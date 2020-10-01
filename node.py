@@ -34,7 +34,6 @@ class Node(threading.Thread):
             with self.lock:
                 for conn in self.connections:
                     if not conn.is_alive():
-                        print("dead")
                         self.connections.remove(conn)
             time.sleep(0.1)
 
@@ -47,13 +46,22 @@ class Node(threading.Thread):
             conn.join()
             self.connections.remove(conn)
 
-    def connect(self, ip, port):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((ip, port))
-        new_connection = Connection(sock, [ip, port], self)
+    def connect(self, target):
+        if len(target) == 2:  # ipv4
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        elif len(target) == 4:  # ipv6
+            sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        else:
+            raise ValueError("Unknown target")
+        sock.settimeout(0.5)
+        try:
+            sock.connect(target)
+        except OSError:
+            return
+        new_connection = Connection(sock, [target[0], target[1]], self)
         new_connection.start()
         self.connections.append(new_connection)
 
-    def sendall(self, data):
+    def sendall(self, msg):
         for conn in self.connections:
-            conn.send(data)
+            conn.send(msg)

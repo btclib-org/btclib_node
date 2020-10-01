@@ -207,20 +207,38 @@ class Mempool:
         super().__init__(name="mempool")
 
 
+@dataclass
 class Ping:
-    def __init__(self):
-        super().__init__(name="ping")
-        self.nonce = random.randint(0, 2 ** 64 - 1).to_bytes(8, "little")
-        self.raw = self.nonce
+    nonce: int
+
+    def __init__(self, nonce=None):
+        if not nonce:
+            self.nonce = random.randint(0, 2 ** 64 - 1)
+        else:
+            self.nonce = nonce
+
+    @classmethod
+    def deserialize(cls, data):
+        stream = bytesio_from_binarydata(data)
+        nonce = int.from_bytes(stream.read(8), "little")
+        return cls(nonce=nonce)
+
+    def serialize(self):
+        return add_headers("ping", self.nonce.to_bytes(8, "little"))
 
 
+@dataclass
 class Pong:
-    def __init__(self):
-        super().__init__(name="pong")
+    nonce: int
 
-    def from_ping(self, ping: Ping):
-        nonce = get_payload(ping)
-        self.raw = nonce
+    @classmethod
+    def deserialize(cls, data):
+        stream = bytesio_from_binarydata(data)
+        nonce = int.from_bytes(stream.read(8), "little")
+        return cls(nonce=nonce)
+
+    def serialize(self):
+        return add_headers("pong", self.nonce.to_bytes(8, "little"))
 
 
 class Reject:
