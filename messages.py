@@ -14,7 +14,11 @@ import struct
 from btclib import varint
 from btclib.utils import bytesio_from_binarydata
 from dataclasses import dataclass
-from ipaddress import IPv6Address
+from structures import NetworkAddress
+from typing import List, Tuple
+
+from btclib.blocks import Block
+from btclib.tx import Tx
 
 
 class WrongChecksumError(Exception):
@@ -46,27 +50,6 @@ def get_payload(message: bytes):
     payload_len = int.from_bytes(message[16:20], "little")
     payload = message[24 : 24 + payload_len]
     return (message_name, payload)
-
-
-@dataclass
-class NetworkAddress:
-    services: int
-    ip: IPv6Address
-    port: int
-
-    @classmethod
-    def deserialize(cls, data):
-        stream = bytesio_from_binarydata(data)
-        services = int.from_bytes(stream.read(8), "little")
-        ip = IPv6Address(stream.read(16))
-        port = int.from_bytes(stream.read(2), "big")
-        return cls(services=services, ip=ip, port=port)
-
-    def serialize(self):
-        payload = self.services.to_bytes(8, "little")
-        payload += self.ip.packed
-        payload += self.port.to_bytes(2, "big")
-        return payload
 
 
 @dataclass
@@ -121,6 +104,7 @@ class Version:
         return add_headers("version", payload)
 
 
+@dataclass
 class Verack:
     @classmethod
     def deserialize(cls, data):
@@ -130,81 +114,149 @@ class Verack:
         return add_headers("verack", b"")
 
 
+@dataclass
 class Addr:
-    def __init__(self):
-        super().__init__(name="verack")
+    addresses: List[Tuple[int, NetworkAddress]]
+
+    @classmethod
+    def deserialize(cls, data):
+        stream = bytesio_from_binarydata(data)
+        len_addresses = varint.decode(stream)
+        addresses = []
+        for x in range(len_addresses):
+            address_timestamp = int.from_bytes(stream.read(8), "little")
+            address = stream.read(22)
+            addresses.append((address_timestamp, address))
+        return cls(addresses=addresses)
+
+    def serialize(self):
+        payload = varint.encode(len(self.addresses))
+        for address_timestamp, address in self.addresses:
+            payload += address_timestamp.to_bytes(8, "little")
+            payload += address.serialize()
+        return add_headers("addr", payload)
 
 
+@dataclass
 class Inv:
-    def __init__(self):
-        super().__init__(name="inv")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("inv", b"")
 
 
+@dataclass
 class Getdata:
-    def __init__(self):
-        super().__init__(name="getdata")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("getdata", b"")
 
 
+@dataclass
 class Notfound:
-    def __init__(self):
-        super().__init__(name="notfound")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("notfound", b"")
 
 
+@dataclass
 class Getblocks:
-    def __init__(self):
-        super().__init__(name="getblocks")
-        self.hashes = []
-        self.hash_stop = b""
+    version: int
+    block_locator_hashes = List[str]
+    hash_stop = str
 
-    @property
-    def raw(self):
-        out = (70015).to_bytes(4, "little")
-        out += varint.encode(len(self.hashes))
-        for hash in self.hashes:
-            out += hash
-        out += self.hash_stop
-        return out
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        payload = self.version.to_bytes(4, "little")
+        payload += varint.encode(len(self.block_locator_hashes))
+        for hash in self.block_locator_hashes:
+            payload += bytes.fromhex(hash)[::-1]
+        payload += bytes.fromhex(self.hash_stop)[::-1]
+        return add_headers("getblocks", payload)
 
 
+@dataclass
 class Getheaders:
-    def __init__(self):
-        super().__init__(name="getheaders")
-        self.hashes = []
-        self.hash_stop = b""
+    version: int
+    block_locator_hashes = List[str]
+    hash_stop = str
 
-    @property
-    def raw(self):
-        out = (70015).to_bytes(4, "little")
-        out += varint.encode(len(self.hashes))
-        for hash in self.hashes:
-            out += hash
-        out += self.hash_stop
-        return out
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        payload = self.version.to_bytes(4, "little")
+        payload += varint.encode(len(self.block_locator_hashes))
+        for hash in self.block_locator_hashes:
+            payload += bytes.fromhex(hash)[::-1]
+        payload += bytes.fromhex(self.hash_stop)[::-1]
+        return add_headers("getheaders", payload)
 
 
+@dataclass
 class Tx:
-    def __init__(self):
-        super().__init__(name="tx")
+    data: Tx
+
+    @classmethod
+    def deserialize(cls, data):
+        return cls(Tx.deserialize(data))
+
+    def serialize(self):
+        return add_headers("tx", self.data.serialize())
 
 
+@dataclass
 class Block:
-    def __init__(self):
-        super().__init__(name="block")
+    data: Block
+
+    @classmethod
+    def deserialize(cls, data):
+        return cls(Block.deserialize(data))
+
+    def serialize(self):
+        return add_headers("block", self.data.serialize())
 
 
+@dataclass
 class Headers:
-    def __init__(self):
-        super().__init__(name="headers")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("headers", b"")
 
 
+@dataclass
 class Getaddr:
-    def __init__(self):
-        super().__init__(name="getaddr")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("getaddr", b"")
 
 
+@dataclass
 class Mempool:
-    def __init__(self):
-        super().__init__(name="mempool")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("mempool", b"")
 
 
 @dataclass
@@ -241,56 +293,111 @@ class Pong:
         return add_headers("pong", self.nonce.to_bytes(8, "little"))
 
 
+@dataclass
 class Reject:
-    def __init__(self):
-        super().__init__(name="reject")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("reject", b"")
 
 
+@dataclass
 class Filterload:
-    def __init__(self):
-        super().__init__(name="filterload")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("filterload", b"")
 
 
+@dataclass
 class Filteradd:
-    def __init__(self):
-        super().__init__(name="filteradd")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("filteradd", b"")
 
 
+@dataclass
 class Filterclear:
-    def __init__(self):
-        super().__init__(name="filterclear")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("filterclear", b"")
 
 
-class Merckleblock:
-    def __init__(self):
-        super().__init__(name="merckleblock")
+@dataclass
+class Merkleblock:
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("merkleblock", b"")
 
 
+@dataclass
 class Sendheaders:
-    def __init__(self):
-        super().__init__(name="sendheaders")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("sendheaders", b"")
 
 
+@dataclass
 class Freefilter:
-    def __init__(self):
-        super().__init__(name="freefilter")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("freefilter", b"")
 
 
+@dataclass
 class Sendcmpct:
-    def __init__(self):
-        super().__init__(name="sendcmpct")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("sendcmpt", b"")
 
 
+@dataclass
 class Cmptcblock:
-    def __init__(self):
-        super().__init__(name="cmptcblock")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("cmptblock", b"")
 
 
+@dataclass
 class Getblocktxn:
-    def __init__(self):
-        super().__init__(name="getblocktxn")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("getblocktxn", b"")
 
 
+@dataclass
 class Blocktxn:
-    def __init__(self):
-        super().__init__(name="blocktxn")
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("blocktxn", b"")

@@ -14,19 +14,7 @@ import socket
 import time
 import random
 import re
-from ipaddress import IPv6Address, AddressValueError
-
-
-def to_ipv6(ip):
-    try:
-        return IPv6Address(ip)
-    except AddressValueError:
-        try:
-            return IPv6Address("::ffff:" + ip)
-        except Exception as e:
-            raise e
-    except Exception as e:
-        raise e
+from utils import to_ipv6
 
 
 class Connection(threading.Thread):
@@ -64,11 +52,9 @@ class Connection(threading.Thread):
             services=services,
             timestamp=int(time.time()),
             addr_recv=NetworkAddress(
-                1, IPv6Address(to_ipv6(self.address[0])), self.address[1]
+                1, to_ipv6(self.address[0]), self.address[1]
             ),  # TODO
-            addr_from=NetworkAddress(
-                services, IPv6Address(to_ipv6("0.0.0.0")), 8333
-            ),  # TODO
+            addr_from=NetworkAddress(services, to_ipv6("0.0.0.0"), 8333),  # TODO
             nonce=random.randint(0, 0xFFFFFFFFFFFF),
             user_agent="/Btclib/",
             start_height=0,  # TODO
@@ -77,6 +63,7 @@ class Connection(threading.Thread):
         self.send(version)
 
     def accept_version(self, version_message):
+        print(version_message)
         return True
 
     def validate_handshake(self):
