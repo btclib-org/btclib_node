@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from ipaddress import IPv6Address
+
 from btclib.utils import bytesio_from_binarydata
 
 

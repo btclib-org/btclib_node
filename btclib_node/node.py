@@ -1,8 +1,8 @@
-import threading
 import socket
+import threading
 import time
 
-from connection import Connection
+from btclib_node.net.connection import Connection
 
 
 class Node(threading.Thread):

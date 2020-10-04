@@ -1,4 +1,4 @@
-from ipaddress import IPv6Address, AddressValueError
+from ipaddress import AddressValueError, IPv6Address
 
 
 def to_ipv6(ip):

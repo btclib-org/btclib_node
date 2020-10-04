@@ -1,6 +1,7 @@
-from node import Node
-import socket
 import random
+import socket
+
+from btclib_node.node import Node
 
 node = Node(30000)
 node.start()

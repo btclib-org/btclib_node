@@ -1,20 +1,14 @@
-from messages import (
-    get_payload,
-    verify_headers,
-    Version,
-    Verack,
-    Ping,
-    Pong,
-    NetworkAddress,
-    WrongChecksumError,
-)
-
-import threading
-import socket
-import time
 import random
 import re
-from utils import to_ipv6
+import socket
+import threading
+import time
+
+from btclib_node.net.messages import WrongChecksumError, get_payload, verify_headers
+from btclib_node.net.messages.handshake import Verack, Version
+from btclib_node.net.messages.ping import Ping, Pong
+from btclib_node.structures import NetworkAddress
+from btclib_node.utils import to_ipv6
 
 
 class Connection(threading.Thread):
@@ -63,7 +57,6 @@ class Connection(threading.Thread):
         self.send(version)
 
     def accept_version(self, version_message):
-        print(version_message)
         return True
 
     def validate_handshake(self):
