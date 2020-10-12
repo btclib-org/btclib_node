@@ -30,8 +30,8 @@ for dns_server in dns_servers:
 random.shuffle(addresses)
 
 i = 0
-while len(node.connections) < 10:
-    node.connect(addresses[i])
+while len(node.connection_manager.connections) < 10:
+    node.connect(addresses[i][0], addresses[i][1])
     i += 1
 
-node.connect(("0.0.0.0", 8333))
+node.connect("0.0.0.0", 8333)
