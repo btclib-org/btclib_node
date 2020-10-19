@@ -5,9 +5,6 @@ def to_ipv6(ip):
     try:
         return IPv6Address(ip)
     except AddressValueError:
-        try:
-            return IPv6Address("::ffff:" + ip)
-        except Exception as e:
-            raise e
+        return IPv6Address("::ffff:" + ip)
     except Exception as e:
         raise e

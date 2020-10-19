@@ -1,52 +1,98 @@
 import asyncio
+import random
 import socket
 import threading
+import time
 from collections import deque
 
 from btclib_node.net.connection import Connection
 
 
+async def get_dns_nodes():
+    loop = asyncio.get_running_loop()
+    dns_servers = [
+        "seed.bitcoin.sipa.be",
+        "dnsseed.bluematt.me",
+        "dnsseed.bitcoin.dashjr.org",
+        "seed.bitcoinstats.com",
+        "seed.bitcoin.jonasschnelli.ch",
+        "seed.btc.petertodd.org",
+        "seed.bitcoin.sprovoost.nl",
+        "dnsseed.emzy.de",
+        "seed.bitcoin.wiz.biz",
+    ]
+    addresses = []
+    for dns_server in dns_servers:
+        try:
+            ips = await loop.getaddrinfo(dns_server, 8333)
+        except socket.gaierror:
+            continue
+        for ip in ips:
+            addresses.append(ip[4])
+    random.shuffle(addresses)
+    return addresses
+
+
 class ConnectionManager(threading.Thread):
-    def __init__(self, net, port):
+    def __init__(self, node, port):
         super().__init__()
-        self.net = net
-        self.magic = net.magic
+        self.node = node
+        self.magic = node.magic
         self.connections = {}
-        self.terminate_flag = threading.Event()
         self.messages = deque()
         self.loop = asyncio.new_event_loop()
         self.port = port
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.bind(("0.0.0.0", self.port))
-        self.server_socket.listen()
-        self.server_socket.settimeout(0.0)
+        self.last_connection_id = -1
 
     def create_connection(self, loop, client):
-        id = max(self.connections.keys()) + 1 if self.connections else 0
-        new_connection = Connection(loop, client, self, id)
-        self.connections[id] = new_connection  # TODO
+        client.settimeout(0.0)
+        new_connection = Connection(loop, client, self, self.last_connection_id)
+        self.connections[self.last_connection_id] = new_connection
         return new_connection
 
     def remove_connection(self, id):
-        del self.connections[id]
+        self.connections[id].stop()
+        self.connections.pop(id)
 
-    async def __run(self, loop):
-        sock = self.server_socket
-        with sock:
+    async def manage_connections(self, loop):
+        addresses = await get_dns_nodes()
+        i = 0
+        while True:
+            for conn in self.connections.copy().values():
+                if conn.state == 4:
+                    self.remove_connection(conn.id)
+            await asyncio.sleep(0.1)
+            if len(self.connections) < 10:
+                self.connect(addresses[i][0], addresses[i][1])
+            i += 1
+
+    async def server(self, loop):
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.bind(("0.0.0.0", self.port))
+        server_socket.listen()
+        server_socket.settimeout(0.0)
+        with server_socket:
             while True:
-                client, addr = await loop.sock_accept(sock)
+                client, addr = await loop.sock_accept(server_socket)
                 asyncio.run_coroutine_threadsafe(
                     self.create_connection(loop, client).run(), loop
                 )
 
     def run(self):
-        asyncio.set_event_loop(self.loop)
-        asyncio.run_coroutine_threadsafe(self.__run(self.loop), self.loop)
-        self.loop.run_forever()
+        loop = self.loop
+        asyncio.set_event_loop(loop)
+        asyncio.run_coroutine_threadsafe(self.server(loop), loop)
+        asyncio.run_coroutine_threadsafe(self.manage_connections(loop), loop)
+        loop.run_forever()
 
     def stop(self):
+        for task in asyncio.all_tasks(self.loop):
+            task.cancel()
         self.loop.stop()
+        time.sleep(1)
+        self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+        self.loop.close()
 
     def connect(self, host, port):
         target = socket.getaddrinfo(host, port)[0][4]
@@ -59,9 +105,10 @@ class ConnectionManager(threading.Thread):
             client.connect(target)
         except OSError:
             return
-        client.settimeout(0.0)
+        self.last_connection_id += 1
         conn = self.create_connection(self.loop, client)
-        asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
+        task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
+        conn.task = task
 
     def send(self, msg, id):
         self.connections[id].send(msg)

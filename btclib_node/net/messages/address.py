@@ -18,8 +18,8 @@ class Addr:
         len_addresses = varint.decode(stream)
         addresses = []
         for x in range(len_addresses):
-            address_timestamp = int.from_bytes(stream.read(8), "little")
-            address = stream.read(22)
+            address_timestamp = int.from_bytes(stream.read(4), "little")
+            address = NetworkAddress.deserialize(stream)
             addresses.append((address_timestamp, address))
         return cls(addresses=addresses)
 
