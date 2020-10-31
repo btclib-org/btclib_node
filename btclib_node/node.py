@@ -1,10 +1,40 @@
 import os
 import threading
+import time
 
+from btclib.tx import Tx
+
+from btclib_node.mempool import Mempool
 from btclib_node.net.connection_manager import ConnectionManager
-from btclib_node.net.messages.address import Addr
-from btclib_node.net.messages.data import Headers, Inv
-from btclib_node.net.messages.getdata import Getheaders
+from btclib_node.net.messages.data import Inv
+from btclib_node.net.messages.data import Tx as TxMessage
+
+
+# TODO: sends to many messages
+def tx(node, msg, conn_id):
+    tx = Tx.deserialize(msg)
+    node.mempool.add_tx(tx)
+    node.connection_manager.sendall(Inv([(1, tx.txid)]))
+
+
+def inv(node, msg, conn_id):
+    inv = Inv.deserialize(msg)
+    transactions = [x[1] for x in inv.inventory if x[0] == 1]
+    # blocks = [x[1] for x in inv.inventory if x[0] == 2]
+    gettransaction_msg = node.mempool.get_missing(transactions)
+    if gettransaction_msg.inventory:
+        node.connection_manager.send(gettransaction_msg, conn_id)
+
+
+def getdata(node, msg, conn_id):
+    inv = Inv.deserialize(msg)
+    transactions = [x[1] for x in inv.inventory if x[0] == 1]
+    # blocks = [x[1] for x in inv.inventory if x[0] == 2]
+    for tx in transactions:
+        if tx in node.mempool.transactions:
+            node.connection_manager.send(
+                TxMessage(node.mempool.transactions[tx]), conn_id
+            )
 
 
 class Node(threading.Thread):
@@ -14,6 +44,7 @@ class Node(threading.Thread):
         self.magic = "f9beb4d9"
         self.connection_manager = ConnectionManager(self, net_port)
         self.connection_manager.start()
+        self.mempool = Mempool({})
         self.data_dir = os.path.join(os.getcwd(), "test_data")
         os.makedirs(self.data_dir, exist_ok=True)
 
@@ -21,62 +52,17 @@ class Node(threading.Thread):
         self.terminate_flag = threading.Event()
 
     def run(self):
+        callbacks = {"inv": inv, "tx": tx, "getdata": getdata}
         while not self.terminate_flag.is_set():
             if not len(self.connection_manager.messages):
                 continue
-            message = self.connection_manager.messages.popleft()
-            if message[0] == "addr":
-                print(Addr.deserialize(message[1]).addresses)
-                # pass
-            elif message[0] == "getaddr":
-                pass
-            elif message[0] == "sendcmpt":
-                pass
-            elif message[0] == "cmptblock":
-                pass
-            elif message[0] == "tx":
-                pass
-            elif message[0] == "block":
-                pass
-            elif message[0] == "headers":
-                # print(Headers.deserialize(message[1]))
-                pass
-            elif message[0] == "blocktxn":
-                pass
-            elif message[0] == "inv":
-                pass
-                # print(Inv.deserialize(message[1]))
-            elif message[0] == "notfound":
-                pass
-            elif message[0] == "filterload":
-                pass
-            elif message[0] == "filteradd":
-                pass
-            elif message[0] == "filterclear":
-                pass
-            elif message[0] == "merkleblock":
-                pass
-            elif message[0] == "feefilter":
-                pass
-            elif message[0] == "filterclear":
-                pass
-            elif message[0] == "getdata":
-                pass
-            elif message[0] == "getblocks":
-                pass
-            elif message[0] == "getheaders":
-                pass
-                # print(Getheaders.deserialize(message[1]))
-            elif message[0] == "getblocktxn":
-                pass
-            elif message[0] == "mempool":
-                pass
-            elif message[0] == "sendheaders":
-                pass
-            elif message[0] == "ping":
-                pass
-            elif message[0] == "pong":
-                pass
+            msg_type, msg, conn_id = self.connection_manager.messages.popleft()
+            print(time.time(), msg_type)
+            if msg_type in callbacks:
+                try:
+                    callbacks[msg_type](self, msg, conn_id)
+                except Exception:
+                    pass
 
     def stop(self):
         self.terminate_flag.set()

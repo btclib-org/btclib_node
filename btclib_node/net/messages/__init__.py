@@ -18,7 +18,7 @@ def verify_headers(message: bytes):
     payload_len = int.from_bytes(message[16:20], "little")
     checksum = message[20:24]
     payload = message[24 : 24 + payload_len]
-    if len(payload) != payload_len:
+    if len(message) < 24 or len(payload) != payload_len:
         raise ValueError("Not enough data")
     if checksum != sha256(sha256(payload).digest()).digest()[:4]:
         raise WrongChecksumError("Wrong checksum, the message might have been tampered")

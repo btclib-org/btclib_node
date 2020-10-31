@@ -3,23 +3,27 @@ from typing import List, Tuple
 
 from btclib import varint
 from btclib.blocks import Block, BlockHeader
-from btclib.tx import Tx as TxData
+from btclib.tx import _Tx
 from btclib.utils import bytesio_from_binarydata
 
 from btclib_node.net.messages import add_headers
 
 
 @dataclass
-class Tx(TxData):
+class Tx:
+    tx: _Tx
+
     def serialize(self):
-        data = super().serialize(self)
+        data = self.tx.serialize()
         return add_headers("tx", data)
 
 
 @dataclass
-class Block(Block):
+class Block:
+    block: Block
+
     def serialize(self):
-        data = super().serialize(self)
+        data = self.block.serialize()
         return add_headers("block", data)
 
 
@@ -49,7 +53,7 @@ class Headers:
 @dataclass
 class Blocktxn:
     blockhash: str
-    transactions: List[TxData]
+    transactions: List[_Tx]
 
     @classmethod
     def deserialize(cls, data):

@@ -51,8 +51,9 @@ class ConnectionManager(threading.Thread):
         return new_connection
 
     def remove_connection(self, id):
-        self.connections[id].stop()
-        self.connections.pop(id)
+        if id in self.connections.keys():
+            self.connections[id].stop()
+            self.connections.pop(id)
 
     async def manage_connections(self, loop):
         addresses = await get_dns_nodes()
@@ -87,6 +88,8 @@ class ConnectionManager(threading.Thread):
         loop.run_forever()
 
     def stop(self):
+        for conn in self.connections.values():
+            conn.stop()
         for task in asyncio.all_tasks(self.loop):
             task.cancel()
         self.loop.stop()
@@ -111,8 +114,9 @@ class ConnectionManager(threading.Thread):
         conn.task = task
 
     def send(self, msg, id):
-        self.connections[id].send(msg)
+        if id in self.connections:
+            self.connections[id].send(msg)
 
     def sendall(self, msg):
-        for conn in self.connections:
+        for conn in self.connections.values():
             conn.send(msg)

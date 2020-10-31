@@ -1,1 +1,4 @@
-- add bloom filter messages
+- Add bloom filter messages
+
+- Add address store system. stop using dns for finding peers
+- Add system for sending ping messages if we don't receive messages for 2 minutes 

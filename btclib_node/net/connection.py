@@ -5,6 +5,8 @@ import re
 import time
 
 from btclib_node.net.messages import WrongChecksumError, get_payload, verify_headers
+from btclib_node.net.messages.compact import Sendcmpct
+from btclib_node.net.messages.getdata import Sendheaders
 from btclib_node.net.messages.handshake import Verack, Version
 from btclib_node.net.messages.ping import Ping, Pong
 from btclib_node.structures import NetworkAddress
@@ -103,6 +105,8 @@ class Connection:
                 else:
                     self.messages = self.messages[1:]
                     self.state = State.Connected
+                    await self.async_send(Sendcmpct(0, 1))
+                    await self.async_send(Sendheaders())
 
     def parse_messages(self):
         while True:
