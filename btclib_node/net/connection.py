@@ -5,14 +5,12 @@ import re
 import time
 
 from btclib_node.net.messages import WrongChecksumError, get_payload, verify_headers
-from btclib_node.net.messages.compact import Sendcmpct
-from btclib_node.net.messages.getdata import Sendheaders
 from btclib_node.net.messages.handshake import Verack, Version
 from btclib_node.net.messages.ping import Ping, Pong
 from btclib_node.structures import NetworkAddress
 from btclib_node.utils import to_ipv6
 
-State = enum.IntEnum("State", ["Open", "Version", "Connected", "Closed"])
+Status = enum.IntEnum("Status", ["Open", "Version", "Connected", "Closed"])
 
 
 class Connection:
@@ -24,18 +22,18 @@ class Connection:
         self.id = id
         self.messages = []
         self.buffer = b""
-        self.state = State.Open
+        self.status = Status.Open
         self.task = None
 
     def stop(self):
-        self.state = State.Closed
+        self.status = Status.Closed
         if self.task:
             self.task.cancel()
 
     async def run(self):
         with self.client:
             await self.send_version()
-            while self.state < State.Closed:
+            while self.status < Status.Closed:
                 data = await self.loop.sock_recv(self.client, 1024)
                 if not data:
                     return self.stop()
@@ -43,15 +41,14 @@ class Connection:
                     self.buffer += data
                     self.parse_messages()
                     if self.messages:
-                        if self.state < State.Connected:
+                        if self.status < Status.Connected:
                             await self.validate_handshake()
-                        if self.state == State.Connected:
+                        if self.status == Status.Connected:
                             await self.handle_messages()
                         else:
                             return self.stop()
-                except Exception as e:
-                    print(e)
-                    raise e
+                except Exception:
+                    return self.stop()
 
     async def _send(self, data):
         data = bytes.fromhex(self.manager.magic) + data
@@ -64,9 +61,9 @@ class Connection:
         asyncio.run_coroutine_threadsafe(self.async_send(msg), self.loop)
 
     async def send_version(self):
-        services = 1032  # TODO
+        services = 1032 + 1 * 0  # TODO: for now we don't have blocks, only headers
         version = Version(
-            version=70015,  # TODO
+            version=70015,
             services=services,
             timestamp=int(time.time()),
             addr_recv=NetworkAddress(
@@ -81,10 +78,18 @@ class Connection:
         await self.async_send(version)
 
     def accept_version(self, version_message):
-        return version_message.version == 70015
+        if version_message.version != 70015:
+            return False
+        # for now we only connect to nodes which can provide blocks
+        if version_message.services & 1 == 0:
+            return False
+        # we only connect to witness nodes
+        if version_message.services & 8 == 0:
+            return False
+        return True
 
     async def validate_handshake(self):
-        if self.state < State.Version:
+        if self.status < Status.Version:
             if self.messages:
                 # first message must be version
                 if not self.messages[0][0] == "version":
@@ -94,19 +99,18 @@ class Connection:
                     if self.accept_version(version_message):
                         await self.async_send(Verack())
                         self.messages = self.messages[1:]
-                        self.state = State.Version
+                        self.status = Status.Version
                     else:
                         return self.stop()
-        if self.state == State.Version:
+        if self.status == Status.Version:
             if self.messages:
                 # second message must be verack
                 if not self.messages[0][0] == "verack":
                     return self.stop()
                 else:
                     self.messages = self.messages[1:]
-                    self.state = State.Connected
-                    await self.async_send(Sendcmpct(0, 1))
-                    await self.async_send(Sendheaders())
+                    self.status = Status.Connected
+                    self.manager.messages.append(("connection_made", "", self.id))
 
     def parse_messages(self):
         while True:

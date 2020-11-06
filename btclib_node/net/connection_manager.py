@@ -60,12 +60,17 @@ class ConnectionManager(threading.Thread):
         i = 0
         while True:
             for conn in self.connections.copy().values():
-                if conn.state == 4:
+                if conn.status == 4:
                     self.remove_connection(conn.id)
             await asyncio.sleep(0.1)
-            if len(self.connections) < 10:
-                self.connect(addresses[i][0], addresses[i][1])
-            i += 1
+            self.connection_num = 1 if self.node.status == "Syncing" else 10
+            if len(self.connections) < self.connection_num:
+                try:
+                    self.connect(addresses[i][0], addresses[i][1])
+                except Exception as e:
+                    print(e)
+                    pass
+                i += 1
 
     async def server(self, loop):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
