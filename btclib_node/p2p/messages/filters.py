@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from btclib_node.net.messages import add_headers
+from btclib_node.p2p.messages import add_headers
 
 
 @dataclass

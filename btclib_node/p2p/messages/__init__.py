@@ -6,7 +6,7 @@ class WrongChecksumError(Exception):
     pass
 
 
-# does not add network_string
+# does not add p2pwork_string
 def add_headers(name: str, payload: bytes):
     command = name + ((12 - len(name)) * "\00")
     payload_len = struct.pack("I", len(payload))

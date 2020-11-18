@@ -6,7 +6,7 @@ from btclib.blocks import Block, BlockHeader
 from btclib.tx import _Tx
 from btclib.utils import bytesio_from_binarydata
 
-from btclib_node.net.messages import add_headers
+from btclib_node.p2p.messages import add_headers
 
 
 @dataclass

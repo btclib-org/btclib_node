@@ -4,9 +4,9 @@ import random
 import re
 import time
 
-from btclib_node.net.messages import WrongChecksumError, get_payload, verify_headers
-from btclib_node.net.messages.handshake import Verack, Version
-from btclib_node.net.messages.ping import Ping, Pong
+from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
+from btclib_node.p2p.messages.handshake import Verack, Version
+from btclib_node.p2p.messages.ping import Ping, Pong
 from btclib_node.structures import NetworkAddress
 from btclib_node.utils import to_ipv6
 
@@ -36,7 +36,8 @@ class Connection:
             while self.status < Status.Closed:
                 data = await self.loop.sock_recv(self.client, 1024)
                 if not data:
-                    return self.stop()
+                    self.status = Status.Closed
+                    return
                 try:
                     self.buffer += data
                     self.parse_messages()
@@ -46,9 +47,11 @@ class Connection:
                         if self.status == Status.Connected:
                             await self.handle_messages()
                         else:
-                            return self.stop()
+                            self.status = Status.Closed
+                            return
                 except Exception:
-                    return self.stop()
+                    self.status = Status.Closed
+                    return
 
     async def _send(self, data):
         data = bytes.fromhex(self.manager.magic) + data
@@ -93,7 +96,8 @@ class Connection:
             if self.messages:
                 # first message must be version
                 if not self.messages[0][0] == "version":
-                    return self.stop()
+                    self.status = Status.Closed
+                    return
                 else:
                     version_message = Version.deserialize(self.messages[0][1])
                     if self.accept_version(version_message):
@@ -101,12 +105,14 @@ class Connection:
                         self.messages = self.messages[1:]
                         self.status = Status.Version
                     else:
-                        return self.stop()
+                        self.status = Status.Closed
+                        return
         if self.status == Status.Version:
             if self.messages:
                 # second message must be verack
                 if not self.messages[0][0] == "verack":
-                    return self.stop()
+                    self.status = Status.Closed
+                    return
                 else:
                     self.messages = self.messages[1:]
                     self.status = Status.Connected

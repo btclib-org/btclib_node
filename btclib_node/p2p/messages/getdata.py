@@ -4,7 +4,7 @@ from typing import List, Tuple
 from btclib import varint
 from btclib.utils import bytesio_from_binarydata
 
-from btclib_node.net.messages import add_headers
+from btclib_node.p2p.messages import add_headers
 
 
 @dataclass

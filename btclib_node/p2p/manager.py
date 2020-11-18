@@ -5,7 +5,7 @@ import threading
 import time
 from collections import deque
 
-from btclib_node.net.connection import Connection
+from btclib_node.p2p.connection import Connection
 
 
 async def get_dns_nodes():
@@ -33,7 +33,7 @@ async def get_dns_nodes():
     return addresses
 
 
-class ConnectionManager(threading.Thread):
+class P2pManager(threading.Thread):
     def __init__(self, node, port):
         super().__init__()
         self.node = node
