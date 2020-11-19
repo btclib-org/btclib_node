@@ -25,33 +25,30 @@ class Connection:
         self.status = Status.Open
         self.task = None
 
-    def stop(self):
+    def stop(self, cancel_task=True):
         self.status = Status.Closed
-        if self.task:
+        if self.task and cancel_task:
             self.task.cancel()
+        self.client.close()
 
     async def run(self):
-        with self.client:
-            await self.send_version()
-            while self.status < Status.Closed:
-                data = await self.loop.sock_recv(self.client, 1024)
-                if not data:
-                    self.status = Status.Closed
-                    return
-                try:
-                    self.buffer += data
-                    self.parse_messages()
-                    if self.messages:
-                        if self.status < Status.Connected:
-                            await self.validate_handshake()
-                        if self.status == Status.Connected:
-                            await self.handle_messages()
-                        else:
-                            self.status = Status.Closed
-                            return
-                except Exception:
-                    self.status = Status.Closed
-                    return
+        await self.send_version()
+        while self.status < Status.Closed:
+            data = await self.loop.sock_recv(self.client, 1024)
+            if not data:
+                return self.stop(cancel_task=False)
+            try:
+                self.buffer += data
+                self.parse_messages()
+                if self.messages:
+                    if self.status < Status.Connected:
+                        await self.validate_handshake()
+                    if self.status == Status.Connected:
+                        await self.handle_messages()
+                    else:
+                        return self.stop(cancel_task=False)
+            except Exception:
+                return self.stop(cancel_task=False)
 
     async def _send(self, data):
         data = bytes.fromhex(self.manager.magic) + data
@@ -96,8 +93,7 @@ class Connection:
             if self.messages:
                 # first message must be version
                 if not self.messages[0][0] == "version":
-                    self.status = Status.Closed
-                    return
+                    return self.stop(cancel_task=False)
                 else:
                     version_message = Version.deserialize(self.messages[0][1])
                     if self.accept_version(version_message):
@@ -105,14 +101,12 @@ class Connection:
                         self.messages = self.messages[1:]
                         self.status = Status.Version
                     else:
-                        self.status = Status.Closed
-                        return
+                        return self.stop(cancel_task=False)
         if self.status == Status.Version:
             if self.messages:
                 # second message must be verack
                 if not self.messages[0][0] == "verack":
-                    self.status = Status.Closed
-                    return
+                    return self.stop(cancel_task=False)
                 else:
                     self.messages = self.messages[1:]
                     self.status = Status.Connected
@@ -151,4 +145,8 @@ class Connection:
             self.messages.pop(0)
 
     def __repr__(self):
-        return f"Connection to {self.client.getpeername()[0]}:{self.client.getpeername()[1]}"
+        try:
+            out = f"Connection to {self.client.getpeername()[0]}:{self.client.getpeername()[1]}"
+        except OSError:
+            out = "Broken connection"
+        return out

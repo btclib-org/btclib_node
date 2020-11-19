@@ -81,9 +81,10 @@ class P2pManager(threading.Thread):
         with server_socket:
             while True:
                 client, addr = await loop.sock_accept(server_socket)
-                asyncio.run_coroutine_threadsafe(
-                    self.create_connection(loop, client).run(), loop
-                )
+                self.last_connection_id += 1
+                conn = self.create_connection(self.loop, client)
+                task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
+                conn.task = task
 
     def run(self):
         loop = self.loop
@@ -97,7 +98,7 @@ class P2pManager(threading.Thread):
             conn.stop()
         for task in asyncio.all_tasks(self.loop):
             task.cancel()
-        self.loop.stop()
+        self.loop.call_soon_threadsafe(self.loop.stop)
         time.sleep(1)
         self.loop.run_until_complete(self.loop.shutdown_asyncgens())
         self.loop.close()
