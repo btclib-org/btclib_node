@@ -40,6 +40,14 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 toml = ["toml"]
 
 [[package]]
+name = "http-parser"
+version = "0.9.0"
+description = "http request/response parser"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "iniconfig"
 version = "1.1.1"
 description = "iniconfig: brain-dead simple config-ini parsing"
@@ -150,7 +158,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "08d9fa93ad87c4302b2427f88c9546d88a63acc4c1c9b627c4764e268369b1d0"
+content-hash = "056dee7ee71e3bd61b5178e1a2de0ea7f699556dd3e8fbcab39bd05485914d33"
 
 [metadata.files]
 atomicwrites = [
@@ -200,6 +208,11 @@ coverage = [
     {file = "coverage-5.3-cp39-cp39-win32.whl", hash = "sha256:cb7df71de0af56000115eafd000b867d1261f786b5eebd88a0ca6360cccfaca7"},
     {file = "coverage-5.3-cp39-cp39-win_amd64.whl", hash = "sha256:47a11bdbd8ada9b7ee628596f9d97fbd3851bd9999d398e9436bd67376dbece7"},
     {file = "coverage-5.3.tar.gz", hash = "sha256:280baa8ec489c4f542f8940f9c4c2181f0306a8ee1a54eceba071a449fb870a0"},
+]
+http-parser = [
+    {file = "http-parser-0.9.0.tar.gz", hash = "sha256:441d3a57c6227230f98aa97539da006fda0f8f4880bc4c5cd895ff2138a52621"},
+    {file = "http_parser-0.9.0-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:fc025894367cff34fcfc7386980b146b9498e9324cf3dc8992b39609e6158401"},
+    {file = "http_parser-0.9.0-py3.7-macosx-10.15-x86_64.egg", hash = "sha256:779f6666c32e831f755bf8c410df8a0d5a498b374506bfe0e74d5b3def746de3"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
