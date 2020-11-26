@@ -63,7 +63,7 @@ class P2pManager(threading.Thread):
                 if conn.status == 4:
                     self.remove_connection(conn.id)
             await asyncio.sleep(0.1)
-            self.connection_num = 1 if self.node.status == "Syncing" else 10
+            self.connection_num = 1 if self.node.status == "Syncing" else 8
             if len(self.connections) < self.connection_num:
                 try:
                     self.connect(addresses[i][0], addresses[i][1])

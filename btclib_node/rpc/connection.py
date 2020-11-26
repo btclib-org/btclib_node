@@ -19,9 +19,10 @@ class Connection:
         self.buffer = b""
         self.task = None
 
-    def stop(self):
+    def close(self):
         if self.task:
             self.task.cancel()
+        self.client.close()
 
     async def run(self):
         p = HttpParser()
@@ -44,8 +45,8 @@ class Connection:
         self.manager.messages.append((msg_type, parameters, self.id))
 
     async def async_send(self, result, error=None):
-        output = {"result": result, "error": None, "id": self.rpc_id}
-        output_str = json.dumps(output).replace(" ", "")
+        output = {"result": result, "error": error, "id": self.rpc_id}
+        output_str = json.dumps(output, separators=(",", ":"))
         response = (
             "HTTP/1.1 200 OK\n"
             + "Content-Type: application/json\n"

@@ -25,6 +25,8 @@ class Connection:
         self.status = Status.Open
         self.task = None
 
+        self.version_message = None
+
     def stop(self, cancel_task=True):
         self.status = Status.Closed
         if self.task and cancel_task:
@@ -67,9 +69,11 @@ class Connection:
             services=services,
             timestamp=int(time.time()),
             addr_recv=NetworkAddress(
-                1, to_ipv6(self.client.getpeername()[0]), self.client.getpeername()[1]
+                0, to_ipv6(self.client.getpeername()[0]), self.client.getpeername()[1]
             ),  # TODO
-            addr_from=NetworkAddress(services, to_ipv6("0.0.0.0"), 8333),  # TODO
+            addr_from=NetworkAddress(
+                services, to_ipv6("0.0.0.0"), self.manager.port
+            ),  # TODO
             nonce=random.randint(0, 0xFFFFFFFFFFFF),
             user_agent="/Btclib/",
             start_height=0,  # TODO
@@ -80,9 +84,9 @@ class Connection:
     def accept_version(self, version_message):
         if version_message.version != 70015:
             return False
-        # for now we only connect to nodes which can provide blocks
-        if version_message.services & 1 == 0:
-            return False
+        # # for now we only connect to nodes which can provide blocks
+        # if version_message.services & 1 == 0:
+        #     return False
         # we only connect to witness nodes
         if version_message.services & 8 == 0:
             return False
@@ -97,6 +101,7 @@ class Connection:
                 else:
                     version_message = Version.deserialize(self.messages[0][1])
                     if self.accept_version(version_message):
+                        self.version_message = version_message
                         await self.async_send(Verack())
                         self.messages = self.messages[1:]
                         self.status = Status.Version

@@ -4,9 +4,9 @@ import threading
 from btclib_node.chainstate import Chainstate
 from btclib_node.index import BlockIndex
 from btclib_node.mempool import Mempool
-from btclib_node.p2p.callbacks import callbacks as p2p_callbacks
+from btclib_node.p2p.main import handle_p2p
 from btclib_node.p2p.manager import P2pManager
-from btclib_node.rpc.callbacks import callbacks as rpc_callbacks
+from btclib_node.rpc.main import handle_rpc
 from btclib_node.rpc.manager import RpcManager
 
 
@@ -37,24 +37,10 @@ class Node(threading.Thread):
     def run(self):
         while not self.terminate_flag.is_set():
             if len(self.rpc_manager.messages):
-                msg_type, msg, conn_id = self.rpc_manager.messages.popleft()
-                if msg_type in rpc_callbacks:
-                    try:
-                        conn = self.rpc_manager.connections[conn_id]
-                        rpc_callbacks[msg_type](self, msg, conn)
-                    except Exception as e:
-                        print(e)
-                        pass
+                handle_rpc(self)
             elif len(self.p2p_manager.messages):
-                msg_type, msg, conn_id = self.p2p_manager.messages.popleft()
-                if msg_type in p2p_callbacks:
-                    try:
-                        conn = self.p2p_manager.connections[conn_id]
-                        p2p_callbacks[msg_type](self, msg, conn)
-                    except Exception as e:
-                        print(e)
-                        pass
-            pass  # each loop
+                handle_p2p(self)
+            pass
 
     def stop(self):
         self.terminate_flag.set()
