@@ -1,31 +1,87 @@
 import os
 import threading
+import time
+from collections import Counter
 
 from btclib_node.chainstate import Chainstate
 from btclib_node.index import BlockIndex
 from btclib_node.mempool import Mempool
 from btclib_node.p2p.main import handle_p2p
 from btclib_node.p2p.manager import P2pManager
+from btclib_node.p2p.messages.getdata import Getdata
 from btclib_node.rpc.main import handle_rpc
 from btclib_node.rpc.manager import RpcManager
+
+
+def next_to_download(node, waiting, pending):
+    if waiting:
+        return waiting[:16]
+    real_pending = []
+    for x in pending:
+        if not node.index.headers[x].downloaded:
+            real_pending.append(x)
+    node.pending = real_pending
+    # get the 4 least common headers in pending
+    # TODO: must get the 16 which are harder to get, not the 16 least common in pending
+    return [x[0] for x in Counter(real_pending).most_common()[:-5:-1]]
+
+
+def block_download(node):
+    if node.status == "Synced":
+
+        connections = node.p2p_manager.connections.values()
+        pending = []
+        exit = True
+        for conn in connections:
+            conn_queue = conn.block_download_queue
+            if not conn_queue:
+                exit = False
+            else:
+                pending.extend(conn_queue)
+        if exit:
+            return
+
+        waiting = []
+        window_complete = True
+        i = node.download_index
+        downloadable = node.index.index[i * 1024 : (i + 1) * 1024]
+        for header in downloadable:
+            if not node.index.headers[header].downloaded:
+                if header not in pending:
+                    waiting.append(header)
+                window_complete = False
+        if window_complete:
+            node.download_index += 1
+            for conn in connections:
+                conn.block_download_queue = []
+            return
+
+        node.waiting = waiting
+        node.pending = pending
+
+        for conn in connections:
+            if conn.block_download_queue == []:
+                new = next_to_download(node, waiting, pending)
+                if new:
+                    conn.block_download_queue = new
+                    conn.send(Getdata([(0x40000002, hash) for hash in new]))
+                return
 
 
 class Node(threading.Thread):
     def __init__(self, p2p_port=8333, rpc_port=8334):
         super().__init__()
 
-        self.magic = "f9beb4d9"
-
-        self.index = BlockIndex(
-            {}, ["000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"]
-        )
-        self.chainstate = Chainstate({})
-        self.mempool = Mempool({})
-
-        self.data_dir = os.path.join(os.getcwd(), "test_data")
-        os.makedirs(self.data_dir, exist_ok=True)
         self.lock = threading.Lock()
         self.terminate_flag = threading.Event()
+
+        self.magic = "f9beb4d9"
+        self.data_dir = os.path.join(os.getcwd(), "test_data")
+        os.makedirs(self.data_dir, exist_ok=True)
+
+        self.index = BlockIndex()
+        self.chainstate = Chainstate()
+        self.mempool = Mempool()
 
         self.p2p_manager = P2pManager(self, p2p_port)
         self.p2p_manager.start()
@@ -33,6 +89,9 @@ class Node(threading.Thread):
         self.rpc_manager.start()
 
         self.status = "Syncing"
+        self.download_index = 0
+        self.waiting = []
+        self.pending = []
 
     def run(self):
         while not self.terminate_flag.is_set():
@@ -40,7 +99,13 @@ class Node(threading.Thread):
                 handle_rpc(self)
             elif len(self.p2p_manager.messages):
                 handle_p2p(self)
-            pass
+            else:
+                time.sleep(0.0001)
+            try:
+                block_download(self)
+            except Exception as e:
+                print(e)
+                pass
 
     def stop(self):
         self.terminate_flag.set()

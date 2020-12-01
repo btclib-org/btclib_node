@@ -20,12 +20,14 @@ class Connection:
         self.client = client
         self.manager = manager
         self.id = id
-        self.messages = []
         self.buffer = b""
-        self.status = Status.Open
         self.task = None
 
+        self.status = Status.Open
+        self.messages = []
+
         self.version_message = None
+        self.block_download_queue = []
 
     def stop(self, cancel_task=True):
         self.status = Status.Closed
@@ -84,11 +86,11 @@ class Connection:
     def accept_version(self, version_message):
         if version_message.version != 70015:
             return False
-        # # for now we only connect to nodes which can provide blocks
-        # if version_message.services & 1 == 0:
-        #     return False
+        # for now we only connect to full nodes
+        if not version_message.services & 1:
+            return False
         # we only connect to witness nodes
-        if version_message.services & 8 == 0:
+        if not version_message.services & 8:
             return False
         return True
 

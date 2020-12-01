@@ -1,8 +1,8 @@
-from btclib.tx import Tx
-
 from btclib_node.p2p.messages.compact import Sendcmpct
+from btclib_node.p2p.messages.data import Block as BlockMsg
 from btclib_node.p2p.messages.data import Headers, Inv
-from btclib_node.p2p.messages.data import Tx as TxMessage
+from btclib_node.p2p.messages.data import Tx as TxMsg
+from btclib_node.p2p.messages.errors import Notfound
 from btclib_node.p2p.messages.getdata import Getdata, Getheaders, Sendheaders
 
 
@@ -17,9 +17,22 @@ def connection_made(node, _, conn):
 # TODO: sends to many messages
 # TODO: check if we have already sent and inv containing this tx
 def tx(node, msg, conn):
-    tx = Tx.deserialize(msg)
+    tx = TxMsg.deserialize(msg).tx
     node.mempool.add_tx(tx)
     node.p2p_manager.sendall(Inv([(1, tx.txid)]))
+
+
+def block(node, msg, conn):
+    block = BlockMsg.deserialize(msg).block
+
+    if not node.index.headers[block.header.hash].downloaded:
+        print(block.header.hash, True)
+    # else:
+    #     print(block.header.hash, False)
+
+    node.index.headers[block.header.hash].downloaded = True
+    if block.header.hash in conn.block_download_queue:
+        conn.block_download_queue.remove(block.header.hash)
 
 
 # TODO: do not ask for a block if we are still downloading old blocks
@@ -44,7 +57,7 @@ def getdata(node, msg, conn):
     # blocks = [x[1] for x in getdata.inventory if x[0] == 2 or x[0] == 0x40000002]
     for tx in transactions:
         if tx in node.mempool.transactions:
-            conn.send(TxMessage(node.mempool.transactions[tx]))
+            conn.send(TxMsg(node.mempool.transactions[tx]))
 
 
 def headers(node, msg, conn):
@@ -64,11 +77,18 @@ def getheaders(node, msg, conn):
         return Headers(headers)
 
 
+def not_found(node, msg, conn):
+    missing = Notfound.deserialize(msg)
+    print("Missing objects:", missing)
+
+
 callbacks = {
     "inv": inv,
     "tx": tx,
+    "block": block,
     "getdata": getdata,
     "getheaders": getheaders,
     "connection_made": connection_made,
     "headers": headers,
+    "notfound": not_found,
 }

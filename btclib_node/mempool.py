@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict
 
 from btclib.tx import Tx
@@ -6,7 +6,7 @@ from btclib.tx import Tx
 
 @dataclass
 class Mempool:
-    transactions: Dict[str, Tx]
+    transactions: Dict[str, Tx] = field(default_factory=lambda: {})
 
     def get_missing(self, transactions):
         missing = []

@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from btclib import varint
-from btclib.blocks import Block, BlockHeader
-from btclib.tx import _Tx
+from btclib.blocks import Block as BlockData
+from btclib.blocks import BlockHeader
+from btclib.tx import Tx as TxData
 from btclib.utils import bytesio_from_binarydata
 
 from btclib_node.p2p.messages import add_headers
@@ -11,7 +12,12 @@ from btclib_node.p2p.messages import add_headers
 
 @dataclass
 class Tx:
-    tx: _Tx
+    tx: TxData
+
+    @classmethod
+    def deserialize(cls, data):
+        tx = TxData.deserialize(data)
+        return cls(tx)
 
     def serialize(self):
         data = self.tx.serialize()
@@ -20,7 +26,12 @@ class Tx:
 
 @dataclass
 class Block:
-    block: Block
+    block: BlockData
+
+    @classmethod
+    def deserialize(cls, data):
+        block = BlockData.deserialize(data)
+        return cls(block)
 
     def serialize(self):
         data = self.block.serialize()
@@ -53,7 +64,7 @@ class Headers:
 @dataclass
 class Blocktxn:
     blockhash: str
-    transactions: List[_Tx]
+    transactions: List[TxData]
 
     @classmethod
     def deserialize(cls, data):
