@@ -8,27 +8,17 @@ from collections import deque
 from btclib_node.p2p.connection import Connection
 
 
-async def get_dns_nodes():
+async def get_dns_nodes(chain):
     loop = asyncio.get_running_loop()
-    dns_servers = [
-        "seed.bitcoin.sipa.be",
-        "dnsseed.bluematt.me",
-        "dnsseed.bitcoin.dashjr.org",
-        "seed.bitcoinstats.com",
-        "seed.bitcoin.jonasschnelli.ch",
-        "seed.btc.petertodd.org",
-        "seed.bitcoin.sprovoost.nl",
-        "dnsseed.emzy.de",
-        "seed.bitcoin.wiz.biz",
-    ]
     addresses = []
-    for dns_server in dns_servers:
+    for dns_server in chain.addresses:
         try:
-            ips = await loop.getaddrinfo(dns_server, 8333)
+            ips = await loop.getaddrinfo(dns_server, chain.port)
         except socket.gaierror:
             continue
         for ip in ips:
             addresses.append(ip[4])
+    addresses = list(set(addresses))
     random.shuffle(addresses)
     return addresses
 
@@ -37,9 +27,10 @@ class P2pManager(threading.Thread):
     def __init__(self, node, port):
         super().__init__()
         self.node = node
-        self.magic = node.magic
+        self.chain = node.chain
         self.connections = {}
         self.messages = deque()
+        self.addresses = []
         self.loop = asyncio.new_event_loop()
         self.port = port
         self.last_connection_id = -1
@@ -56,21 +47,26 @@ class P2pManager(threading.Thread):
             self.connections.pop(id)
 
     async def manage_connections(self, loop):
-        addresses = await get_dns_nodes()
-        i = 0
+        self.addresses = await get_dns_nodes(self.chain)
         while True:
             for conn in self.connections.copy().values():
                 if conn.status == 4:
                     self.remove_connection(conn.id)
             await asyncio.sleep(0.1)
             self.connection_num = 1 if self.node.status == "Syncing" else 10
+            self.addresses = list(set(self.addresses))
+            random.shuffle(self.addresses)
             if len(self.connections) < self.connection_num:
                 try:
-                    self.connect(addresses[i][0], addresses[i][1])
+                    address = self.addresses[0]
+                    already_connected = [
+                        conn.client.getpeername() for conn in self.connections.values()
+                    ]
+                    if tuple(address) not in already_connected:
+                        self.connect(*self.addresses[0])
                 except Exception as e:
                     print(e)
                     pass
-                i += 1
 
     async def server(self, loop):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

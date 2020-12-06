@@ -1,8 +1,7 @@
-import logging
-
+from btclib_node import chains
 from btclib_node.node import Node
 
-logging.getLogger("asyncio").setLevel(logging.DEBUG)
-
-node = Node(30000, 30001)
+node = Node(
+    chain=chains.TestNet(), data_dir="test_data", p2p_port=30000, rpc_port=30001
+)
 node.start()

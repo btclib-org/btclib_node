@@ -11,7 +11,7 @@ class RpcManager(threading.Thread):
     def __init__(self, node, port):
         super().__init__()
         self.node = node
-        self.magic = node.magic
+        self.chain = node.chain
         self.connections = {}
         self.messages = deque()
         self.loop = asyncio.new_event_loop()

@@ -3,6 +3,7 @@ import threading
 import time
 from collections import Counter
 
+from btclib_node.chains import Main
 from btclib_node.chainstate import Chainstate
 from btclib_node.index import BlockIndex
 from btclib_node.mempool import Mempool
@@ -69,23 +70,27 @@ def block_download(node):
 
 
 class Node(threading.Thread):
-    def __init__(self, p2p_port=8333, rpc_port=8334):
+    def __init__(self, chain=Main(), data_dir=None, p2p_port=None, rpc_port=None):
         super().__init__()
 
         self.lock = threading.Lock()
         self.terminate_flag = threading.Event()
 
-        self.magic = "f9beb4d9"
-        self.data_dir = os.path.join(os.getcwd(), "test_data")
+        self.chain = chain
+
+        if not data_dir:
+            data_dir = os.path.join(os.path.expanduser("~"), ".btclib")
+        if not os.path.isabs(data_dir):
+            self.data_dir = os.path.join(os.getcwd(), data_dir)
         os.makedirs(self.data_dir, exist_ok=True)
 
-        self.index = BlockIndex()
+        self.index = BlockIndex(data_dir, chain)
         self.chainstate = Chainstate()
         self.mempool = Mempool()
 
-        self.p2p_manager = P2pManager(self, p2p_port)
+        self.p2p_manager = P2pManager(self, p2p_port if p2p_port else chain.p2p_port)
         self.p2p_manager.start()
-        self.rpc_manager = RpcManager(self, rpc_port)
+        self.rpc_manager = RpcManager(self, rpc_port if rpc_port else chain.rpc_port)
         self.rpc_manager.start()
 
         self.status = "Syncing"
@@ -111,6 +116,3 @@ class Node(threading.Thread):
         self.terminate_flag.set()
         self.p2p_manager.stop()
         self.rpc_manager.stop()
-
-    def connect(self, host, port):
-        self.p2p_manager.connect(host, port)

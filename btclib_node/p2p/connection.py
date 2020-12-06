@@ -19,6 +19,7 @@ class Connection:
         self.loop = loop
         self.client = client
         self.manager = manager
+        self.node = manager.node
         self.id = id
         self.buffer = b""
         self.task = None
@@ -55,7 +56,7 @@ class Connection:
                 return self.stop(cancel_task=False)
 
     async def _send(self, data):
-        data = bytes.fromhex(self.manager.magic) + data
+        data = bytes.fromhex(self.node.chain.magic) + data
         await self.loop.sock_sendall(self.client, data)
 
     async def async_send(self, msg):
@@ -84,7 +85,7 @@ class Connection:
         await self.async_send(version)
 
     def accept_version(self, version_message):
-        if version_message.version != 70015:
+        if version_message.version < 70015:
             return False
         # for now we only connect to full nodes
         if not version_message.services & 1:
@@ -137,8 +138,8 @@ class Connection:
             except WrongChecksumError:
                 # https://stackoverflow.com/questions/30945784/how-to-remove-all-characters-before-a-specific-character-in-python
                 self.buffer = re.sub(
-                    f"^.*?{self.manager.magic}".encode(),
-                    self.manager.magic.encode(),
+                    f"^.*?{self.node.chain.magic}".encode(),
+                    self.node.chain.magic.encode(),
                     self.buffer,
                 )
             except ValueError:

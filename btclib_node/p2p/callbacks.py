@@ -1,3 +1,4 @@
+from btclib_node.p2p.messages.address import Addr, Getaddr
 from btclib_node.p2p.messages.compact import Sendcmpct
 from btclib_node.p2p.messages.data import Block as BlockMsg
 from btclib_node.p2p.messages.data import Headers, Inv
@@ -10,8 +11,16 @@ from btclib_node.p2p.messages.getdata import Getdata, Getheaders, Sendheaders
 def connection_made(node, _, conn):
     conn.send(Sendcmpct(0, 1))
     conn.send(Sendheaders())
+    conn.send(Getaddr())
     block_locators = node.index.get_block_locator_hashes()
     conn.send(Getheaders(7015, block_locators, "00" * 32))
+
+
+def addr(node, msg, conn):
+    addresses = Addr.deserialize(msg).addresses
+    addresses = [x for x in addresses if x[1].ip.ipv4_mapped]
+    addresses = [(x[1].ip.ipv4_mapped.compressed, x[1].port) for x in addresses]
+    node.p2p_manager.addresses.extend(addresses)
 
 
 # TODO: sends to many messages
@@ -26,9 +35,7 @@ def block(node, msg, conn):
     block = BlockMsg.deserialize(msg).block
 
     if not node.index.headers[block.header.hash].downloaded:
-        print(block.header.hash, True)
-    # else:
-    #     print(block.header.hash, False)
+        print(block.header.hash)
 
     node.index.headers[block.header.hash].downloaded = True
     if block.header.hash in conn.block_download_queue:
@@ -91,4 +98,5 @@ callbacks = {
     "connection_made": connection_made,
     "headers": headers,
     "notfound": not_found,
+    "addr": addr,
 }
