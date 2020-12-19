@@ -29,15 +29,20 @@ def get_block_header(node, params, conn):
 def get_peer_info(node, _, conn):
     out = []
     for id, p2p_conn in node.p2p_manager.connections.items():
-        conn_dict = {}
-        conn_dict["id"] = id
-        addr = f"{p2p_conn.client.getpeername()[0]}:{p2p_conn.client.getpeername()[1]}"
-        conn_dict["addr"] = addr
-        addrbind = (
-            f"{p2p_conn.client.getsockname()[0]}:{p2p_conn.client.getsockname()[1]}"
-        )
-        conn_dict["addrbind"] = addrbind
-        out.append(conn_dict)
+        try:
+            conn_dict = {}
+            conn_dict["id"] = id
+            addr = (
+                f"{p2p_conn.client.getpeername()[0]}:{p2p_conn.client.getpeername()[1]}"
+            )
+            conn_dict["addr"] = addr
+            addrbind = (
+                f"{p2p_conn.client.getsockname()[0]}:{p2p_conn.client.getsockname()[1]}"
+            )
+            conn_dict["addrbind"] = addrbind
+            out.append(conn_dict)
+        except OSError:
+            pass
     conn.send(out)
 
 

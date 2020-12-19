@@ -14,11 +14,12 @@ Status = enum.IntEnum("Status", ["Open", "Version", "Connected", "Closed"])
 
 
 class Connection:
-    def __init__(self, loop, client, manager, id):
+    def __init__(self, manager, client, address, id):
         super().__init__()
-        self.loop = loop
-        self.client = client
         self.manager = manager
+        self.loop = manager.loop
+        self.client = client
+        self.address = address
         self.node = manager.node
         self.id = id
         self.buffer = b""
@@ -36,7 +37,7 @@ class Connection:
             self.task.cancel()
         self.client.close()
 
-    async def run(self):
+    async def run(self, connect=True):
         await self.send_version()
         while self.status < Status.Closed:
             data = await self.loop.sock_recv(self.client, 1024)

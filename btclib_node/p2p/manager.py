@@ -3,6 +3,7 @@ import random
 import socket
 import threading
 import time
+import traceback
 from collections import deque
 
 from btclib_node.p2p.connection import Connection
@@ -35,16 +36,27 @@ class P2pManager(threading.Thread):
         self.port = port
         self.last_connection_id = -1
 
-    def create_connection(self, loop, client):
+    def create_connection(self, client, address):
         client.settimeout(0.0)
-        new_connection = Connection(loop, client, self, self.last_connection_id)
-        self.connections[self.last_connection_id] = new_connection
-        return new_connection
+        self.last_connection_id += 1
+        conn = Connection(self, client, address, self.last_connection_id)
+        self.connections[self.last_connection_id] = conn
+        task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
+        conn.task = task
 
     def remove_connection(self, id):
         if id in self.connections.keys():
             self.connections[id].stop()
             self.connections.pop(id)
+
+    def connect(self, address):
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            client.settimeout(1)
+            client.connect(address)
+        except OSError:
+            return
+        self.create_connection(client, address)
 
     async def manage_connections(self, loop):
         self.addresses = await get_dns_nodes(self.chain)
@@ -60,13 +72,12 @@ class P2pManager(threading.Thread):
                 try:
                     address = self.addresses[0]
                     already_connected = [
-                        conn.client.getpeername() for conn in self.connections.values()
+                        conn.address for conn in self.connections.values()
                     ]
                     if tuple(address) not in already_connected:
-                        self.connect(*self.addresses[0])
-                except Exception as e:
-                    print(e)
-                    pass
+                        self.connect(self.addresses[0])
+                except Exception:
+                    traceback.print_exc()
 
     async def server(self, loop):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -77,10 +88,7 @@ class P2pManager(threading.Thread):
         with server_socket:
             while True:
                 client, addr = await loop.sock_accept(server_socket)
-                self.last_connection_id += 1
-                conn = self.create_connection(self.loop, client)
-                task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
-                conn.task = task
+                self.create_connection(client, addr)
 
     def run(self):
         loop = self.loop
@@ -98,22 +106,6 @@ class P2pManager(threading.Thread):
         time.sleep(1)
         self.loop.run_until_complete(self.loop.shutdown_asyncgens())
         self.loop.close()
-
-    def connect(self, host, port):
-        target = socket.getaddrinfo(host, port)[0][4]
-        if len(target) == 2:  # ipv4
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        elif len(target) == 4:  # ipv6
-            client = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, 0)
-        try:
-            client.settimeout(1)
-            client.connect(target)
-        except OSError:
-            return
-        self.last_connection_id += 1
-        conn = self.create_connection(self.loop, client)
-        task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
-        conn.task = task
 
     def send(self, msg, id):
         if id in self.connections:

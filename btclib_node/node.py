@@ -1,6 +1,7 @@
 import os
 import threading
 import time
+import traceback
 from collections import Counter
 
 from btclib_node.chains import Main
@@ -108,9 +109,8 @@ class Node(threading.Thread):
                 time.sleep(0.0001)
             try:
                 block_download(self)
-            except Exception as e:
-                print(e)
-                pass
+            except Exception:
+                traceback.print_exc()
 
     def stop(self):
         self.terminate_flag.set()

@@ -1,8 +1,8 @@
+from btclib import script
 from btclib.blocks import BlockHeader, _generate_merkle_root
 from btclib.tx import Tx
-from btclib.tx_in import TxIn, OutPoint
+from btclib.tx_in import OutPoint, TxIn
 from btclib.tx_out import TxOut
-from btclib import script
 
 
 def create_genesis(time, nonce, difficulty, version, reward):

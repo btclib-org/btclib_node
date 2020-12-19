@@ -1,3 +1,5 @@
+import traceback
+
 from btclib_node.rpc.callbacks import callbacks
 
 
@@ -14,13 +16,14 @@ def handle_rpc(node):
     conn = get_connection(node.rpc_manager, conn_id)
     if not conn:
         conn.close()
-        return
+        node.rpc_manager.connections.pop(conn_id)
     if msg_type not in callbacks.keys():
         conn.send(None, {"code": -32601, "message": "Method not found"})
         return
     try:
         callbacks[msg_type](node, msg, conn)
-    except Exception as e:
-        print(e)
+    except Exception:
+        traceback.print_exc()
         conn.close()
-        return
+    finally:
+        node.rpc_manager.connections.pop(conn_id)
