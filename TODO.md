@@ -1,4 +1,4 @@
 - Add bloom filter messages
 - Add address store system. stop using dns for finding peers
 - Add system for sending ping messages if we don't receive messages for 2 minutes
-- Download speed is awful when trying to connect to new blocks. Need to check P2pManager.manage_connections
+- Improve time spent while connecting when starting to download blocks

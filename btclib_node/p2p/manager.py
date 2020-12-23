@@ -49,14 +49,21 @@ class P2pManager(threading.Thread):
             self.connections[id].stop()
             self.connections.pop(id)
 
-    def connect(self, address):
+    async def async_connect(self, address):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.settimeout(0)
         try:
-            client.settimeout(1)
             client.connect(address)
-        except OSError:
-            return
-        self.create_connection(client, address)
+        except BlockingIOError:
+            await asyncio.sleep(1)
+            try:
+                client.getpeername()
+                self.create_connection(client, address)
+            except socket.error:
+                client.close()
+
+    def connect(self, address):
+        asyncio.run_coroutine_threadsafe(self.async_connect(address), self.loop)
 
     async def manage_connections(self, loop):
         self.addresses = await get_dns_nodes(self.chain)
@@ -75,7 +82,7 @@ class P2pManager(threading.Thread):
                         conn.address for conn in self.connections.values()
                     ]
                     if tuple(address) not in already_connected:
-                        self.connect(self.addresses[0])
+                        await self.async_connect(self.addresses[0])
                 except Exception:
                     traceback.print_exc()
 

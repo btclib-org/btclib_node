@@ -67,7 +67,7 @@ def block_download(node):
                 if new:
                     conn.block_download_queue = new
                     conn.send(Getdata([(0x40000002, hash) for hash in new]))
-                return
+                return  # TODO: request blocks from more than one peer at a time
 
 
 class Node(threading.Thread):
