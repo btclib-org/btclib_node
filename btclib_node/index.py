@@ -16,6 +16,23 @@ class BlockIndex:
         self.headers = {genesis.hash: BlockStatus(genesis, True)}
         self.index = [genesis.hash]
 
+        # the first 1024 block window at least one block not downloaded
+        self.download_index = 0
+
+    # return a list of blocks that have to be downloaded
+    def get_download_candidates(self):
+        candidates = []
+        i = self.download_index
+        downloadable = self.index[i * 1024 : (i + 1) * 1024]
+        for header in downloadable:
+            if not self.headers[header].downloaded:
+                candidates.append(header)
+        if not candidates and len(self.index) > self.download_index * 1024:
+            self.download_index += 1
+            return self.get_download_candidates()
+        else:
+            return candidates
+
     def add_headers(self, headers):
         added = False  # flag that tells there is a new header in this message
         for header in headers:

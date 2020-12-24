@@ -15,59 +15,48 @@ from btclib_node.rpc.main import handle_rpc
 from btclib_node.rpc.manager import RpcManager
 
 
-def next_to_download(node, waiting, pending):
-    if waiting:
-        return waiting[:16]
-    real_pending = []
-    for x in pending:
-        if not node.index.headers[x].downloaded:
-            real_pending.append(x)
-    node.pending = real_pending
-    # get the 4 least common headers in pending
-    # TODO: must get the 16 which are harder to get, not the 16 least common in pending
-    return [x[0] for x in Counter(real_pending).most_common()[:-5:-1]]
-
-
 def block_download(node):
     if node.status == "Synced":
+
+        candidates = node.index.get_download_candidates()
+        if not candidates:
+            return
 
         connections = node.p2p_manager.connections.values()
         pending = []
         exit = True
         for conn in connections:
             conn_queue = conn.block_download_queue
-            if not conn_queue:
+            new_queue = []
+            for header in conn_queue:
+                if not node.index.headers[header].downloaded:
+                    new_queue.append(header)
+            conn.block_download_queue = new_queue
+            pending.extend(new_queue)
+            if not new_queue:
                 exit = False
-            else:
-                pending.extend(conn_queue)
         if exit:
             return
 
         waiting = []
-        window_complete = True
-        i = node.download_index
-        downloadable = node.index.index[i * 1024 : (i + 1) * 1024]
-        for header in downloadable:
-            if not node.index.headers[header].downloaded:
-                if header not in pending:
-                    waiting.append(header)
-                window_complete = False
-        if window_complete:
-            node.download_index += 1
-            for conn in connections:
-                conn.block_download_queue = []
-            return
+        for header in candidates:
+            if header not in pending:
+                waiting.append(header)
 
         node.waiting = waiting
         node.pending = pending
 
+        header_list = waiting + [x[0] for x in Counter(pending).most_common()[::-1]]
+
         for conn in connections:
             if conn.block_download_queue == []:
-                new = next_to_download(node, waiting, pending)
+                new = header_list[:16]
+                header_list = header_list[16:]
                 if new:
                     conn.block_download_queue = new
                     conn.send(Getdata([(0x40000002, hash) for hash in new]))
-                return  # TODO: request blocks from more than one peer at a time
+                else:
+                    return
 
 
 class Node(threading.Thread):
