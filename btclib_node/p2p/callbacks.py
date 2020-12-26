@@ -33,13 +33,16 @@ def tx(node, msg, conn):
 
 def block(node, msg, conn):
     block = BlockMsg.deserialize(msg).block
+    block.assert_valid()
+    header_status = node.index.get_header_status(block.header.hash)
 
-    if not node.index.headers[block.header.hash].downloaded:
+    if not header_status.downloaded:
         print(block.header.hash)
-
-    node.index.headers[block.header.hash].downloaded = True
     if block.header.hash in conn.block_download_queue:
         conn.block_download_queue.remove(block.header.hash)
+
+    header_status.downloaded = True
+    node.index.insert_header_status(header_status)
 
 
 # TODO: do not ask for a block if we are still downloading old blocks
@@ -69,6 +72,14 @@ def getdata(node, msg, conn):
 
 def headers(node, msg, conn):
     headers = Headers.deserialize(msg).headers
+    valid_headers = []
+    for header in headers:
+        try:
+            header.assert_valid()
+            valid_headers.append(header)
+        except:
+            continue
+    headers = valid_headers
     added = node.index.add_headers(headers)
     if len(headers) == 2000 and added:  # we have to require more headers
         block_locators = node.index.get_block_locator_hashes()
@@ -79,7 +90,9 @@ def headers(node, msg, conn):
 
 def getheaders(node, msg, conn):
     getheaders = Getheaders.deserialize(msg)
-    headers = node.index.get_headers(getheaders.block_hashes, getheaders.hash_stop)
+    headers = node.index.get_headers_from_locators(
+        getheaders.block_hashes, getheaders.hash_stop
+    )
     if headers:
         return Headers(headers)
 
