@@ -1,3 +1,6 @@
+from btclib.exceptions import BTClibValueError
+
+from btclib_node.p2p.constants import ConnectionStatus, ProtocolVersion
 from btclib_node.p2p.messages.address import Addr, Getaddr
 from btclib_node.p2p.messages.compact import Sendcmpct
 from btclib_node.p2p.messages.data import Block as BlockMsg
@@ -5,15 +8,53 @@ from btclib_node.p2p.messages.data import Headers, Inv
 from btclib_node.p2p.messages.data import Tx as TxMsg
 from btclib_node.p2p.messages.errors import Notfound
 from btclib_node.p2p.messages.getdata import Getdata, Getheaders, Sendheaders
+from btclib_node.p2p.messages.handshake import Verack, Version
+from btclib_node.p2p.messages.ping import Ping, Pong
 
 
-# called when a connection has been made
-def connection_made(node, _, conn):
+def version(node, msg, conn):
+    if (
+        conn.status != ConnectionStatus.Open
+    ):  # we shuld receive only one version message
+        conn.stop()
+        return
+
+    version_msg = Version.deserialize(msg)
+    if version_msg.version < ProtocolVersion:
+        conn.stop()
+        return
+    # for now we only connect to full nodes
+    if not version_msg.services & 1:
+        conn.stop()
+        return
+    # we only connect to witness nodes
+    if not version_msg.services & 8:
+        conn.stop()
+        return
+
+    conn.status = ConnectionStatus.Version
+    conn.send(Verack())
+
+
+def verack(node, msg, conn):
+    if conn.status != ConnectionStatus.Version:
+        conn.stop()
+        return
+    conn.status = ConnectionStatus.Connected
     conn.send(Sendcmpct(0, 1))
     conn.send(Sendheaders())
     conn.send(Getaddr())
     block_locators = node.index.get_block_locator_hashes()
-    conn.send(Getheaders(7015, block_locators, "00" * 32))
+    conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
+
+
+def ping(node, msg, conn):
+    nonce = Ping.deserialize(msg).nonce
+    conn.send(Pong(nonce))
+
+
+def pong(node, msg, conn):
+    pass
 
 
 def addr(node, msg, conn):
@@ -77,13 +118,13 @@ def headers(node, msg, conn):
         try:
             header.assert_valid()
             valid_headers.append(header)
-        except:
+        except BTClibValueError:
             continue
     headers = valid_headers
     added = node.index.add_headers(headers)
     if len(headers) == 2000 and added:  # we have to require more headers
         block_locators = node.index.get_block_locator_hashes()
-        conn.send(Getheaders(7015, block_locators, "00" * 32))
+        conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
     else:
         node.status = "Synced"
 
@@ -102,13 +143,16 @@ def not_found(node, msg, conn):
     print("Missing objects:", missing)
 
 
+handshake_callbacks = {"version": version, "verack": verack}
+
 callbacks = {
+    "ping": ping,
+    "pong": pong,
     "inv": inv,
     "tx": tx,
     "block": block,
     "getdata": getdata,
     "getheaders": getheaders,
-    "connection_made": connection_made,
     "headers": headers,
     "notfound": not_found,
     "addr": addr,

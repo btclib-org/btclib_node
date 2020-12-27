@@ -31,6 +31,7 @@ class P2pManager(threading.Thread):
         self.chain = node.chain
         self.connections = {}
         self.messages = deque()
+        self.handshake_messages = deque()
         self.addresses = []
         self.loop = asyncio.new_event_loop()
         self.port = port

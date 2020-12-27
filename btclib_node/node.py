@@ -8,7 +8,7 @@ from btclib_node.chains import Main
 from btclib_node.chainstate import Chainstate
 from btclib_node.index import BlockIndex
 from btclib_node.mempool import Mempool
-from btclib_node.p2p.main import handle_p2p
+from btclib_node.p2p.main import handle_p2p, handle_p2p_handshake
 from btclib_node.p2p.manager import P2pManager
 from btclib_node.p2p.messages.getdata import Getdata
 from btclib_node.rpc.main import handle_rpc
@@ -29,7 +29,7 @@ def block_download(node):
             conn_queue = conn.block_download_queue
             new_queue = []
             for header in conn_queue:
-                if not node.index.headers[header].downloaded:
+                if not node.index.get_header_status(header).downloaded:
                     new_queue.append(header)
             conn.block_download_queue = new_queue
             pending.extend(new_queue)
@@ -90,7 +90,9 @@ class Node(threading.Thread):
 
     def run(self):
         while not self.terminate_flag.is_set():
-            if len(self.rpc_manager.messages):
+            if len(self.p2p_manager.handshake_messages):
+                handle_p2p_handshake(self)
+            elif len(self.rpc_manager.messages):
                 handle_rpc(self)
             elif len(self.p2p_manager.messages):
                 handle_p2p(self)

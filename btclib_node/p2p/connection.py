@@ -1,16 +1,13 @@
 import asyncio
-import enum
 import random
 import re
 import time
 
+from btclib_node.p2p.constants import ConnectionStatus, ProtocolVersion
 from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
-from btclib_node.p2p.messages.handshake import Verack, Version
-from btclib_node.p2p.messages.ping import Ping, Pong
+from btclib_node.p2p.messages.handshake import Version
 from btclib_node.structures import NetworkAddress
 from btclib_node.utils import to_ipv6
-
-Status = enum.IntEnum("Status", ["Open", "Version", "Connected", "Closed"])
 
 
 class Connection:
@@ -25,34 +22,26 @@ class Connection:
         self.buffer = b""
         self.task = None
 
-        self.status = Status.Open
-        self.messages = []
+        self.status = ConnectionStatus.Open
 
         self.version_message = None
         self.block_download_queue = []
 
     def stop(self, cancel_task=True):
-        self.status = Status.Closed
+        self.status = ConnectionStatus.Closed
         if self.task and cancel_task:
             self.task.cancel()
         self.client.close()
 
     async def run(self, connect=True):
         await self.send_version()
-        while self.status < Status.Closed:
+        while self.status < ConnectionStatus.Closed:
             data = await self.loop.sock_recv(self.client, 1024)
             if not data:
                 return self.stop(cancel_task=False)
             try:
                 self.buffer += data
                 self.parse_messages()
-                if self.messages:
-                    if self.status < Status.Connected:
-                        await self.validate_handshake()
-                    if self.status == Status.Connected:
-                        await self.handle_messages()
-                    else:
-                        return self.stop(cancel_task=False)
             except Exception:
                 return self.stop(cancel_task=False)
 
@@ -69,7 +58,7 @@ class Connection:
     async def send_version(self):
         services = 1032 + 1 * 0  # TODO: for now we don't have blocks, only headers
         version = Version(
-            version=70015,
+            version=ProtocolVersion,
             services=services,
             timestamp=int(time.time()),
             addr_recv=NetworkAddress(
@@ -85,42 +74,6 @@ class Connection:
         )
         await self.async_send(version)
 
-    def accept_version(self, version_message):
-        if version_message.version < 70015:
-            return False
-        # for now we only connect to full nodes
-        if not version_message.services & 1:
-            return False
-        # we only connect to witness nodes
-        if not version_message.services & 8:
-            return False
-        return True
-
-    async def validate_handshake(self):
-        if self.status < Status.Version:
-            if self.messages:
-                # first message must be version
-                if not self.messages[0][0] == "version":
-                    return self.stop(cancel_task=False)
-                else:
-                    version_message = Version.deserialize(self.messages[0][1])
-                    if self.accept_version(version_message):
-                        self.version_message = version_message
-                        await self.async_send(Verack())
-                        self.messages = self.messages[1:]
-                        self.status = Status.Version
-                    else:
-                        return self.stop(cancel_task=False)
-        if self.status == Status.Version:
-            if self.messages:
-                # second message must be verack
-                if not self.messages[0][0] == "verack":
-                    return self.stop(cancel_task=False)
-                else:
-                    self.messages = self.messages[1:]
-                    self.status = Status.Connected
-                    self.manager.messages.append(("connection_made", "", self.id))
-
     def parse_messages(self):
         while True:
             if not self.buffer:
@@ -130,10 +83,10 @@ class Connection:
                 message_length = int.from_bytes(self.buffer[16:20], "little")
                 message = get_payload(self.buffer)
                 self.buffer = self.buffer[24 + message_length :]
-                if message[0] in ("version", "verack", "ping", "pong"):
-                    self.messages.append(message)
-                elif message[0] in ("addr", "getaddr"):
-                    self.manager.messages.append((*message, self.id))
+                if message[0] in ("version", "verack"):
+                    self.manager.handshake_messages.append((*message, self.id))
+                elif message[0] in ("ping", "pong"):
+                    self.manager.messages.appendleft((*message, self.id))
                 else:
                     self.manager.messages.append((*message, self.id))
             except WrongChecksumError:
@@ -145,13 +98,6 @@ class Connection:
                 )
             except ValueError:
                 return
-
-    async def handle_messages(self):
-        for message in self.messages:
-            if message[0] == "ping":
-                ping = Ping.deserialize(message[1])
-                await self.async_send(Pong(ping.nonce))
-            self.messages.pop(0)
 
     def __repr__(self):
         try:
