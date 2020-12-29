@@ -2,6 +2,7 @@ import os
 import threading
 import time
 import traceback
+import sys
 from collections import Counter
 
 from btclib_node.chains import Main
@@ -102,8 +103,9 @@ class Node(threading.Thread):
                 block_download(self)
             except Exception:
                 traceback.print_exc()
+        self.p2p_manager.stop()
+        self.rpc_manager.stop()
+        sys.exit(0)
 
     def stop(self):
         self.terminate_flag.set()
-        self.p2p_manager.stop()
-        self.rpc_manager.stop()

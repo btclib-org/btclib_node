@@ -27,39 +27,40 @@ class Connection:
     async def run(self):
         p = HttpParser()
         body = []
-        while True:
-            data = await self.loop.sock_recv(self.client, 1024)
-            if not data:
-                break
-            recved = len(data)
-            nparsed = p.execute(data, recved)
-            assert nparsed == recved
-            if p.is_partial_body():
-                body.append(p.recv_body())
-            if p.is_message_complete():
-                break
-        body = json.loads(body[0])
-        self.rpc_id = body["id"]
-        msg_type = body["method"]
-        parameters = body["params"]
-        self.manager.messages.append((msg_type, parameters, self.id))
+        try:
+            while True:
+                data = await self.loop.sock_recv(self.client, 1024)
+                if not data:
+                    break
+                recved = len(data)
+                nparsed = p.execute(data, recved)
+                assert nparsed == recved
+                if p.is_partial_body():
+                    body.append(p.recv_body())
+                if p.is_message_complete():
+                    break
+            body = json.loads(body[0])
+            if type(body) != list:
+                body = [body]
+            self.manager.messages.append((body, self.id))
+        except Exception:
+            self.client.close()
 
-    async def async_send(self, result, error=None):
-        output = {"result": result, "error": error, "id": self.rpc_id}
-        output_str = json.dumps(output, separators=(",", ":"))
-        response = (
-            "HTTP/1.1 200 OK\n"
-            + "Content-Type: application/json\n"
-            + f"Content-Length: {len(output_str)+1}\n"
-            + "\n"  # Important!
-            + output_str
-            + "\n"
-        ).encode()
-        await self.loop.sock_sendall(self.client, response)
+    async def async_send(self, response):
+        if len(response) == 1:
+            response = response[0]
+        output_str = json.dumps(response, separators=(",", ":"))
+        response = "HTTP/1.1 200 OK\n"
+        response += "Content-Type: application/json\n"
+        response += f"Content-Length: {len(output_str)+1}\n"
+        response += "\n"  # Important!
+        response += output_str
+        response += "\n"
+        await self.loop.sock_sendall(self.client, response.encode())
         self.client.close()
 
-    def send(self, result, error=None):
-        asyncio.run_coroutine_threadsafe(self.async_send(result, error), self.loop)
+    def send(self, response):
+        asyncio.run_coroutine_threadsafe(self.async_send(response), self.loop)
 
     def __repr__(self):
         try:

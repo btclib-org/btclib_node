@@ -1,16 +1,13 @@
-import sys
+def get_best_block_hash(node, conn, _):
+    return node.index.header_index[-1]
 
 
-def get_best_block_hash(node, _, conn):
-    conn.send(node.index.index[-1])
+def get_block_hash(node, conn, params):
+    return node.index.header_index[params[0]]
 
 
-def get_block_hash(node, params, conn):
-    conn.send(node.index.index[params[0]])
-
-
-def get_block_header(node, params, conn):
-    header = node.index.headers[params[0]]
+def get_block_header(node, conn, params):
+    header = node.index.header_dict[params[0]]
     out = header.to_dict()
     out["hash"] = header.hash
 
@@ -23,10 +20,10 @@ def get_block_header(node, params, conn):
     if height < len(node.index.index) - 1:
         out["nexblockhash"] = node.index.index[height + 1]
 
-    conn.send(out)
+    return out
 
 
-def get_peer_info(node, _, conn):
+def get_peer_info(node, conn, _):
     out = []
     for id, p2p_conn in node.p2p_manager.connections.items():
         try:
@@ -43,17 +40,16 @@ def get_peer_info(node, _, conn):
             out.append(conn_dict)
         except OSError:
             pass
-    conn.send(out)
+    return out
 
 
-def get_connection_count(node, _, conn):
-    conn.send(len(node.p2p_manager.connections))
+def get_connection_count(node, conn, _):
+    return len(node.p2p_manager.connections)
 
 
-def stop(node, _, conn):
-    conn.send("Btclib node stopping")
+def stop(node, conn, _):
     node.stop()
-    sys.exit(0)
+    return "Btclib node stopping"
 
 
 callbacks = {
