@@ -11,12 +11,14 @@ from btclib_node.utils import to_ipv6
 
 
 class Connection:
-    def __init__(self, manager, client, address, id):
+    def __init__(self, reader, writer, manager, id):
         super().__init__()
         self.manager = manager
         self.loop = manager.loop
-        self.client = client
-        self.address = address
+        self.reader = reader
+        self.writer = writer
+        self.sock = self.writer.transport.get_extra_info("socket")
+        self.address = self.sock.getpeername()
         self.node = manager.node
         self.id = id
         self.buffer = b""
@@ -31,12 +33,12 @@ class Connection:
         self.status = ConnectionStatus.Closed
         if self.task and cancel_task:
             self.task.cancel()
-        self.client.close()
+        self.writer.close()
 
     async def run(self, connect=True):
         await self.send_version()
         while self.status < ConnectionStatus.Closed:
-            data = await self.loop.sock_recv(self.client, 1024)
+            data = await self.reader.read(1024)
             if not data:
                 return self.stop(cancel_task=False)
             try:
@@ -47,7 +49,8 @@ class Connection:
 
     async def _send(self, data):
         data = bytes.fromhex(self.node.chain.magic) + data
-        await self.loop.sock_sendall(self.client, data)
+        self.writer.write(data)
+        await self.writer.drain()
 
     async def async_send(self, msg):
         await self._send(msg.serialize())
@@ -62,7 +65,7 @@ class Connection:
             services=services,
             timestamp=int(time.time()),
             addr_recv=NetworkAddress(
-                0, to_ipv6(self.client.getpeername()[0]), self.client.getpeername()[1]
+                0, to_ipv6(self.sock.getpeername()[0]), self.sock.getpeername()[1]
             ),  # TODO
             addr_from=NetworkAddress(
                 services, to_ipv6("0.0.0.0"), self.manager.port
@@ -101,7 +104,7 @@ class Connection:
 
     def __repr__(self):
         try:
-            out = f"Connection to {self.client.getpeername()[0]}:{self.client.getpeername()[1]}"
+            out = f"Connection to {self.sock.getpeername()[0]}:{self.sock.getpeername()[1]}"
         except OSError:
             out = "Broken connection"
         return out

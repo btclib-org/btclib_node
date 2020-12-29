@@ -20,11 +20,13 @@ class RpcManager(threading.Thread):
         self.port = port
         self.last_connection_id = -1
 
-    def create_connection(self, loop, client):
-        client.settimeout(0.0)
-        new_connection = Connection(loop, client, self, self.last_connection_id)
-        self.connections[self.last_connection_id] = new_connection
-        return new_connection
+    async def create_connection(self, reader, writer):
+        self.last_connection_id += 1
+        conn = Connection(reader, writer, self, self.last_connection_id, self.loop)
+        self.connections[self.last_connection_id] = conn
+        task = asyncio.create_task(conn.run())
+        conn.task = task
+        await task
 
     def remove_connection(self, id):
         if id in self.connections.keys():
@@ -32,18 +34,12 @@ class RpcManager(threading.Thread):
             self.connections.pop(id)
 
     async def server(self, loop):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket.bind(("0.0.0.0", self.port))
-        server_socket.listen()
-        server_socket.settimeout(0.0)
-        with server_socket:
-            while True:
-                client, addr = await loop.sock_accept(server_socket)
-                self.last_connection_id += 1
-                conn = self.create_connection(self.loop, client)
-                task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
-                conn.task = task
+        server = await asyncio.start_server(
+            self.create_connection, "0.0.0.0", self.port, loop=self.loop
+        )
+
+        async with server:
+            await server.serve_forever()
 
     def run(self):
         loop = self.loop

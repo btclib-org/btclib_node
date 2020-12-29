@@ -29,13 +29,10 @@ def get_peer_info(node, conn, _):
         try:
             conn_dict = {}
             conn_dict["id"] = id
-            addr = (
-                f"{p2p_conn.client.getpeername()[0]}:{p2p_conn.client.getpeername()[1]}"
-            )
+            sock = p2p_conn.writer.transport.get_extra_info("socket")
+            addr = f"{sock.getpeername()[0]}:{sock.getpeername()[1]}"
             conn_dict["addr"] = addr
-            addrbind = (
-                f"{p2p_conn.client.getsockname()[0]}:{p2p_conn.client.getsockname()[1]}"
-            )
+            addrbind = f"{sock.getsockname()[0]}:{sock.getsockname()[1]}"
             conn_dict["addrbind"] = addrbind
             out.append(conn_dict)
         except OSError:

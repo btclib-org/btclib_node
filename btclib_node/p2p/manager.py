@@ -39,18 +39,17 @@ class P2pManager(threading.Thread):
         self.port = port
         self.last_connection_id = -1
 
-    def create_connection(self, client, address):
-        client.settimeout(0.0)
+    def create_connection(self, reader, writer):
         self.last_connection_id += 1
-        conn = Connection(self, client, address, self.last_connection_id)
+        conn = Connection(reader, writer, self, self.last_connection_id)
         self.connections[self.last_connection_id] = conn
-        task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
-        conn.task = task
+        return conn
 
-    def remove_connection(self, id):
-        if id in self.connections.keys():
-            self.connections[id].stop()
-            self.connections.pop(id)
+    async def server_connection(self, reader, writer):
+        conn = self.create_connection(reader, writer)
+        task = asyncio.create_task(conn.run())
+        conn.task = task
+        await task
 
     async def async_connect(self, address):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -61,12 +60,27 @@ class P2pManager(threading.Thread):
             await asyncio.sleep(1)
             try:
                 client.getpeername()
-                self.create_connection(client, address)
+                reader, writer = await asyncio.open_connection(sock=client)
+                conn = self.create_connection(reader, writer)
+                task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
+                conn.task = task
             except socket.error:
                 client.close()
 
-    def connect(self, address):
-        asyncio.run_coroutine_threadsafe(self.async_connect(address), self.loop)
+    # def connect(self, address):
+    #     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     client.settimeout(1)
+    #     try:
+    #         client.connect(address)
+    #         conn = self.create_connection(client, address)
+    #         asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
+    #     except OSError:
+    #         pass
+
+    def remove_connection(self, id):
+        if id in self.connections.keys():
+            self.connections[id].stop()
+            self.connections.pop(id)
 
     async def manage_connections(self, loop):
         self.addresses = await get_dns_nodes(self.chain)
@@ -90,15 +104,12 @@ class P2pManager(threading.Thread):
                     traceback.print_exc()
 
     async def server(self, loop):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket.bind(("0.0.0.0", self.port))
-        server_socket.listen()
-        server_socket.settimeout(0.0)
-        with server_socket:
-            while True:
-                client, addr = await loop.sock_accept(server_socket)
-                self.create_connection(client, addr)
+        server = await asyncio.start_server(
+            self.server_connection, "0.0.0.0", self.port, loop=self.loop
+        )
+
+        async with server:
+            await server.serve_forever()
 
     def run(self):
         loop = self.loop

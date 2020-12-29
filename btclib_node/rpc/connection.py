@@ -8,10 +8,11 @@ import json
 
 
 class Connection:
-    def __init__(self, loop, client, manager, id):
+    def __init__(self, reader, writer, manager, id, loop):
         super().__init__()
         self.loop = loop
-        self.client = client
+        self.reader = reader
+        self.writer = writer
         self.manager = manager
         self.id = id
         self.rpc_id = ""
@@ -19,17 +20,17 @@ class Connection:
         self.buffer = b""
         self.task = None
 
-    def close(self):
-        if self.task:
+    def close(self, cancel_task=True):
+        if self.task and cancel_task:
             self.task.cancel()
-        self.client.close()
+        self.writer.close()
 
     async def run(self):
         p = HttpParser()
         body = []
         try:
             while True:
-                data = await self.loop.sock_recv(self.client, 1024)
+                data = await self.reader.read(1024)
                 if not data:
                     break
                 recved = len(data)
@@ -44,7 +45,7 @@ class Connection:
                 body = [body]
             self.manager.messages.append((body, self.id))
         except Exception:
-            self.client.close()
+            self.writer.close()
 
     async def async_send(self, response):
         if len(response) == 1:
@@ -56,15 +57,17 @@ class Connection:
         response += "\n"  # Important!
         response += output_str
         response += "\n"
-        await self.loop.sock_sendall(self.client, response.encode())
-        self.client.close()
+        self.writer.write(response.encode())
+        await self.writer.drain()
+        self.writer.close()
 
     def send(self, response):
         asyncio.run_coroutine_threadsafe(self.async_send(response), self.loop)
 
     def __repr__(self):
         try:
-            out = f"Connection to {self.client.getpeername()[0]}:{self.client.getpeername()[1]}"
+            sock = self.writer.transport.get_extra_info("socket")
+            out = f"Connection to {sock.getpeername()[0]}:{sock.getpeername()[1]}"
         except OSError:
             out = "Broken connection"
         return out
