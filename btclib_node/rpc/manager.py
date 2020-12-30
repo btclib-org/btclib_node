@@ -4,8 +4,6 @@ import threading
 import time
 from collections import deque
 
-import uvloop
-
 from btclib_node.rpc.connection import Connection
 
 
@@ -16,7 +14,7 @@ class RpcManager(threading.Thread):
         self.chain = node.chain
         self.connections = {}
         self.messages = deque()
-        self.loop = uvloop.new_event_loop()
+        self.loop = asyncio.new_event_loop()
         self.port = port
         self.last_connection_id = -1
 

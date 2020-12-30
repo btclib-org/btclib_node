@@ -2,3 +2,4 @@
 - Add address store system. stop using dns for finding peers
 - Add system for sending ping messages if we don't receive messages for 2 minutes
 - Improve time spent while connecting when starting to download blocks
+- support for ipv6

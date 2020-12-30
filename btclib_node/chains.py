@@ -48,6 +48,7 @@ def create_genesis(time, nonce, difficulty, version, reward):
 
 
 class Main:
+    name = "mainnet"
     port = 8333
     magic = "f9beb4d9"
     addresses = [
@@ -65,6 +66,7 @@ class Main:
 
 
 class TestNet:
+    name = "testnet"
     port = 18333
     magic = "0b110907"
     addresses = [
@@ -77,6 +79,7 @@ class TestNet:
 
 
 class SigNet:
+    name = "signet"
     port = 38333
     magic = "0a03cf40"  # default signet
     addresses = ["178.128.221.177"]

@@ -1,6 +1,6 @@
 from btclib.exceptions import BTClibValueError
 
-from btclib_node.p2p.constants import ConnectionStatus, ProtocolVersion
+from btclib_node.constants import P2pConnectionStatus, ProtocolVersion
 from btclib_node.p2p.messages.address import Addr, Getaddr
 from btclib_node.p2p.messages.compact import Sendcmpct
 from btclib_node.p2p.messages.data import Block as BlockMsg
@@ -14,7 +14,7 @@ from btclib_node.p2p.messages.ping import Ping, Pong
 
 def version(node, msg, conn):
     if (
-        conn.status != ConnectionStatus.Open
+        conn.status != P2pConnectionStatus.Open
     ):  # we shuld receive only one version message
         conn.stop()
         return
@@ -32,15 +32,15 @@ def version(node, msg, conn):
         conn.stop()
         return
 
-    conn.status = ConnectionStatus.Version
+    conn.status = P2pConnectionStatus.Version
     conn.send(Verack())
 
 
 def verack(node, msg, conn):
-    if conn.status != ConnectionStatus.Version:
+    if conn.status != P2pConnectionStatus.Version:
         conn.stop()
         return
-    conn.status = ConnectionStatus.Connected
+    conn.status = P2pConnectionStatus.Connected
     conn.send(Sendcmpct(0, 1))
     conn.send(Sendheaders())
     conn.send(Getaddr())
@@ -91,6 +91,7 @@ def inv(node, msg, conn):
     inv = Inv.deserialize(msg)
     if node.status == "Syncing":
         return
+    return
     transactions = [x[1] for x in inv.inventory if x[0] == 1 or x[0] == 0x40000001]
     blocks = [x[1] for x in inv.inventory if x[0] == 2 or x[0] == 0x40000002]
     if blocks:

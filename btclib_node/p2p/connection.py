@@ -3,7 +3,7 @@ import random
 import re
 import time
 
-from btclib_node.p2p.constants import ConnectionStatus, ProtocolVersion
+from btclib_node.constants import P2pConnectionStatus, ProtocolVersion
 from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
 from btclib_node.p2p.messages.handshake import Version
 from btclib_node.structures import NetworkAddress
@@ -22,20 +22,20 @@ class Connection:
         self.buffer = b""
         self.task = None
 
-        self.status = ConnectionStatus.Open
+        self.status = P2pConnectionStatus.Open
 
         self.version_message = None
         self.block_download_queue = []
 
     def stop(self, cancel_task=True):
-        self.status = ConnectionStatus.Closed
+        self.status = P2pConnectionStatus.Closed
         if self.task and cancel_task:
             self.task.cancel()
         self.client.close()
 
     async def run(self, connect=True):
         await self.send_version()
-        while self.status < ConnectionStatus.Closed:
+        while self.status < P2pConnectionStatus.Closed:
             data = await self.loop.sock_recv(self.client, 1024)
             if not data:
                 return self.stop(cancel_task=False)

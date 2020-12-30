@@ -6,8 +6,6 @@ import time
 import traceback
 from collections import deque
 
-import uvloop
-
 from btclib_node.p2p.connection import Connection
 
 
@@ -35,7 +33,7 @@ class P2pManager(threading.Thread):
         self.messages = deque()
         self.handshake_messages = deque()
         self.addresses = []
-        self.loop = uvloop.new_event_loop()
+        self.loop = asyncio.new_event_loop()
         self.port = port
         self.last_connection_id = -1
 

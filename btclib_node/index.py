@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 
 import plyvel
+from btclib import varint
 from btclib.blocks import BlockHeader
 from btclib.utils import bytesio_from_binarydata
 
@@ -9,17 +10,20 @@ from btclib.utils import bytesio_from_binarydata
 @dataclass
 class BlockStatus:
     header: BlockHeader
+    index: int
     downloaded: bool = False
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         header = BlockHeader.deserialize(stream)
+        index = varint.decode(stream)
         downloaded = bool(int.from_bytes(stream.read(1), "little"))
-        return cls(header, downloaded)
+        return cls(header, index, downloaded)
 
     def serialize(self):
         out = self.header.serialize()
+        out += varint.encode(self.index)
         out += int(self.downloaded).to_bytes(1, "little")
         return out
 
@@ -27,11 +31,12 @@ class BlockStatus:
 # TODO: currently if does not support blockchain reorganizations
 class BlockIndex:
     def __init__(self, data_dir, chain):
-        os.makedirs(os.path.join(data_dir, "index"), exist_ok=True)
-        self.db = plyvel.DB(os.path.join(data_dir, "index"), create_if_missing=True)
+        data_dir = os.path.join(data_dir, "index")
+        os.makedirs(data_dir, exist_ok=True)
+        self.db = plyvel.DB(data_dir, create_if_missing=True)
 
         genesis = chain.genesis
-        genesis_status = BlockStatus(genesis, True)
+        genesis_status = BlockStatus(genesis, 0, True)
 
         self.header_dict = {genesis.hash: genesis_status}
 
@@ -39,7 +44,7 @@ class BlockIndex:
         self.active_chain = [genesis_status]
 
         # blocks that are waiting to be connected to the active chain
-        self.block_candidates = {}
+        self.block_candidates = []
 
         # blocks that have an anchestor missing
         self.unlinked_blocks = {}
@@ -55,6 +60,8 @@ class BlockIndex:
 
     def init_from_db(self):
         pass
+        # for key, value in self.db:
+        #     self.header_dict[key.hex()] = BlockStatus.deserialize(value)
 
     def update(self):
         pass
@@ -72,16 +79,18 @@ class BlockIndex:
     def add_headers(self, headers):
         added = False  # flag that signals if there is a new header in this message
         for header in headers:
-            hash = header.hash
-            if hash not in self.header_dict:
-                added = True
-                block_status = BlockStatus(header, False)
-                self.insert_header_status(block_status)
+            if header.hash in self.header_dict:
+                continue
+            if header.previousblockhash not in self.header_dict:
+                continue
+            added = True
+            previous_block = self.get_header_status(header.previousblockhash)
+            block_status = BlockStatus(header, previous_block.index + 1, False)
+            self.insert_header_status(block_status)
 
-                # TODO: rewrite to support reorgs
-                if header.previousblockhash == self.header_index[-1]:
-                    self.header_index.append(header.hash)
-
+            # TODO: rewrite to support reorgs
+            if header.previousblockhash == self.header_index[-1]:
+                self.header_index.append(header.hash)
         return added
 
     # return a list of blocks that have to be downloaded
@@ -117,15 +126,13 @@ class BlockIndex:
     def get_headers_from_locators(self, block_locators, stop):
         output = []
         for block_locator in block_locators:
-            try:
-                start = self.header_index.index(block_locator)
-                output = self.header_index[start + 1 :]
-            except ValueError:
+            if block_locator not in self.header_index:
                 continue
-            try:
+            start = self.header_index.index(block_locator)
+            output = self.header_index[start + 1 :]
+            if stop in self.header_index:
                 end = self.header_index.index(stop)
                 output = output[: end + 1]
-            except ValueError:
-                pass
+            output = output[:2000]
             break
-        return output[:2000]
+        return [self.get_header_status(x).header for x in output]
