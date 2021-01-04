@@ -1,6 +1,6 @@
 from btclib.exceptions import BTClibValueError
 
-from btclib_node.constants import P2pConnectionStatus, ProtocolVersion
+from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion
 from btclib_node.p2p.messages.address import Addr, Getaddr
 from btclib_node.p2p.messages.compact import Sendcmpct
 from btclib_node.p2p.messages.data import Block as BlockMsg
@@ -13,12 +13,6 @@ from btclib_node.p2p.messages.ping import Ping, Pong
 
 
 def version(node, msg, conn):
-    if (
-        conn.status != P2pConnectionStatus.Open
-    ):  # we shuld receive only one version message
-        conn.stop()
-        return
-
     version_msg = Version.deserialize(msg)
     if version_msg.version < ProtocolVersion:
         conn.stop()
@@ -32,15 +26,15 @@ def version(node, msg, conn):
         conn.stop()
         return
 
-    conn.status = P2pConnectionStatus.Version
+    conn.version_message = version_msg
     conn.send(Verack())
 
 
 def verack(node, msg, conn):
-    if conn.status != P2pConnectionStatus.Version:
+    if not conn.version_message:
         conn.stop()
         return
-    conn.status = P2pConnectionStatus.Connected
+    conn.status = P2pConnStatus.Connected
     conn.send(Sendcmpct(0, 1))
     conn.send(Sendheaders())
     conn.send(Getaddr())
@@ -89,9 +83,9 @@ def block(node, msg, conn):
 # TODO: do not ask for a block if we are still downloading old blocks
 def inv(node, msg, conn):
     inv = Inv.deserialize(msg)
-    if node.status == "Syncing":
+    if node.status < NodeStatus.BlockSynced:
         return
-    return
+
     transactions = [x[1] for x in inv.inventory if x[0] == 1 or x[0] == 0x40000001]
     blocks = [x[1] for x in inv.inventory if x[0] == 2 or x[0] == 0x40000002]
     if blocks:
@@ -127,7 +121,7 @@ def headers(node, msg, conn):
         block_locators = node.index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
     else:
-        node.status = "Synced"
+        node.status = NodeStatus.HeaderSynced
 
 
 def getheaders(node, msg, conn):

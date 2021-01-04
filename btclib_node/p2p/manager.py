@@ -6,6 +6,7 @@ import time
 import traceback
 from collections import deque
 
+from btclib_node.constants import NodeStatus, P2pConnStatus
 from btclib_node.p2p.connection import Connection
 
 
@@ -70,10 +71,13 @@ class P2pManager(threading.Thread):
         self.addresses = await get_dns_nodes(self.chain)
         while True:
             for conn in self.connections.copy().values():
-                if conn.status == 4:
+                if conn.status == P2pConnStatus.Closed:
                     self.remove_connection(conn.id)
             await asyncio.sleep(0.1)
-            self.connection_num = 1 if self.node.status == "Syncing" else 10
+            if self.node.status < NodeStatus.HeaderSynced:
+                self.connection_num = 1
+            else:
+                self.connection_num = 10
             self.addresses = list(set(self.addresses))
             random.shuffle(self.addresses)
             if len(self.connections) < self.connection_num:

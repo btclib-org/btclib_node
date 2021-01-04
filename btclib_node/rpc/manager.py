@@ -37,7 +37,7 @@ class RpcManager(threading.Thread):
         server_socket.settimeout(0.0)
         with server_socket:
             while True:
-                client, addr = await loop.sock_accept(server_socket)
+                client, _ = await loop.sock_accept(server_socket)
                 self.last_connection_id += 1
                 conn = self.create_connection(self.loop, client)
                 task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)

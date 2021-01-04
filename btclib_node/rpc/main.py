@@ -12,7 +12,7 @@ def get_connection(manager, id):
 
 
 def is_valid_rpc(request):
-    if type(request) != dict:
+    if not isinstance(request, dict):
         return False
     if "method" not in request:
         return False

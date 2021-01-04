@@ -68,10 +68,10 @@ class BlockIndex:
 
     def insert_header_status(self, header_status):
         self.header_dict[header_status.header.hash] = header_status
-        key = b"b" + bytes.fromhex(header_status.header.hash)
-        value = header_status.serialize()
-        self.db.put(key, value)
-        self.update()
+        # key = b"b" + bytes.fromhex(header_status.header.hash)
+        # value = header_status.serialize()
+        # self.db.put(key, value)
+        # self.update()
 
     def get_header_status(self, hash):
         return self.header_dict[hash]

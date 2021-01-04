@@ -7,6 +7,7 @@ from collections import Counter
 
 from btclib_node.chains import Main
 from btclib_node.chainstate import Chainstate
+from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockIndex
 from btclib_node.mempool import Mempool
 from btclib_node.p2p.main import handle_p2p, handle_p2p_handshake
@@ -17,7 +18,7 @@ from btclib_node.rpc.manager import RpcManager
 
 
 def block_download(node):
-    if node.status == "Synced":
+    if node.status >= NodeStatus.HeaderSynced:
 
         candidates = node.index.get_download_candidates()
         if not candidates:
@@ -80,7 +81,7 @@ class Node(threading.Thread):
         self.chainstate = Chainstate(self.data_dir)
         self.mempool = Mempool()
 
-        self.status = "Syncing"
+        self.status = NodeStatus.Starting
         self.download_index = 0
         self.waiting = []
         self.pending = []
@@ -89,6 +90,8 @@ class Node(threading.Thread):
         self.p2p_manager.start()
         self.rpc_manager = RpcManager(self, rpc_port if rpc_port else chain.rpc_port)
         self.rpc_manager.start()
+
+        self.status = NodeStatus.SyncingHeaders
 
     def run(self):
         while not self.terminate_flag.is_set():

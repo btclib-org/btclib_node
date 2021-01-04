@@ -39,7 +39,7 @@ def get_peer_info(node, conn, _):
             conn_dict["addrbind"] = addrbind
             out.append(conn_dict)
         except OSError:
-            pass
+            out.append({"id": id, "a": int(p2p_conn.status)})
     return out
 
 

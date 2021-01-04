@@ -36,7 +36,7 @@ def create_genesis(time, nonce, difficulty, version, reward):
         vout=[tx_out],
     )
     header = BlockHeader(
-        version=1,
+        version=version,
         previousblockhash="00" * 32,
         merkleroot="00" * 32,
         time=time,

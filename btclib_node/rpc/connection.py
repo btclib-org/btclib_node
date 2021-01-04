@@ -40,7 +40,7 @@ class Connection:
                 if p.is_message_complete():
                     break
             body = json.loads(body[0])
-            if type(body) != list:
+            if not isinstance(body, list):
                 body = [body]
             self.manager.messages.append((body, self.id))
         except Exception:

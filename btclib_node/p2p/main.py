@@ -1,6 +1,6 @@
 import traceback
 
-from btclib_node.constants import P2pConnectionStatus
+from btclib_node.constants import P2pConnStatus
 from btclib_node.p2p.callbacks import callbacks, handshake_callbacks
 
 
@@ -10,8 +10,12 @@ def handle_p2p_handshake(node):
         conn = node.p2p_manager.connections[conn_id]
         print(msg_type, conn_id)
         try:
-            if msg_type in handshake_callbacks:
+            if conn.status == P2pConnStatus.Open:
                 handshake_callbacks[msg_type](node, msg, conn)
+            elif conn.status == P2pConnStatus.Closed:
+                pass
+            else:
+                conn.stop()
         except Exception:
             conn.stop()
             traceback.print_exc()
@@ -24,8 +28,10 @@ def handle_p2p(node):
         print(msg_type, conn_id)
         try:
             if msg_type in callbacks:
-                if conn.status > P2pConnectionStatus.Version:
+                if conn.status == P2pConnStatus.Connected:
                     callbacks[msg_type](node, msg, conn)
+                elif conn.status == P2pConnStatus.Closed:
+                    pass
                 else:
                     conn.stop()
         except Exception:
