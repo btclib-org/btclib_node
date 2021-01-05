@@ -69,18 +69,21 @@ def tx(node, msg, conn):
 def block(node, msg, conn):
     block = BlockMsg.deserialize(msg).block
     block.assert_valid()
-    header_status = node.index.get_header_status(block.header.hash)
 
-    if not header_status.downloaded:
-        print(block.header.hash)
     if block.header.hash in conn.block_download_queue:
         conn.block_download_queue.remove(block.header.hash)
 
-    header_status.downloaded = True
-    node.index.insert_header_status(header_status)
+    header_status = node.index.get_header_status(block.header.hash)
+
+    if not header_status.downloaded:
+        print(block.header.hash, True)
+        header_status.downloaded = True
+        node.index.insert_header_status(header_status)
+        node.block_db.add_block(block)
+    else:
+        print(block.header.hash, False)
 
 
-# TODO: do not ask for a block if we are still downloading old blocks
 def inv(node, msg, conn):
     inv = Inv.deserialize(msg)
     if node.status < NodeStatus.BlockSynced:
@@ -117,11 +120,13 @@ def headers(node, msg, conn):
             continue
     headers = valid_headers
     added = node.index.add_headers(headers)
+    # TODO: now it doesn't support long reorganizations (> 20000 headers)
     if len(headers) == 2000 and added:  # we have to require more headers
         block_locators = node.index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
     else:
-        node.status = NodeStatus.HeaderSynced
+        if node.status == NodeStatus.SyncingHeaders:
+            node.status = NodeStatus.HeaderSynced
 
 
 def getheaders(node, msg, conn):

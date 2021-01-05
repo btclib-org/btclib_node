@@ -12,6 +12,8 @@ class BlockStatus:
     header: BlockHeader
     index: int
     downloaded: bool = False
+    valid: bool = False
+    in_active_chain: bool = False
 
     @classmethod
     def deserialize(cls, data):
@@ -19,12 +21,16 @@ class BlockStatus:
         header = BlockHeader.deserialize(stream)
         index = varint.decode(stream)
         downloaded = bool(int.from_bytes(stream.read(1), "little"))
-        return cls(header, index, downloaded)
+        valid = bool(int.from_bytes(stream.read(1), "little"))
+        in_active_chain = bool(int.from_bytes(stream.read(1), "little"))
+        return cls(header, index, downloaded, valid, in_active_chain)
 
     def serialize(self):
         out = self.header.serialize()
         out += varint.encode(self.index)
         out += int(self.downloaded).to_bytes(1, "little")
+        out += int(self.valid).to_bytes(1, "little")
+        out += int(self.in_active_chain).to_bytes(1, "little")
         return out
 
 
@@ -36,25 +42,22 @@ class BlockIndex:
         self.db = plyvel.DB(data_dir, create_if_missing=True)
 
         genesis = chain.genesis
-        genesis_status = BlockStatus(genesis, 0, True)
+        genesis_status = BlockStatus(genesis, 0, True, True, True)
 
         self.header_dict = {genesis.hash: genesis_status}
 
         # the actual block chain; it contains only valid blocks
-        self.active_chain = [genesis_status]
+        self.active_chain = [genesis.hash]
 
         # blocks that are waiting to be connected to the active chain
-        self.block_candidates = []
+        self.download_candidates = []
 
         # blocks that have an anchestor missing
         self.unlinked_blocks = {}
 
         # list all header hashes, even if not already checked
-        # needed for the block locators and to know which block to download
+        # needed for the block locators
         self.header_index = [genesis.hash]
-
-        # the first 1024 block window with at least one block not downloaded
-        self.download_index = 0
 
         self.init_from_db()
 
@@ -62,16 +65,28 @@ class BlockIndex:
         pass
         # for key, value in self.db:
         #     self.header_dict[key.hex()] = BlockStatus.deserialize(value)
+        # self.update_download_candidates()
+        # self.update_header_index()
 
-    def update(self):
+    def generate_download_candidates(self):
         pass
+
+    def update_download_candidates(self):
+        pass
+
+    def generate_header_index(self):
+        pass
+
+    # TODO: rewrite to support reorgs
+    def update_header_index(self, header):
+        if header.previousblockhash == self.header_index[-1]:
+            self.header_index.append(header.hash)
 
     def insert_header_status(self, header_status):
         self.header_dict[header_status.header.hash] = header_status
         # key = b"b" + bytes.fromhex(header_status.header.hash)
         # value = header_status.serialize()
         # self.db.put(key, value)
-        # self.update()
 
     def get_header_status(self, hash):
         return self.header_dict[hash]
@@ -85,27 +100,45 @@ class BlockIndex:
                 continue
             added = True
             previous_block = self.get_header_status(header.previousblockhash)
-            block_status = BlockStatus(header, previous_block.index + 1, False)
+            index = previous_block.index + 1
+            block_status = BlockStatus(header, index)
             self.insert_header_status(block_status)
+            self.update_header_index(header)
 
-            # TODO: rewrite to support reorgs
-            if header.previousblockhash == self.header_index[-1]:
-                self.header_index.append(header.hash)
+            # TODO: use total work instead of lenght
+            # TODO: we shouldn't look at the active chain or we may miss a block during syncing
+            if index > self.get_header_status(self.active_chain[-1]).index:
+                self.download_candidates.append(header.hash)
+
         return added
 
     # return a list of blocks that have to be downloaded
     def get_download_candidates(self):
         candidates = []
-        i = self.download_index
-        downloadable = self.header_index[i * 1024 : (i + 1) * 1024]
-        for header in downloadable:
-            if not self.get_header_status(header).downloaded:
-                candidates.append(header)
-        if not candidates and len(self.header_index) > self.download_index * 1024:
-            self.download_index += 1
-            return self.get_download_candidates()
-        else:
-            return candidates
+        i = -1
+        while len(candidates) < 1024:
+            i += 1
+            if i >= len(self.download_candidates):
+                break
+            candidate = self.download_candidates[i]
+            if candidate not in candidates:
+                candidates.append(candidate)
+            else:
+                continue
+
+            new_candidates = []
+            while True:
+                candidate = self.get_header_status(candidate).header.previousblockhash
+                if candidate in candidates:
+                    break
+                elif candidate in self.active_chain:
+                    break
+                elif not self.get_header_status(candidate).downloaded:
+                    new_candidates.append(candidate)
+
+            candidates = new_candidates[::-1] + candidates
+
+        return candidates[:1024]
 
     # return a list of block hashes looking at the current best chain
     def get_block_locator_hashes(self):
