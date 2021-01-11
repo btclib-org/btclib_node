@@ -1,4 +1,5 @@
 import os
+import enum
 from dataclasses import dataclass
 
 import plyvel
@@ -7,30 +8,34 @@ from btclib.blocks import BlockHeader
 from btclib.utils import bytesio_from_binarydata
 
 
+class BlockStatus(enum.IntEnum):
+    valid_header = 1
+    invalid = 2
+    valid = 3
+    in_active_chain = 4
+
+
 @dataclass
-class BlockStatus:
+class BlockInfo:
     header: BlockHeader
     index: int
+    status: BlockStatus
     downloaded: bool = False
-    valid: bool = False
-    in_active_chain: bool = False
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         header = BlockHeader.deserialize(stream)
         index = varint.decode(stream)
+        status = BlockStatus.from_bytes(stream.read(1), "little")
         downloaded = bool(int.from_bytes(stream.read(1), "little"))
-        valid = bool(int.from_bytes(stream.read(1), "little"))
-        in_active_chain = bool(int.from_bytes(stream.read(1), "little"))
-        return cls(header, index, downloaded, valid, in_active_chain)
+        return cls(header, index, status, downloaded)
 
     def serialize(self):
         out = self.header.serialize()
         out += varint.encode(self.index)
+        out += self.status.to_bytes(1, "little")
         out += int(self.downloaded).to_bytes(1, "little")
-        out += int(self.valid).to_bytes(1, "little")
-        out += int(self.in_active_chain).to_bytes(1, "little")
         return out
 
 
@@ -42,7 +47,7 @@ class BlockIndex:
         self.db = plyvel.DB(data_dir, create_if_missing=True)
 
         genesis = chain.genesis
-        genesis_status = BlockStatus(genesis, 0, True, True, True)
+        genesis_status = BlockInfo(genesis, 0, BlockStatus.in_active_chain, True)
 
         self.header_dict = {genesis.hash: genesis_status}
 
@@ -64,7 +69,7 @@ class BlockIndex:
     def init_from_db(self):
         pass
         # for key, value in self.db:
-        #     self.header_dict[key.hex()] = BlockStatus.deserialize(value)
+        #     self.header_dict[key.hex()] = BlockInfo.deserialize(value)
         # self.update_download_candidates()
         # self.update_header_index()
 
@@ -82,14 +87,28 @@ class BlockIndex:
         if header.previousblockhash == self.header_index[-1]:
             self.header_index.append(header.hash)
 
-    def insert_header_status(self, header_status):
-        self.header_dict[header_status.header.hash] = header_status
-        # key = b"b" + bytes.fromhex(header_status.header.hash)
-        # value = header_status.serialize()
+    def insert_block_info(self, block_info):
+        self.header_dict[block_info.header.hash] = block_info
+        # key = b"b" + bytes.fromhex(block_info.header.hash)
+        # value = block_info.serialize()
         # self.db.put(key, value)
 
-    def get_header_status(self, hash):
+    def get_block_info(self, hash):
         return self.header_dict[hash]
+
+    # returns the active chain and the forked chain from the common anchestor
+    def get_fork_details(self, header_hash):
+        fork = [header_hash]
+        while True:
+            block_info = self.get_block_info(header_hash)
+            header_hash = block_info.header.previousblockhash
+            if header_hash in self.active_chain:
+                anchestor_index = self.active_chain.index(header_hash)
+                break
+            else:
+                fork.append(header_hash)
+        main = self.active_chain[anchestor_index + 1 :]
+        return fork, main
 
     def add_headers(self, headers):
         added = False  # flag that signals if there is a new header in this message
@@ -99,15 +118,14 @@ class BlockIndex:
             if header.previousblockhash not in self.header_dict:
                 continue
             added = True
-            previous_block = self.get_header_status(header.previousblockhash)
+            previous_block = self.get_block_info(header.previousblockhash)
             index = previous_block.index + 1
-            block_status = BlockStatus(header, index)
-            self.insert_header_status(block_status)
+            block_info = BlockInfo(header, index, BlockStatus.valid_header)
+            self.insert_block_info(block_info)
             self.update_header_index(header)
 
             # TODO: use total work instead of lenght
-            # TODO: we shouldn't look at the active chain or we may miss a block during syncing
-            if index > self.get_header_status(self.active_chain[-1]).index:
+            if index > self.get_block_info(self.active_chain[-1]).index:
                 self.download_candidates.append(header.hash)
 
         return added
@@ -122,22 +140,15 @@ class BlockIndex:
                 break
             candidate = self.download_candidates[i]
             if candidate not in candidates:
-                candidates.append(candidate)
-            else:
-                continue
-
-            new_candidates = []
-            while True:
-                candidate = self.get_header_status(candidate).header.previousblockhash
-                if candidate in candidates:
-                    break
-                elif candidate in self.active_chain:
-                    break
-                elif not self.get_header_status(candidate).downloaded:
-                    new_candidates.append(candidate)
-
-            candidates = new_candidates[::-1] + candidates
-
+                new_candidates = [candidate]
+                while True:
+                    block_info = self.get_block_info(candidate)
+                    candidate = block_info.header.previousblockhash
+                    if candidate in candidates or candidate in self.active_chain:
+                        break
+                    if not self.get_header_status(candidate).downloaded:
+                        new_candidates.append(candidate)
+                candidates = candidates + new_candidates[::-1]
         return candidates[:1024]
 
     # return a list of block hashes looking at the current best chain
@@ -168,4 +179,4 @@ class BlockIndex:
                 output = output[: end + 1]
             output = output[:2000]
             break
-        return [self.get_header_status(x).header for x in output]
+        return [self.get_block_info(x).header for x in output]

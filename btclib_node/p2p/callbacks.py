@@ -73,15 +73,14 @@ def block(node, msg, conn):
     if block.header.hash in conn.block_download_queue:
         conn.block_download_queue.remove(block.header.hash)
 
-    header_status = node.index.get_header_status(block.header.hash)
+    block_info = node.index.get_block_info(block.header.hash)
 
-    if not header_status.downloaded:
-        print(block.header.hash, True)
-        header_status.downloaded = True
-        node.index.insert_header_status(header_status)
-        node.block_db.add_block(block)
-    else:
-        print(block.header.hash, False)
+    if not block_info.downloaded:
+        block_info.downloaded = True
+        node.index.insert_block_info(block_info)
+        # node.block_db.add_block(block)
+        # node.block_received = True
+        print(block.header.hash)
 
 
 def inv(node, msg, conn):
