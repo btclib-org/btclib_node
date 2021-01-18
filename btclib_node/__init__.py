@@ -63,9 +63,7 @@ class Node(threading.Thread):
                 time.sleep(0.0001)
             try:
                 block_download(self)
-                # if self.block_received:
                 update_chain(self)
-                # self.block_received = False
             except Exception:
                 traceback.print_exc()
         self.p2p_manager.stop()

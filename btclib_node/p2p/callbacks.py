@@ -78,8 +78,7 @@ def block(node, msg, conn):
     if not block_info.downloaded:
         block_info.downloaded = True
         node.index.insert_block_info(block_info)
-        # node.block_db.add_block(block)
-        # node.block_received = True
+        node.block_db.add_block(block)
         print(block.header.hash)
 
 
