@@ -15,7 +15,7 @@ async def get_dns_nodes(chain):
     addresses = []
     for dns_server in chain.addresses:
         try:
-            ips = await loop.getaddrinfo(dns_server, chain.port)
+            ips = await loop.getaddrinfo(dns_server, chain.p2p_port)
         except socket.gaierror:
             continue
         for ip in ips:
@@ -78,6 +78,8 @@ class P2pManager(threading.Thread):
                 self.connection_num = 1
             else:
                 self.connection_num = 10
+            if not self.addresses:
+                continue
             self.addresses = list(set(self.addresses))
             random.shuffle(self.addresses)
             if len(self.connections) < self.connection_num:

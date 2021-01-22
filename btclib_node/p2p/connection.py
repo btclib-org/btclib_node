@@ -4,10 +4,9 @@ import re
 import time
 
 from btclib_node.constants import P2pConnStatus, ProtocolVersion
+from btclib_node.p2p.address import NetworkAddress, to_ipv6
 from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
 from btclib_node.p2p.messages.handshake import Version
-from btclib_node.structures import NetworkAddress
-from btclib_node.utils import to_ipv6
 
 
 class Connection:

@@ -40,6 +40,7 @@ def update_chain(node):
 
     index = node.index
     if not index.block_candidates:
+        node.status = NodeStatus.BlockSynced
         return
 
     to_add, to_remove = index.get_fork_details(index.block_candidates[0])

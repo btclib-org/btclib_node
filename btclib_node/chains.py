@@ -49,7 +49,8 @@ def create_genesis(time, nonce, difficulty, version, reward):
 
 class Main:
     name = "mainnet"
-    port = 8333
+    p2p_port = 8333
+    rpc_port = 8334
     magic = "f9beb4d9"
     addresses = [
         "seed.bitcoin.sipa.be",
@@ -67,7 +68,8 @@ class Main:
 
 class TestNet:
     name = "testnet"
-    port = 18333
+    p2p_port = 18333
+    rpc_port = 18334
     magic = "0b110907"
     addresses = [
         "testnet-seed.bitcoin.jonasschnelli.ch",
@@ -80,7 +82,17 @@ class TestNet:
 
 class SigNet:
     name = "signet"
-    port = 38333
+    p2p_port = 38333
+    rpc_port = 38334
     magic = "0a03cf40"  # default signet
     addresses = ["178.128.221.177"]
     genesis = create_genesis(1598918400, 52613770, 0x1E0377AE, 1, 50 * 10 ** 8)
+
+
+class RegTest:
+    name = "regtest"
+    p2p_port = 18444
+    rpc_port = 18445
+    magic = "fabfb5da"
+    addresses = []
+    genesis = create_genesis(1296688602, 2, 0x207FFFFF, 1, 50 * 10 ** 8)

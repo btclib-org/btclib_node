@@ -1,3 +1,4 @@
+import enum
 from dataclasses import dataclass
 from typing import List, Tuple
 
@@ -30,10 +31,21 @@ class Notfound:
         return add_headers("notfound", payload)
 
 
+class RejectCode(enum.IntEnum):
+    malformed = 0x01
+    invalid = 0x10
+    obsolete = 0x11
+    duplicate = 0x12
+    nonstandard = 0x40
+    dust = 0x41
+    insufficientfee = 0x42
+    checkpoint = 0x43
+
+
 @dataclass
 class Reject:
     message: str
-    code: int
+    code: RejectCode
     reason: str
     data: str
 
@@ -41,9 +53,9 @@ class Reject:
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         message = stream.read(varint.decode(stream)).decode()
-        code = int.from_bytes(stream.read(1), "little")
+        code = RejectCode.from_bytes(stream.read(1), "little")
         reason = stream.read(varint.decode(stream)).decode()
-        data = stream.read(32)
+        data = stream.read(32).hex()
         return cls(message, code, reason, data)
 
     def serialize(self):

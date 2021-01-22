@@ -4,8 +4,8 @@ from typing import List, Tuple
 from btclib import varint
 from btclib.utils import bytesio_from_binarydata
 
+from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import add_headers
-from btclib_node.structures import NetworkAddress
 
 
 @dataclass
@@ -26,7 +26,7 @@ class Addr:
     def serialize(self):
         payload = varint.encode(len(self.addresses))
         for address_timestamp, address in self.addresses:
-            payload += address_timestamp.to_bytes(8, "little")
+            payload += address_timestamp.to_bytes(4, "little")
             payload += address.serialize()
         return add_headers("addr", payload)
 

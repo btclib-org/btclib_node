@@ -1,5 +1,4 @@
 import os
-import sys
 import threading
 import time
 import traceback
@@ -68,7 +67,6 @@ class Node(threading.Thread):
                 traceback.print_exc()
         self.p2p_manager.stop()
         self.rpc_manager.stop()
-        sys.exit(0)
 
     def stop(self):
         self.terminate_flag.set()
