@@ -7,11 +7,10 @@ class BlockDB:
         os.makedirs(data_dir, exist_ok=True)
 
         # self.data = {}
-        self.count = 0
 
     # TODO: store on disk
     def add_block(self, block):
-        self.count += 1
+        pass
         # self.data[block.header.hash] = block
 
     def get_block(self, hash):

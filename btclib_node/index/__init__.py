@@ -27,7 +27,7 @@ class BlockInfo:
     def work(self):
         target = int.from_bytes(self.header.bits[-3:], "big")
         exp = pow(256, (self.header.bits[0] - 3))
-        return int(256 ** 32 / target / exp)
+        return 256 ** 32 / target / exp
 
     @classmethod
     def deserialize(cls, data):

@@ -1,11 +1,13 @@
-import time
-
 from btclib_node import Node
-from btclib_node.chains import RegTest
+from btclib_node.config import Config
 
 
 def test_init(tmp_path):
-    node = Node(chain=RegTest(), data_dir=tmp_path, p2p_port=30000, rpc_port=30001)
+    node = Node(
+        config=Config(
+            chain="regtest", data_dir=tmp_path, allow_p2p=False, allow_rpc=True
+        )
+    )
     node.start()
-    time.sleep(1)
     node.stop()
+    node.join()

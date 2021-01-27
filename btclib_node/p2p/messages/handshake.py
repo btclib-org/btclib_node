@@ -29,7 +29,7 @@ class Version:
         addr_from = NetworkAddress.deserialize(stream)
         nonce = int.from_bytes(stream.read(8), "little")
         user_agent_len = varint.decode(stream)
-        user_agent = stream.read(user_agent_len)
+        user_agent = stream.read(user_agent_len).decode()
         start_height = int.from_bytes(stream.read(4), "little")
         relay = bool(int.from_bytes(stream.read(1), "little"))
         return cls(
@@ -54,6 +54,8 @@ class Version:
         if self.user_agent:
             payload += varint.encode(len(self.user_agent))
             payload += self.user_agent.encode()
+        else:
+            payload += varint.encode(0)
         payload += self.start_height.to_bytes(4, "little")
         payload += self.relay.to_bytes(1, "little")
         return add_headers("version", payload)

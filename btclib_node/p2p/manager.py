@@ -15,7 +15,7 @@ async def get_dns_nodes(chain):
     addresses = []
     for dns_server in chain.addresses:
         try:
-            ips = await loop.getaddrinfo(dns_server, chain.p2p_port)
+            ips = await loop.getaddrinfo(dns_server, chain.port)
         except socket.gaierror:
             continue
         for ip in ips:

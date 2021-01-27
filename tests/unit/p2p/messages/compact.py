@@ -1,5 +1,5 @@
 from btclib_node.p2p.messages import get_payload
-from btclib_node.p2p.messages.compact import Sendcmpct, Cmptcblock
+from btclib_node.p2p.messages.compact import Cmptcblock, Sendcmpct
 
 
 def test_sendcmpt():

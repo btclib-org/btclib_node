@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from typing import List
+
 from btclib import script
 from btclib.blocks import BlockHeader, _generate_merkle_root
 from btclib.tx import Tx
@@ -47,52 +50,69 @@ def create_genesis(time, nonce, difficulty, version, reward):
     return header
 
 
-class Main:
-    name = "mainnet"
-    p2p_port = 8333
-    rpc_port = 8334
-    magic = "f9beb4d9"
-    addresses = [
-        "seed.bitcoin.sipa.be",
-        "dnsseed.bluematt.me",
-        "dnsseed.bitcoin.dashjr.org",
-        "seed.bitcoinstats.com",
-        "seed.bitcoin.jonasschnelli.ch",
-        "seed.btc.petertodd.org",
-        "seed.bitcoin.sprovoost.nl",
-        "dnsseed.emzy.de",
-        "seed.bitcoin.wiz.biz",
-    ]
-    genesis = create_genesis(1231006505, 2083236893, 0x1D00FFFF, 1, 50 * 10 ** 8)
+@dataclass
+class Chain:
+    name: str
+    port: int
+    magic: str
+    addresses: List[str]
+    genesis: BlockHeader
 
 
-class TestNet:
-    name = "testnet"
-    p2p_port = 18333
-    rpc_port = 18334
-    magic = "0b110907"
-    addresses = [
-        "testnet-seed.bitcoin.jonasschnelli.ch",
-        "seed.tbtc.petertodd.org",
-        "seed.testnet.bitcoin.sprovoost.nl",
-        "testnet-seed.bluematt.me",
-    ]
-    genesis = create_genesis(1296688602, 414098458, 0x1D00FFFF, 1, 50 * 10 ** 8)
+@dataclass
+class Main(Chain):
+    def __init__(self):
+        self.name = "mainnet"
+        self.port = 8333
+        self.magic = "f9beb4d9"
+        self.addresses = [
+            "seed.bitcoin.sipa.be",
+            "dnsseed.bluematt.me",
+            "dnsseed.bitcoin.dashjr.org",
+            "seed.bitcoinstats.com",
+            "seed.bitcoin.jonasschnelli.ch",
+            "seed.btc.petertodd.org",
+            "seed.bitcoin.sprovoost.nl",
+            "dnsseed.emzy.de",
+            "seed.bitcoin.wiz.biz",
+        ]
+        self.genesis = create_genesis(
+            1231006505, 2083236893, 0x1D00FFFF, 1, 50 * 10 ** 8
+        )
 
 
-class SigNet:
-    name = "signet"
-    p2p_port = 38333
-    rpc_port = 38334
-    magic = "0a03cf40"  # default signet
-    addresses = ["178.128.221.177"]
-    genesis = create_genesis(1598918400, 52613770, 0x1E0377AE, 1, 50 * 10 ** 8)
+@dataclass
+class TestNet(Chain):
+    def __init__(self):
+        self.name = "testnet"
+        self.port = 18333
+        self.magic = "0b110907"
+        self.addresses = [
+            "testnet-seed.bitcoin.jonasschnelli.ch",
+            "seed.tbtc.petertodd.org",
+            "seed.testnet.bitcoin.sprovoost.nl",
+            "testnet-seed.bluematt.me",
+        ]
+        self.genesis = create_genesis(
+            1296688602, 414098458, 0x1D00FFFF, 1, 50 * 10 ** 8
+        )
 
 
-class RegTest:
-    name = "regtest"
-    p2p_port = 18444
-    rpc_port = 18445
-    magic = "fabfb5da"
-    addresses = []
-    genesis = create_genesis(1296688602, 2, 0x207FFFFF, 1, 50 * 10 ** 8)
+@dataclass
+class SigNet(Chain):
+    def __init__(self):
+        self.name = "signet"
+        self.port = 38333
+        self.magic = "0a03cf40"  # default signet
+        self.addresses = ["178.128.221.177"]
+        self.genesis = create_genesis(1598918400, 52613770, 0x1E0377AE, 1, 50 * 10 ** 8)
+
+
+@dataclass
+class RegTest(Chain):
+    def __init__(self):
+        self.name = "regtest"
+        self.port = 18444
+        self.magic = "fabfb5da"
+        self.addresses = []
+        self.genesis = create_genesis(1296688602, 2, 0x207FFFFF, 1, 50 * 10 ** 8)

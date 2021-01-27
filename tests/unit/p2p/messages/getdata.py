@@ -1,9 +1,9 @@
 from btclib_node.p2p.messages import get_payload
 from btclib_node.p2p.messages.getdata import (
-    Getdata,
     Getblocks,
-    Getheaders,
     Getblocktxn,
+    Getdata,
+    Getheaders,
     Mempool,
     Sendheaders,
 )

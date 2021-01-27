@@ -1,5 +1,5 @@
 from btclib_node.p2p.messages import get_payload
-from btclib_node.p2p.messages.data import Tx, Block, Headers, Blocktxn, Inv
+from btclib_node.p2p.messages.data import Block, Blocktxn, Headers, Inv, Tx
 
 
 def test_empty_inv():

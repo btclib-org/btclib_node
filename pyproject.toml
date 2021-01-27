@@ -22,10 +22,11 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/unit"]
 python_files = "*.py"
 python_functions = "test_*"
-addopts = "--cov  --basetemp=test_data"
+addopts = "--cov --durations=10 -n 4"
+filterwarnings = ['ignore:cannot collect test class']
 
 [tool.coverage.run]
 omit = ["*/site-packages/*"]
@@ -36,4 +37,4 @@ skip_empty = true
 
 [tool.isort]
 profile = "hug"
-src_paths = ["btclib_node", "test"]
+src_paths = ["btclib_node", "tests"]
