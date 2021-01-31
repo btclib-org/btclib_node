@@ -2,9 +2,9 @@ import asyncio
 import random
 import socket
 import threading
-import time
 import traceback
 from collections import deque
+from contextlib import suppress
 
 from btclib_node.constants import NodeStatus, P2pConnStatus
 from btclib_node.p2p.connection import Connection
@@ -112,13 +112,16 @@ class P2pManager(threading.Thread):
         loop.run_forever()
 
     def stop(self):
+        self.loop.call_soon_threadsafe(self.loop.stop)
         for conn in self.connections.values():
             conn.stop()
-        for task in asyncio.all_tasks(self.loop):
+        while self.loop.is_running():
+            pass
+        pending = asyncio.all_tasks(self.loop)
+        for task in pending:
             task.cancel()
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        time.sleep(1)
-        self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+            with suppress(asyncio.CancelledError):
+                self.loop.run_until_complete(task)
         self.loop.close()
 
     def send(self, msg, id):

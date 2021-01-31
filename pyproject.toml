@@ -15,6 +15,7 @@ http-parser = "^0.9.0"
 pytest = "^6.1.2"
 pytest-cov = "^2.10.1"
 pytest-xdist = "^2.2.0"
+pytest-remotedata = "^0.3.2"
 pydeps = "^1.9.13"
 
 [build-system]
@@ -22,10 +23,10 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-testpaths = ["tests/unit"]
+testpaths = ["tests/unit", 'tests/functional']
 python_files = "*.py"
 python_functions = "test_*"
-addopts = "--cov --durations=10 -n 4"
+addopts = "--cov --durations=10 -n 4 --remote-data=any"
 filterwarnings = ['ignore:cannot collect test class']
 
 [tool.coverage.run]

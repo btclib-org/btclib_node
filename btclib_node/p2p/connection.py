@@ -55,7 +55,8 @@ class Connection:
         asyncio.run_coroutine_threadsafe(self.async_send(msg), self.loop)
 
     async def send_version(self):
-        services = 1032 + 1 * 0  # TODO: for now we don't have blocks, only headers
+        # TODO: for now we don't have blocks but we say we have them
+        services = 1024 + 8 + 1
         version = Version(
             version=ProtocolVersion,
             services=services,

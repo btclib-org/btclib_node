@@ -1,8 +1,8 @@
 import asyncio
 import socket
 import threading
-import time
 from collections import deque
+from contextlib import suppress
 
 from btclib_node.rpc.connection import Connection
 
@@ -50,11 +50,14 @@ class RpcManager(threading.Thread):
         loop.run_forever()
 
     def stop(self):
-        for conn in self.connections.values():
-            conn.close()
-        for task in asyncio.all_tasks(self.loop):
-            task.cancel()
         self.loop.call_soon_threadsafe(self.loop.stop)
-        time.sleep(1)
-        self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+        for conn in self.connections.values():
+            conn.stop()
+        while self.loop.is_running():
+            pass
+        pending = asyncio.all_tasks(self.loop)
+        for task in pending:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                self.loop.run_until_complete(task)
         self.loop.close()

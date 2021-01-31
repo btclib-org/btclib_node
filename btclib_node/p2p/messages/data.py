@@ -73,13 +73,13 @@ class Blocktxn:
         num_transactions = varint.decode(stream)
         transactions = []
         for x in range(num_transactions):
-            transactions.append(Tx.deserialize(stream))
+            transactions.append(TxData.deserialize(stream))
         return cls(blockhash=blockhash, transactions=transactions)
 
     def serialize(self):
         payload = bytes.fromhex(self.blockhash)[::-1]
         payload += varint.encode(len(self.transactions))
-        for tx in self.transacions:
+        for tx in self.transactions:
             payload += tx.serialize()
         return add_headers("blocktxn", payload)
 

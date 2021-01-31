@@ -94,7 +94,7 @@ class Getblocktxn:
         num_indexes = varint.decode(stream)
         indexes = []
         for x in range(num_indexes):
-            indexes.append(varint.deserialize(stream))
+            indexes.append(varint.decode(stream))
         return cls(blockhash=blockhash, indexes=indexes)
 
     def serialize(self):

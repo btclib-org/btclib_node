@@ -37,21 +37,24 @@ class Node(threading.Thread):
 
         self.download_window = []
 
-        self.p2p_manager = None
         if config.p2p_port:
             self.p2p_port = config.p2p_port
-            self.p2p_manager = P2pManager(self, self.p2p_port)
-            self.p2p_manager.start()
+        else:
+            self.p2p_port = None
+        self.p2p_manager = P2pManager(self, self.p2p_port)
 
-        self.rpc_manager = None
         if config.rpc_port:
             self.rpc_port = config.rpc_port
-            self.rpc_manager = RpcManager(self, self.rpc_port)
-            self.rpc_manager.start()
-
-        self.status = NodeStatus.SyncingHeaders
+        else:
+            self.rpc_port = None
+        self.rpc_manager = RpcManager(self, self.rpc_port)
 
     def run(self):
+        if self.p2p_port:
+            self.p2p_manager.start()
+        if self.rpc_port:
+            self.rpc_manager.start()
+        self.status = NodeStatus.SyncingHeaders
         while not self.terminate_flag.is_set():
             if self.p2p_manager and len(self.p2p_manager.handshake_messages):
                 handle_p2p_handshake(self)
@@ -66,10 +69,8 @@ class Node(threading.Thread):
                 update_chain(self)
             except Exception:
                 traceback.print_exc()
-        if self.p2p_manager:
-            self.p2p_manager.stop()
-        if self.rpc_manager:
-            self.rpc_manager.stop()
+        self.p2p_manager.stop()
+        self.rpc_manager.stop()
 
     def stop(self):
         self.terminate_flag.set()

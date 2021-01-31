@@ -10,6 +10,7 @@ class Config:
     data_dir: str
     p2p_port: int
     rpc_port: int
+    pruned: bool
 
     def __init__(
         self,
@@ -19,6 +20,7 @@ class Config:
         rpc_port=None,
         allow_p2p=True,
         allow_rpc=True,
+        pruned=False,
     ):
         if isinstance(chain, Chain):
             self.chain = chain
@@ -53,3 +55,5 @@ class Config:
             self.rpc_port = self.chain.port + 1
             if rpc_port:
                 self.rpc_port = rpc_port
+
+        self.pruned = pruned

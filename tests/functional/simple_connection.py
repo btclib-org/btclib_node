@@ -1,10 +1,12 @@
 import os
+import time
 
 from btclib_node import Node
 from btclib_node.config import Config
+from btclib_node.constants import P2pConnStatus
 
 
-def test_init(tmp_path):
+def test_simple_connection(tmp_path):
     node1 = Node(
         config=Config(
             chain="regtest",
@@ -24,9 +26,13 @@ def test_init(tmp_path):
     node1.start()
     node2.start()
     node2.p2p_manager.connect(("0.0.0.0", 60000))
+
     while not len(node1.p2p_manager.connections):
-        pass
+        time.sleep(0.01)
+    while node1.p2p_manager.connections[0].status != P2pConnStatus.Connected:
+        time.sleep(0.01)
+
+    assert node1.p2p_manager.connections[0].status == P2pConnStatus.Connected
+    assert node2.p2p_manager.connections[0].status == P2pConnStatus.Connected
     node1.stop()
     node2.stop()
-    node1.join()
-    node2.join()

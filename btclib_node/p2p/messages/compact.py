@@ -28,7 +28,7 @@ class Sendcmpct:
 
 
 @dataclass
-class Cmptcblock:
+class Cmpctblock:
     header: BlockHeader
     nonce: int
     short_ids: List[str]
@@ -40,13 +40,13 @@ class Cmptcblock:
         header = BlockHeader.deserialize(stream)
         nonce = int.from_bytes(stream.read(8), "little")
         short_ids = []
-        short_ids_length = varint.deserialize(stream)
+        short_ids_length = varint.decode(stream)
         for x in range(short_ids_length):
-            short_ids.append(stream.read(8)[::-1].hex())
+            short_ids.append(stream.read(6)[::-1].hex())
         prefilled_tx_list = []
-        prefilled_tx_num = varint.deserialize(stream)
+        prefilled_tx_num = varint.decode(stream)
         for x in range(prefilled_tx_num):
-            tx_index = varint.deserialize(stream)
+            tx_index = varint.decode(stream)
             tx = Tx.deserialize(stream)
             prefilled_tx_list.append((tx_index, tx))
         return cls(
@@ -59,11 +59,11 @@ class Cmptcblock:
     def serialize(self):
         payload = self.header.serialize()
         payload += self.nonce.to_bytes(8, "little")
-        payload += varint.serialize(len(self.short_ids))
+        payload += varint.encode(len(self.short_ids))
         for short_id in self.short_ids:
             payload += bytes.fromhex(short_id)[::-1]
-        payload += varint.serialize(len(self.prefilled_tx_list))
+        payload += varint.encode(len(self.prefilled_tx_list))
         for tx_index, tx in self.prefilled_tx_list:
-            payload += varint.serialize(tx_index)
+            payload += varint.encode(tx_index)
             payload += tx.serialize()
         return add_headers("cmptblock", payload)
