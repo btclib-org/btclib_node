@@ -7,18 +7,20 @@ def get_block_hash(node, conn, params):
 
 
 def get_block_header(node, conn, params):
-    header = node.index.header_dict[params[0]]
+    block_info = node.index.get_block_info(params[0])
+    header = header = block_info.header
     out = header.to_dict()
     out["hash"] = header.hash
 
     # TODO: fix if is not in main chain
-    height = node.index.index.index(params[0])
+    height = node.index.header_index.index(params[0])
     out["height"] = height
-    out["confirmations"] = len(node.index.index) - height
+    out["confirmations"] = len(node.index.header_index) - height
     if height > 0:
-        out["previousblockhash"] = node.index.index[height - 1]
-    if height < len(node.index.index) - 1:
-        out["nexblockhash"] = node.index.index[height + 1]
+        out["previousblockhash"] = node.index.header_index[height - 1]
+    if height < len(node.index.header_index) - 1:
+        out["nexblockhash"] = node.index.header_index[height + 1]
+    out["chainwork"] = block_info.chainwork
 
     return out
 
