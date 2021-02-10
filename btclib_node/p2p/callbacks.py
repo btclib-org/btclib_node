@@ -45,10 +45,12 @@ def verack(node, msg, conn):
 def ping(node, msg, conn):
     nonce = Ping.deserialize(msg).nonce
     conn.send(Pong(nonce))
+    node.logger.info(f"Sent ping with nonce {nonce}")
 
 
 def pong(node, msg, conn):
-    pass
+    nonce = Pong.deserialize(msg).nonce
+    node.logger.info(f"Received pong with nonce {nonce}")
 
 
 def addr(node, msg, conn):
@@ -79,7 +81,7 @@ def block(node, msg, conn):
         block_info.downloaded = True
         node.index.insert_block_info(block_info)
         node.block_db.add_block(block)
-        print(block.header.hash)
+        node.logger.info(f"Received new block with hash:{block.header.hash}")
 
 
 def inv(node, msg, conn):
@@ -138,7 +140,7 @@ def getheaders(node, msg, conn):
 
 def not_found(node, msg, conn):
     missing = Notfound.deserialize(msg)
-    print("Missing objects:", missing)
+    node.logger.warning(f"Missing objects:{missing}")
 
 
 handshake_callbacks = {"version": version, "verack": verack}

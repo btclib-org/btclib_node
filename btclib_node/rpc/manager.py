@@ -52,7 +52,7 @@ class RpcManager(threading.Thread):
     def stop(self):
         self.loop.call_soon_threadsafe(self.loop.stop)
         for conn in self.connections.values():
-            conn.stop()
+            conn.close()
         while self.loop.is_running():
             pass
         pending = asyncio.all_tasks(self.loop)

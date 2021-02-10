@@ -1,7 +1,5 @@
-import os
 import threading
 import time
-import traceback
 
 from btclib_node.block_db import BlockDB
 from btclib_node.chainstate import Chainstate
@@ -9,6 +7,7 @@ from btclib_node.config import Config
 from btclib_node.constants import NodeStatus
 from btclib_node.download import block_download
 from btclib_node.index import BlockIndex
+from btclib_node.log import Logger
 from btclib_node.main import update_chain
 from btclib_node.mempool import Mempool
 from btclib_node.p2p.main import handle_p2p, handle_p2p_handshake
@@ -21,12 +20,13 @@ class Node(threading.Thread):
     def __init__(self, config=Config()):
         super().__init__()
 
-        self.lock = threading.Lock()
-        self.terminate_flag = threading.Event()
-
         self.chain = config.chain
         self.data_dir = config.data_dir
-        os.makedirs(self.data_dir, exist_ok=True)
+        self.data_dir.mkdir(exist_ok=True, parents=True)
+
+        self.lock = threading.Lock()
+        self.terminate_flag = threading.Event()
+        self.logger = Logger(self.data_dir / "debug.log", config.debug)
 
         self.index = BlockIndex(self.data_dir, self.chain)
         self.chainstate = Chainstate(self.data_dir)
@@ -68,7 +68,7 @@ class Node(threading.Thread):
                 block_download(self)
                 update_chain(self)
             except Exception:
-                traceback.print_exc()
+                self.logger.exception("Exception occurred")
         self.p2p_manager.stop()
         self.rpc_manager.stop()
 

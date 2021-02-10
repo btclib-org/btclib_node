@@ -2,7 +2,6 @@ import asyncio
 import random
 import socket
 import threading
-import traceback
 from collections import deque
 from contextlib import suppress
 
@@ -91,7 +90,7 @@ class P2pManager(threading.Thread):
                     if tuple(address) not in already_connected:
                         await self.async_connect(self.addresses[0])
                 except Exception:
-                    traceback.print_exc()
+                    self.node.logger.exception("Exception occurred")
 
     async def server(self, loop):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

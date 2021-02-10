@@ -1,10 +1,10 @@
-import os
+from btclib.blocks import Block
 
 
 class BlockDB:
     def __init__(self, data_dir):
-        data_dir = os.path.join(data_dir, "blocks")
-        os.makedirs(data_dir, exist_ok=True)
+        data_dir = data_dir / "blocks"
+        data_dir.mkdir(exist_ok=True, parents=True)
 
         # self.data = {}
 

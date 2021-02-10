@@ -1,5 +1,3 @@
-import traceback
-
 from btclib_node.rpc.callbacks import callbacks
 
 
@@ -62,7 +60,7 @@ def handle_rpc(node):
                 }
             )
         except Exception:
-            traceback.print_exc()
+            node.logger.exception("Exception occurred")
             response.append(error_msg(-32603))
 
     conn.send(response)

@@ -1,4 +1,3 @@
-import os
 import time
 
 from btclib_node import Node
@@ -10,7 +9,7 @@ def test_simple_connection(tmp_path):
     node1 = Node(
         config=Config(
             chain="regtest",
-            data_dir=os.path.join(tmp_path, "node1"),
+            data_dir=tmp_path / "node1",
             p2p_port=60000,
             allow_rpc=False,
         )
@@ -18,7 +17,7 @@ def test_simple_connection(tmp_path):
     node2 = Node(
         config=Config(
             chain="regtest",
-            data_dir=os.path.join(tmp_path, "node2"),
+            data_dir=tmp_path / "node2",
             p2p_port=60001,
             allow_rpc=False,
         )
