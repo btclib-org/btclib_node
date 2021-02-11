@@ -2,11 +2,13 @@ import asyncio
 import random
 import socket
 import threading
+import time
 from collections import deque
 from contextlib import suppress
 
 from btclib_node.constants import NodeStatus, P2pConnStatus
 from btclib_node.p2p.connection import Connection
+from btclib_node.p2p.messages.ping import Ping
 
 
 async def get_dns_nodes(chain):
@@ -33,6 +35,7 @@ class P2pManager(threading.Thread):
         self.messages = deque()
         self.handshake_messages = deque()
         self.addresses = []
+        self.nonces = []
         self.loop = asyncio.new_event_loop()
         self.port = port
         self.last_connection_id = -1
@@ -69,9 +72,18 @@ class P2pManager(threading.Thread):
     async def manage_connections(self, loop):
         self.addresses = await get_dns_nodes(self.chain)
         while True:
+            now = time.time()
             for conn in self.connections.copy().values():
                 if conn.status == P2pConnStatus.Closed:
                     self.remove_connection(conn.id)
+                if now - conn.last_receive > 120:
+                    if not conn.ping_sent:
+                        ping_msg = Ping()
+                        conn.send(ping_msg)
+                        conn.ping_sent = now
+                        conn.ping_nonce = ping_msg.nonce
+                    elif now - conn.ping_sent > 120:
+                        self.remove_connection(conn.id)
             await asyncio.sleep(0.1)
             if self.node.status < NodeStatus.HeaderSynced:
                 self.connection_num = 1
@@ -79,16 +91,13 @@ class P2pManager(threading.Thread):
                 self.connection_num = 10
             if not self.addresses:
                 continue
+            already_connected = [conn.address for conn in self.connections.values()]
             self.addresses = list(set(self.addresses))
-            random.shuffle(self.addresses)
+            addresses = [x for x in self.addresses if tuple(x) not in already_connected]
+            random.shuffle(addresses)
             if len(self.connections) < self.connection_num:
                 try:
-                    address = self.addresses[0]
-                    already_connected = [
-                        conn.address for conn in self.connections.values()
-                    ]
-                    if tuple(address) not in already_connected:
-                        await self.async_connect(self.addresses[0])
+                    await self.async_connect(addresses[0])
                 except Exception:
                     self.node.logger.exception("Exception occurred")
 

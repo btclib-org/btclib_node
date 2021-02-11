@@ -23,6 +23,11 @@ class Connection:
 
         self.status = P2pConnStatus.Open
 
+        self.last_receive = time.time()
+        self.ping_nonce = None
+        self.ping_sent = 0
+        self.latency = 0
+
         self.version_message = None
         self.block_download_queue = []
 
@@ -46,7 +51,10 @@ class Connection:
 
     async def _send(self, data):
         data = bytes.fromhex(self.node.chain.magic) + data
-        await self.loop.sock_sendall(self.client, data)
+        try:
+            await self.loop.sock_sendall(self.client, data)
+        except OSError:  # probably connection dropped
+            pass
 
     async def async_send(self, msg):
         await self._send(msg.serialize())
@@ -57,6 +65,9 @@ class Connection:
     async def send_version(self):
         # TODO: for now we don't have blocks but we say we have them
         services = 1024 + 8 + 1
+        nonce = random.randint(0, 0xFFFFFFFFFFFF)
+        self.manager.nonces.append(nonce)
+        self.manager.nonces = self.manager.nonces[:10]
         version = Version(
             version=ProtocolVersion,
             services=services,
@@ -67,7 +78,7 @@ class Connection:
             addr_from=NetworkAddress(
                 services, to_ipv6("0.0.0.0"), self.manager.port
             ),  # TODO
-            nonce=random.randint(0, 0xFFFFFFFFFFFF),
+            nonce=nonce,
             user_agent="/Btclib/",
             start_height=0,  # TODO
             relay=True,  # TODO
@@ -80,6 +91,7 @@ class Connection:
                 return
             try:
                 verify_headers(self.buffer)
+                self.last_receive = time.time()
                 message_length = int.from_bytes(self.buffer[16:20], "little")
                 message = get_payload(self.buffer)
                 self.buffer = self.buffer[24 + message_length :]

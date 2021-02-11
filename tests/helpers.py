@@ -1,4 +1,5 @@
 import random
+import socket
 
 from btclib.blocks import BlockHeader
 
@@ -22,3 +23,15 @@ def generate_trivial_chain(length, start):
             )
         )
     return chain
+
+
+def get_random_port():
+    while True:
+        port = random.randint(1024, 65535)
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind(("", port))
+            sock.close()
+            return port
+        except OSError:
+            sock.close()

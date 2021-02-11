@@ -1,3 +1,5 @@
+import time
+
 from btclib.exceptions import BTClibValueError
 
 from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion
@@ -14,19 +16,22 @@ from btclib_node.p2p.messages.ping import Ping, Pong
 
 def version(node, msg, conn):
     version_msg = Version.deserialize(msg)
-    if version_msg.version < ProtocolVersion:
-        conn.stop()
-        return
-    # for now we only connect to full nodes
-    if not version_msg.services & 1:
-        conn.stop()
-        return
-    # we only connect to witness nodes
-    if not version_msg.services & 8:
+
+    conn.version_message = version_msg
+    if version_msg.nonce in node.p2p_manager.nonces:  # connection to ourselves
         conn.stop()
         return
 
-    conn.version_message = version_msg
+    if version_msg.version < ProtocolVersion:
+        conn.stop()
+        return
+    if not version_msg.services & 1:  # for now we only connect to full nodes
+        conn.stop()
+        return
+    if not version_msg.services & 8:  # we only connect to witness nodes
+        conn.stop()
+        return
+
     conn.send(Verack())
 
 
@@ -45,12 +50,17 @@ def verack(node, msg, conn):
 def ping(node, msg, conn):
     nonce = Ping.deserialize(msg).nonce
     conn.send(Pong(nonce))
-    node.logger.info(f"Sent ping with nonce {nonce}")
 
 
 def pong(node, msg, conn):
     nonce = Pong.deserialize(msg).nonce
-    node.logger.info(f"Received pong with nonce {nonce}")
+    if conn.ping_sent:
+        if conn.ping_nonce != nonce:
+            conn.stop()
+            return
+        conn.latency = time.time() - conn.ping_sent
+        conn.ping_sent = 0
+        conn.ping_nonce = 0
 
 
 def addr(node, msg, conn):

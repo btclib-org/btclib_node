@@ -10,4 +10,3 @@ def test_init(tmp_path):
     )
     node.start()
     node.stop()
-    node.join()
