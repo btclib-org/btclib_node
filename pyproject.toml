@@ -17,6 +17,7 @@ pytest-cov = "^2.10.1"
 pytest-xdist = "^2.2.0"
 pytest-remotedata = "^0.3.2"
 pydeps = "^1.9.13"
+requests = "^2.25.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

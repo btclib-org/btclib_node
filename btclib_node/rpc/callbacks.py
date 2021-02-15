@@ -19,7 +19,7 @@ def get_block_header(node, conn, params):
     if height > 0:
         out["previousblockhash"] = node.index.header_index[height - 1]
     if height < len(node.index.header_index) - 1:
-        out["nexblockhash"] = node.index.header_index[height + 1]
+        out["nextblockhash"] = node.index.header_index[height + 1]
     out["chainwork"] = block_info.chainwork
 
     return out
@@ -41,7 +41,7 @@ def get_peer_info(node, conn, _):
             conn_dict["addrbind"] = addrbind
             out.append(conn_dict)
         except OSError:
-            out.append({"id": id, "a": int(p2p_conn.status)})
+            pass
     return out
 
 

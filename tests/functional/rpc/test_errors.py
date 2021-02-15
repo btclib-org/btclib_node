@@ -1,0 +1,99 @@
+import json
+import time
+
+import requests
+
+from btclib_node import Node
+from btclib_node.config import Config
+from tests.helpers import get_random_port
+
+
+def test_no_method(tmp_path):
+    node = Node(
+        config=Config(
+            chain="regtest",
+            data_dir=tmp_path,
+            allow_p2p=False,
+            rpc_port=get_random_port(),
+        )
+    )
+    node.start()
+    time.sleep(0.1)
+
+    response = json.loads(
+        requests.post(
+            url=f"http://127.0.0.1:{node.rpc_port}",
+            data=json.dumps(
+                {
+                    "jsonrpc": "1.0",
+                    "id": "pytest",
+                }
+            ).encode(),
+            headers={"Content-Type": "text/plain"},
+        ).text
+    )
+
+    assert response["error"]["message"] == "Invalid request"
+
+    node.stop()
+
+
+def test_no_id(tmp_path):
+    node = Node(
+        config=Config(
+            chain="regtest",
+            data_dir=tmp_path,
+            allow_p2p=False,
+            rpc_port=get_random_port(),
+        )
+    )
+    node.start()
+    time.sleep(0.1)
+
+    response = json.loads(
+        requests.post(
+            url=f"http://127.0.0.1:{node.rpc_port}",
+            data=json.dumps(
+                {
+                    "jsonrpc": "1.0",
+                    "method": "getpeerinfo",
+                }
+            ).encode(),
+            headers={"Content-Type": "text/plain"},
+        ).text
+    )
+
+    assert response["error"]["message"] == "Invalid request"
+
+    node.stop()
+
+
+def test_invalid_method(tmp_path):
+    node = Node(
+        config=Config(
+            chain="regtest",
+            data_dir=tmp_path,
+            allow_p2p=False,
+            rpc_port=get_random_port(),
+        )
+    )
+    node.start()
+    time.sleep(0.1)
+
+    response = json.loads(
+        requests.post(
+            url=f"http://127.0.0.1:{node.rpc_port}",
+            data=json.dumps(
+                {
+                    "jsonrpc": "1.0",
+                    "method": "notavalidmethod",
+                    "id": "pytest",
+                }
+            ).encode(),
+            headers={"Content-Type": "text/plain"},
+        ).text
+    )
+
+    assert response["error"]["message"] == "Method not found"
+
+    node.stop()

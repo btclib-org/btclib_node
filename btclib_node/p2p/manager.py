@@ -95,7 +95,7 @@ class P2pManager(threading.Thread):
             self.addresses = list(set(self.addresses))
             addresses = [x for x in self.addresses if tuple(x) not in already_connected]
             random.shuffle(addresses)
-            if len(self.connections) < self.connection_num:
+            if len(self.connections) < self.connection_num and addresses:
                 try:
                     await self.async_connect(addresses[0])
                 except Exception:

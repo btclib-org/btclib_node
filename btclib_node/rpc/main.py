@@ -45,23 +45,24 @@ def handle_rpc(node):
     for request in data:
         if not is_valid_rpc(request):
             response.append(error_msg(-32600))
-        if request["method"] not in callbacks:
+        elif request["method"] not in callbacks:
             response.append(error_msg(-32601))
-        try:
-            if "params" in request:
-                params = request["params"]
-            else:
-                params = []
-            response.append(
-                {
-                    "jsonrpc": "2.0",
-                    "result": callbacks[request["method"]](node, conn, params),
-                    "id": request["id"],
-                }
-            )
-        except Exception:
-            node.logger.exception("Exception occurred")
-            response.append(error_msg(-32603))
+        else:
+            try:
+                if "params" in request:
+                    params = request["params"]
+                else:
+                    params = []
+                response.append(
+                    {
+                        "jsonrpc": "2.0",
+                        "result": callbacks[request["method"]](node, conn, params),
+                        "id": request["id"],
+                    }
+                )
+            except Exception:
+                node.logger.exception("Exception occurred")
+                response.append(error_msg(-32603))
 
     conn.send(response)
     # node.rpc_manager.connections.pop(conn_id)
