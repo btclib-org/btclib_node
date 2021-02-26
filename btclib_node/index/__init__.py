@@ -159,7 +159,7 @@ class BlockIndex:
             else:
                 fork.append(header_hash)
         main = chain[anchestor_index + 1 :]
-        return fork, main
+        return fork[::-1], main
 
     # TODO: improve speed
     def prune_block_candidates(self):
