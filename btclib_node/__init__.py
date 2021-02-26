@@ -72,5 +72,11 @@ class Node(threading.Thread):
         self.p2p_manager.stop()
         self.rpc_manager.stop()
 
+        self.index.close()
+        self.chainstate.close()
+        self.block_db.close()
+
+        self.logger.close()
+
     def stop(self):
         self.terminate_flag.set()

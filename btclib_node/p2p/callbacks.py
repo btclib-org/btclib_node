@@ -113,10 +113,15 @@ def inv(node, msg, conn):
 def getdata(node, msg, conn):
     getdata = Getdata.deserialize(msg)
     transactions = [x[1] for x in getdata.inventory if x[0] == 1 or x[0] == 0x40000001]
-    # blocks = [x[1] for x in getdata.inventory if x[0] == 2 or x[0] == 0x40000002]
-    for tx in transactions:
-        if tx in node.mempool.transactions:
-            conn.send(TxMsg(node.mempool.transactions[tx]))
+    blocks = [x[1] for x in getdata.inventory if x[0] == 2 or x[0] == 0x40000002]
+    for txid in transactions:
+        tx = node.mempool.get_tx(txid)
+        if tx:
+            conn.send(TxMsg(tx))
+    for block_hash in blocks:
+        block = node.block_db.get_block(block_hash)
+        if block:
+            conn.send(BlockMsg(block))
 
 
 def headers(node, msg, conn):
@@ -130,7 +135,7 @@ def headers(node, msg, conn):
             continue
     headers = valid_headers
     added = node.index.add_headers(headers)
-    # TODO: now it doesn't support long reorganizations (> 20000 headers)
+    # TODO: now it doesn't support long reorganizations (> 2000 headers)
     if len(headers) == 2000 and added:  # we have to require more headers
         block_locators = node.index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
@@ -145,7 +150,7 @@ def getheaders(node, msg, conn):
         getheaders.block_hashes, getheaders.hash_stop
     )
     if headers:
-        return Headers(headers)
+        conn.send(Headers(headers))
 
 
 def not_found(node, msg, conn):

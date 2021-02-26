@@ -7,3 +7,8 @@ class Logger(logging.Logger):
         self.addHandler(logging.FileHandler(filepath))
         if debug:
             self.addHandler(logging.StreamHandler())
+
+    def close(self):
+        for handler in self.handlers:
+            handler.close()
+            self.removeHandler(handler)

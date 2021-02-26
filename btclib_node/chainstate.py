@@ -19,6 +19,9 @@ class Chainstate:
             value = TxOut.deserialize(value)
             self.utxo_dict[key] = value
 
+    def close(self):
+        self.db.close()
+
     def get_output(self, out_point):
         prev_out_hash = out_point.serialize().hex()
         if prev_out_hash in self.utxo_dict:

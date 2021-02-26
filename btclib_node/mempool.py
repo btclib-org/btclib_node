@@ -15,5 +15,10 @@ class Mempool:
                 missing.append(tx)
         return missing
 
+    def get_tx(self, txid):
+        if txid in self.transactions:
+            return self.transactions[txid]
+        return None
+
     def add_tx(self, tx):
         self.transactions[tx.txid] = tx

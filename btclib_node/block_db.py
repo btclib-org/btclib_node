@@ -13,6 +13,9 @@ class BlockDB:
         self.cache = {}
         self.rev_cache = {}
 
+    def close(self):
+        pass
+
     # TODO: store on disk
     def add_block(self, block):
         self.cache[block.header.hash] = block
@@ -21,10 +24,14 @@ class BlockDB:
         self.rev_cache[rev_block.hash] = rev_block
 
     def get_block(self, hash):
-        return self.cache[hash]
+        if hash in self.cache:
+            return self.cache[hash]
+        return None
 
     def get_rev_block(self, hash):
-        return self.rev_cache[hash]
+        if hash in self.rev_caches:
+            return self.rev_cache[hash]
+        return None
 
 
 @dataclass

@@ -81,6 +81,9 @@ class BlockIndex:
         self.generate_block_candidates()
         self.generate_header_index()
 
+    def close(self):
+        self.db.close()
+
     def calculate_chainwork(self):
         sorted_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
         for block_hash in sorted_dict:

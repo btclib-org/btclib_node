@@ -60,7 +60,7 @@ def update_chain(node):
 
         a = time.time()
         node.index.prune_block_candidates()
-        print(time.time() - a)
+        node.logger.debug(f"Time taken to add block: {time.time() - a}")
 
     else:
         update_header_index(node.index)
