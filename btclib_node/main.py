@@ -1,5 +1,6 @@
 import time
 
+from btclib_node.chainstate import ChainstateSnapshot
 from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockStatus
 
@@ -25,25 +26,31 @@ def update_chain(node):
         node.status = NodeStatus.BlockSynced
         return
     to_add, to_remove = node.index.get_fork_details(first_candidate.header.hash)
-
+    # print(to_add, to_remove)
     for hash in to_add:
         if not node.index.get_block_info(hash).downloaded:
             return
     to_add = [node.block_db.get_block(hash) for hash in to_add]
     to_remove = [node.block_db.get_rev_block(hash) for hash in to_remove]
 
+    chainstate_snapshot = ChainstateSnapshot(node.chainstate)
     for rev_block in to_remove:
-        # remove block
-        pass
+        chainstate_snapshot.apply_rev_block(rev_block)
     for block in to_add:
-        # add block
-        # success = try_add_block()
-        success = True
+        try:
+            transactions = chainstate_snapshot.add_block(block)
+            # script_engine.validate(transactions)
+            success = True
+        except Exception as e:
+            print(e)
+            success = False
         if success:
             update_block_status(node.index, block.header.hash, BlockStatus.valid)
         else:
             update_block_status(node.index, block.header.hash, BlockStatus.invalid)
             break
+
+    print(success)
 
     if success:
         for rev_block in to_remove:

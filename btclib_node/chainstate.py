@@ -59,3 +59,30 @@ class Chainstate:
             self.__remove_output(out_point)
         for out_point, tx_out in rev_block.to_add:
             self.__add_output(out_point, tx_out)
+
+
+class ChainstateSnapshot(Chainstate):
+    def __init__(self, chainstate):
+        self.utxo_dict = chainstate.utxo_dict.copy()
+
+    def add_block(self, block):
+        complete_transactions = []
+        for i, tx_out in enumerate(block.transactions[0].vout):
+            out_point = OutPoint(block.transactions[0].txid, i)
+            self.utxo_dict[out_point.serialize().hex()] = tx_out
+        for tx in block.transactions[1:]:
+            prev_outputs = []
+            for tx_in in tx.vin:
+                prev_outputs.append(self.utxo_dict[tx_in.prevout.serialize().hex()])
+                self.utxo_dict.pop(out_point.serialize().hex())
+            for i, tx_out in enumerate(tx.vout):
+                out_point = OutPoint(tx.txid, i)
+                self.utxo_dict[out_point.serialize().hex()] = tx_out
+            complete_transactions.append([prev_outputs, tx])
+        return complete_transactions
+
+    def apply_rev_block(self, rev_block):
+        for out_point in rev_block.to_remove:
+            self.utxo_dict.pop(out_point.serialize().hex())
+        for out_point, tx_out in rev_block.to_add:
+            self.utxo_dict[out_point.serialize().hex()] = tx_out
