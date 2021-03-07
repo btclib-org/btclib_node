@@ -74,7 +74,7 @@ class ChainstateSnapshot(Chainstate):
             prev_outputs = []
             for tx_in in tx.vin:
                 prev_outputs.append(self.utxo_dict[tx_in.prevout.serialize().hex()])
-                self.utxo_dict.pop(out_point.serialize().hex())
+                self.utxo_dict.pop(tx_in.prevout.serialize().hex())
             for i, tx_out in enumerate(tx.vout):
                 out_point = OutPoint(tx.txid, i)
                 self.utxo_dict[out_point.serialize().hex()] = tx_out
