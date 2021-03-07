@@ -86,7 +86,7 @@ class BlockDB:
     def __init__(self, data_dir):
         self.data_dir = data_dir / "blocks"
         self.data_dir.mkdir(exist_ok=True, parents=True)
-        self.db = plyvel.DB(str(data_dir), create_if_missing=True)
+        self.db = plyvel.DB(str(self.data_dir), create_if_missing=True)
         self.files = {}
         self.blocks = {}
         self.rev_patches = {}
@@ -94,6 +94,8 @@ class BlockDB:
         if not self.files:
             self.files["data.blk"] = FileMetadata("data.blk", 0)
             self.files["data.rev"] = FileMetadata("data.rev", 0)
+        self.current_block_file = None
+        self.current_rev_file = None
 
     def init_from_db(self):
         for key, value in self.db:
@@ -107,56 +109,71 @@ class BlockDB:
     def close(self):
         self.db.close()
 
+    def __get_file(self, filename):
+        if filename[-3:] == "blk":
+            if not self.current_block_file:
+                self.current_block_file = open(str(self.data_dir / filename), "a+b")
+            if self.current_block_file.name[-len(filename) :] != filename:
+                self.current_block_file.close()
+                self.current_block_file = open(str(self.data_dir / filename), "a+b")
+            return self.current_block_file
+        elif filename[-3:] == "rev":
+            if not self.current_rev_file:
+                self.current_rev_file = open(str(self.data_dir / filename), "a+b")
+            if self.current_rev_file.name[-len(filename) :] != filename:
+                self.current_rev_file.close()
+                self.current_rev_file = open(str(self.data_dir / filename), "a+b")
+            return self.current_rev_file
+
+    def __add_to_file(self, filename, data):
+        file = self.__get_file(filename)
+        file.write(data)
+        file.flush()
+        file_metadata = self.files[filename]
+        data_index = file_metadata.size
+        data_size = len(data)
+        file_metadata.size += data_size
+        self.db.put(b"f" + file_metadata.filename.encode(), file_metadata.serialize())
+        return data_index, data_size
+
+    def __get_from_file(self, filename, index, size):
+        file = self.__get_file(filename)
+        file.seek(index)
+        data = file.read(size)
+        return data
+
     def add_block(self, block):
         data = block.serialize()
-
-        file = (self.data_dir / "data.blk").open("ab")
-        file.write(data)
-        file.close()
-
-        file_size = self.files["data.blk"].size
-        block_location = BlockLocation("data.blk", file_size, len(data))
+        filename = "data.blk"
+        index, block_size = self.__add_to_file(filename, data)
+        block_location = BlockLocation(filename, index, block_size)
         self.blocks[block.header.hash] = block_location
         self.db.put(b"f" + bytes.fromhex(block.header.hash), block_location.serialize())
 
-        file_metadata = self.files["data.blk"]
-        file_metadata.size += len(data)
-        self.db.put(b"f" + file_metadata.filename.encode(), file_metadata.serialize())
-
     def add_rev_block(self, rev_block):
         data = rev_block.serialize()
-
-        file = (self.data_dir / "data.rev").open("ab")
-        file.write(data)
-        file.close()
-
-        file_size = self.files["data.rev"].size
-        block_location = BlockLocation("data.rev", file_size, len(data))
+        filename = "data.rev"
+        index, block_size = self.__add_to_file(filename, data)
+        block_location = BlockLocation(filename, index, block_size)
         self.rev_patches[rev_block.hash] = block_location
         self.db.put(b"f" + bytes.fromhex(rev_block.hash), block_location.serialize())
-
-        file_metadata = self.files["data.rev"]
-        file_metadata.size += len(data)
-        self.db.put(b"f" + file_metadata.filename.encode(), file_metadata.serialize())
 
     def get_block(self, hash):
         if hash not in self.blocks:
             return None
+        filename = "data.blk"
         block_location = self.blocks[hash]
-        start = block_location.index
-        end = block_location.index + block_location.size
-        file = (self.data_dir / "data.blk").open("rb")
-        block_data = file.read()[start:end]
-        file.close()
+        block_data = self.__get_from_file(
+            filename, block_location.index, block_location.size
+        )
         return Block.deserialize(block_data)
 
     def get_rev_block(self, hash):
         if hash not in self.rev_patches:
             return None
+        filename = "data.rev"
         rev_patch_location = self.rev_patches[hash]
-        start = rev_patch_location.index
-        end = rev_patch_location.index + rev_patch_location.size
-        file = (self.data_dir / "data.rev").open("rb")
-        rev_patch_data = file.read()[start:end]
-        file.close()
+        rev_patch_data = self.__get_from_file(
+            filename, rev_patch_location.index, rev_patch_location.size
+        )
         return RevBlock.deserialize(rev_patch_data)

@@ -41,8 +41,10 @@ def update_chain(node):
             transactions = chainstate_snapshot.add_block(block)
             # script_engine.validate(transactions)
             success = True
-        except Exception as e:
-            print(e)
+        except Exception:
+            node.logger.exception("Exception occurred")
+            node.logger.debug(block)
+            node.logger.debug(block.header.hash)
             success = False
         if success:
             update_block_status(node.index, block.header.hash, BlockStatus.valid)
@@ -50,15 +52,13 @@ def update_chain(node):
             update_block_status(node.index, block.header.hash, BlockStatus.invalid)
             break
 
-    print(success)
-
     if success:
         for rev_block in to_remove:
-            node.index.active_chain.remove(rev_block.hash)
+            node.index.remove_from_active_chain(rev_block.hash)
             node.chainstate.apply_rev_block(rev_block)
             update_block_status(node.index, rev_block.hash, BlockStatus.valid)
         for block in to_add:
-            node.index.active_chain.append(block.header.hash)
+            node.index.add_to_active_chain(block.header.hash)
             rev_block = node.chainstate.add_block(block)
             node.block_db.add_rev_block(rev_block)
             update_block_status(
@@ -66,7 +66,6 @@ def update_chain(node):
             )
 
         a = time.time()
-        node.index.prune_block_candidates()
         node.logger.debug(f"Time taken to add block: {time.time() - a}")
 
     else:

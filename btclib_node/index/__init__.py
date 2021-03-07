@@ -120,6 +120,7 @@ class BlockIndex:
             if block_info.chainwork > current_work:
                 self.block_candidates.append([header.hash, block_info.chainwork])
 
+    # TODO: improve speed
     def generate_header_index(self):
         self.header_index = self.active_chain[:]
         sorted_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
@@ -164,19 +165,25 @@ class BlockIndex:
         main = chain[anchestor_index + 1 :]
         return fork[::-1], main
 
-    # TODO: improve speed
-    def prune_block_candidates(self):
-        current_work = self.get_block_info(self.active_chain[-1]).chainwork
-        self.block_candidates = list(
-            filter(
-                lambda x: x[1] > current_work,
-                self.block_candidates,
-            )
-        )
+    # unsafe: doesn't perform any check
+    def add_to_active_chain(self, block_hash):
+        self.active_chain.append(block_hash)
+
+    def remove_from_active_chain(self, block_hash):
+        if block_hash != self.active_chain[-1]:
+            raise Exception
+        self.active_chain.pop()
 
     def get_first_candidate(self):
+        chainwork = self.get_block_info(self.active_chain[-1]).chainwork
+        i = 0
         if self.block_candidates:
-            return self.get_block_info(self.block_candidates[0][0])
+            for hash, work in self.block_candidates:
+                block_info = self.get_block_info(hash)
+                if block_info.chainwork > chainwork:
+                    self.block_candidates = self.block_candidates[i:]
+                    return block_info
+                i += 1
         return None
 
     def add_headers(self, headers):
@@ -214,6 +221,7 @@ class BlockIndex:
 
     # return a list of blocks that have to be downloaded
     def get_download_candidates(self):
+        chainwork = self.get_block_info(self.active_chain[-1]).chainwork
         candidates = []
         i = -1
         while len(candidates) < 1024:
@@ -221,6 +229,8 @@ class BlockIndex:
             if i >= len(self.block_candidates):
                 break
             candidate = self.block_candidates[i][0]
+            if self.get_block_info(candidate).chainwork < chainwork:
+                continue
             if candidate not in candidates:
                 new_candidates = [candidate]
                 while True:
