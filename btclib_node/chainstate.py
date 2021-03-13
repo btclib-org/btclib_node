@@ -9,8 +9,12 @@ class Chainstate:
     def __init__(self, data_dir):
         data_dir = data_dir / "chainstate"
         data_dir.mkdir(exist_ok=True, parents=True)
+
         self.db = plyvel.DB(str(data_dir), create_if_missing=True)
         self.utxo_dict = {}
+        self.removed_utxos = []
+        self.updated_utxo_set = {}
+
         self.init_from_db()
 
     def init_from_db(self):
@@ -28,61 +32,78 @@ class Chainstate:
             return self.utxo_dict[prev_out_hash]
         return None
 
-    def __add_output(self, out_point, tx_out):
-        self.utxo_dict[out_point.serialize().hex()] = tx_out
-        self.db.put(out_point.serialize(), tx_out.serialize())
-
-    def __remove_output(self, out_point):
-        self.utxo_dict.pop(out_point.serialize().hex())
-        self.db.delete(out_point.serialize())
-
     def add_block(self, block):
+
         removed = []
         added = []
-        for i, tx_out in enumerate(block.transactions[0].vout):
-            out_point = OutPoint(block.transactions[0].txid, i)
-            self.__add_output(out_point, tx_out)
-            added.append(out_point)
-        for tx in block.transactions[1:]:
-            for tx_in in tx.vin:
-                removed.append((tx_in.prevout, self.get_output(tx_in.prevout)))
-                self.__remove_output(tx_in.prevout)
-            for i, tx_out in enumerate(tx.vout):
-                out_point = OutPoint(tx.txid, i)
-                self.__add_output(out_point, tx_out)
-                added.append(out_point)
-        rev_block = RevBlock(hash=block.header.hash, to_add=removed, to_remove=added)
-        return rev_block
-
-    def apply_rev_block(self, rev_block):
-        for out_point in rev_block.to_remove:
-            self.__remove_output(out_point)
-        for out_point, tx_out in rev_block.to_add:
-            self.__add_output(out_point, tx_out)
-
-
-class ChainstateSnapshot(Chainstate):
-    def __init__(self, chainstate):
-        self.utxo_dict = chainstate.utxo_dict.copy()
-
-    def add_block(self, block):
         complete_transactions = []
+
         for i, tx_out in enumerate(block.transactions[0].vout):
             out_point = OutPoint(block.transactions[0].txid, i)
-            self.utxo_dict[out_point.serialize().hex()] = tx_out
+            self.updated_utxo_set[out_point.serialize().hex()] = tx_out
+            added.append(out_point)
+
         for tx in block.transactions[1:]:
+
             prev_outputs = []
+
             for tx_in in tx.vin:
-                prev_outputs.append(self.utxo_dict[tx_in.prevout.serialize().hex()])
-                self.utxo_dict.pop(tx_in.prevout.serialize().hex())
+
+                prevout_hex = tx_in.prevout.serialize().hex()
+
+                if prevout_hex in self.removed_utxos:
+                    raise Exception
+                if prevout_hex in self.updated_utxo_set:
+                    prevout = self.updated_utxo_set[prevout_hex]
+                    prev_outputs.append(prevout)
+                    self.updated_utxo_set.pop(prevout_hex)
+                elif prevout_hex in self.utxo_dict:
+                    prevout = self.utxo_dict[prevout_hex]
+                    prev_outputs.append(prevout)
+                    self.removed_utxos.append(prevout_hex)
+                else:
+                    raise Exception
+
+                removed.append((tx_in.prevout, prevout))
+
             for i, tx_out in enumerate(tx.vout):
                 out_point = OutPoint(tx.txid, i)
-                self.utxo_dict[out_point.serialize().hex()] = tx_out
+                self.updated_utxo_set[out_point.serialize().hex()] = tx_out
+                added.append(out_point)
+
             complete_transactions.append([prev_outputs, tx])
-        return complete_transactions
+
+        rev_block = RevBlock(hash=block.header.hash, to_add=removed, to_remove=added)
+
+        return complete_transactions, rev_block
 
     def apply_rev_block(self, rev_block):
         for out_point in rev_block.to_remove:
-            self.utxo_dict.pop(out_point.serialize().hex())
+
+            out_point_hex = out_point.serialize().hex()
+
+            if out_point_hex in self.removed_utxos:
+                raise Exception
+            if out_point_hex in self.updated_utxo_set:
+                self.updated_utxo_set.pop(out_point_hex)
+            elif out_point_hex in self.utxo_dict:
+                self.removed_utxos.append(out_point_hex)
+            else:
+                raise Exception
+
         for out_point, tx_out in rev_block.to_add:
-            self.utxo_dict[out_point.serialize().hex()] = tx_out
+            self.updated_utxo_set[out_point.serialize().hex()] = tx_out
+
+    def finalize(self):
+        for x in self.removed_utxos:
+            self.utxo_dict.pop(x)
+            self.db.delete(bytes.fromhex(x))
+        for out_point_hex, tx_out in self.updated_utxo_set.items():
+            self.utxo_dict[out_point_hex] = tx_out
+            self.db.put(bytes.fromhex(out_point_hex), tx_out.serialize())
+        self.removed_utxos = []
+        self.updated_utxo_set = {}
+
+    def rollback(self):
+        self.removed_utxos = []
+        self.updated_utxo_set = {}

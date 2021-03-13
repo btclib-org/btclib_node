@@ -1,6 +1,5 @@
 import time
 
-from btclib_node.chainstate import ChainstateSnapshot
 from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockStatus
 
@@ -26,40 +25,41 @@ def update_chain(node):
         node.status = NodeStatus.BlockSynced
         return
     to_add, to_remove = node.index.get_fork_details(first_candidate.header.hash)
-    # print(to_add, to_remove)
     for hash in to_add:
         if not node.index.get_block_info(hash).downloaded:
             return
     to_add = [node.block_db.get_block(hash) for hash in to_add]
     to_remove = [node.block_db.get_rev_block(hash) for hash in to_remove]
 
-    chainstate_snapshot = ChainstateSnapshot(node.chainstate)
-    for rev_block in to_remove:
-        chainstate_snapshot.apply_rev_block(rev_block)
-    for block in to_add:
-        try:
-            transactions = chainstate_snapshot.add_block(block)
+    b = time.time()
+    node.logger.debug(f"{b - a}")
+
+    success = True
+    generated_rev_patches = []
+    try:
+        for rev_block in to_remove:
+            node.chainstate.apply_rev_block(rev_block)
+        for block in to_add:
+            transactions, rev_patch = node.chainstate.add_block(block)
             # script_engine.validate(transactions)
-            success = True
-        except Exception:
-            node.logger.exception("Exception occurred")
-            node.logger.debug(block)
-            node.logger.debug(block.header.hash)
-            success = False
-        if success:
+            generated_rev_patches.append(rev_patch)
             update_block_status(node.index, block.header.hash, BlockStatus.valid)
+    except Exception:
+        node.logger.exception("Exception occurred")
+        success = False
+    finally:
+        if success:
+            node.chainstate.finalize()
         else:
-            update_block_status(node.index, block.header.hash, BlockStatus.invalid)
-            break
+            node.chainstate.rollback()
 
     if success:
         for rev_block in to_remove:
             node.index.remove_from_active_chain(rev_block.hash)
-            node.chainstate.apply_rev_block(rev_block)
             update_block_status(node.index, rev_block.hash, BlockStatus.valid)
-        for block in to_add:
+            node.logger.debug(f"Removed block {rev_block.hash}")
+        for rev_block, block in zip(generated_rev_patches, to_add):
             node.index.add_to_active_chain(block.header.hash)
-            rev_block = node.chainstate.add_block(block)
             node.block_db.add_rev_block(rev_block)
             update_block_status(
                 node.index, block.header.hash, BlockStatus.in_active_chain
