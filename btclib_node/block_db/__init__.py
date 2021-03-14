@@ -83,7 +83,10 @@ class FileMetadata:
 
 # TODO: use more than one file
 class BlockDB:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, logger):
+
+        self.logger = logger
+
         self.data_dir = data_dir / "blocks"
         self.data_dir.mkdir(exist_ok=True, parents=True)
         self.db = plyvel.DB(str(self.data_dir), create_if_missing=True)
@@ -98,6 +101,7 @@ class BlockDB:
         self.init_from_db()
 
     def init_from_db(self):
+        self.logger.info("Start Block database initialization")
         for key, value in self.db:
             if key[:1] == b"f":
                 self.files[key[1:].decode()] = FileMetadata.deserialize(value)
@@ -107,9 +111,15 @@ class BlockDB:
                 self.rev_patches[key[1:].hex()] = BlockLocation.deserialize(value)
             elif key == b"i":
                 self.file_index = int.from_bytes(value, "big")
+        self.logger.info("Finished Block database initialization")
 
     def close(self):
         self.db.close()
+        if self.open_block_file:
+            self.open_block_file.close()
+        if self.open_rev_file:
+            self.open_rev_file.close()
+        self.logger.info("Closing Block Database")
 
     def __find_block_file(self):
         new_file = False

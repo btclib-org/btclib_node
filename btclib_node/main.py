@@ -1,5 +1,3 @@
-import time
-
 from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockStatus
 
@@ -28,11 +26,14 @@ def update_chain(node):
     for hash in to_add:
         if not node.index.get_block_info(hash).downloaded:
             return
+
+    node.logger.debug("Start getting blocks")
+
     to_add = [node.block_db.get_block(hash) for hash in to_add]
     to_remove = [node.block_db.get_rev_block(hash) for hash in to_remove]
 
-    b = time.time()
-    node.logger.debug(f"{b - a}")
+    node.logger.debug("Got all blocks")
+    node.logger.debug("Start chainstate test")
 
     success = True
     generated_rev_patches = []
@@ -49,9 +50,15 @@ def update_chain(node):
         success = False
     finally:
         if success:
+            node.logger.debug("Start chainstate finalize")
             node.chainstate.finalize()
+            node.logger.debug("End chainstate finalize")
         else:
+            node.logger.debug("Start chainstate rollback")
             node.chainstate.rollback()
+            node.logger.debug("End chainstate rollback")
+
+    node.logger.debug("Start updating index")
 
     if success:
         for rev_block in to_remove:
@@ -64,12 +71,11 @@ def update_chain(node):
             update_block_status(
                 node.index, block.header.hash, BlockStatus.in_active_chain
             )
-
-        a = time.time()
-        node.logger.debug(f"Time taken to add block: {time.time() - a}")
-
+            node.logger.debug(f"Added block {block.header.hash}")
     else:
         update_header_index(node.index)
+
+    node.logger.debug("Finished main\n")
 
     if not node.index.get_first_candidate():
         node.status = NodeStatus.BlockSynced

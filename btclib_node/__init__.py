@@ -24,13 +24,12 @@ class Node(threading.Thread):
         self.data_dir = config.data_dir
         self.data_dir.mkdir(exist_ok=True, parents=True)
 
-        self.lock = threading.Lock()
         self.terminate_flag = threading.Event()
-        self.logger = Logger(self.data_dir / "debug.log", config.debug)
+        self.logger = Logger(self.data_dir / "history.log", config.debug)
 
-        self.index = BlockIndex(self.data_dir, self.chain)
-        self.chainstate = Chainstate(self.data_dir)
-        self.block_db = BlockDB(self.data_dir)
+        self.index = BlockIndex(self.data_dir, self.chain, self.logger)
+        self.chainstate = Chainstate(self.data_dir, self.logger)
+        self.block_db = BlockDB(self.data_dir, self.logger)
         self.mempool = Mempool()
 
         self.status = NodeStatus.Starting
@@ -50,6 +49,9 @@ class Node(threading.Thread):
         self.rpc_manager = RpcManager(self, self.rpc_port)
 
     def run(self):
+
+        self.logger.info("Starting main loop")
+
         if self.p2p_port:
             self.p2p_manager.start()
         if self.rpc_port:
@@ -69,6 +71,7 @@ class Node(threading.Thread):
                 update_chain(self)
             except Exception:
                 self.logger.exception("Exception occurred")
+                break
         self.p2p_manager.stop()
         self.rpc_manager.stop()
 
@@ -76,6 +79,7 @@ class Node(threading.Thread):
         self.chainstate.close()
         self.block_db.close()
 
+        self.logger.info("Stopping node")
         self.logger.close()
 
     def stop(self):

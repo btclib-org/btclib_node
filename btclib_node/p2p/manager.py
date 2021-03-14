@@ -30,6 +30,7 @@ class P2pManager(threading.Thread):
     def __init__(self, node, port):
         super().__init__()
         self.node = node
+        self.logger = node.logger
         self.chain = node.chain
         self.connections = {}
         self.messages = deque()
@@ -99,7 +100,7 @@ class P2pManager(threading.Thread):
                 try:
                     await self.async_connect(addresses[0])
                 except Exception:
-                    self.node.logger.exception("Exception occurred")
+                    self.logger.exception("Exception occurred")
 
     async def server(self, loop):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -113,6 +114,7 @@ class P2pManager(threading.Thread):
                 self.create_connection(client, addr)
 
     def run(self):
+        self.logger.info("Starting P2P manager")
         loop = self.loop
         asyncio.set_event_loop(loop)
         asyncio.run_coroutine_threadsafe(self.server(loop), loop)
@@ -131,6 +133,7 @@ class P2pManager(threading.Thread):
             with suppress(asyncio.CancelledError):
                 self.loop.run_until_complete(task)
         self.loop.close()
+        self.logger.info("Stopping P2P Manager")
 
     def send(self, msg, id):
         if id in self.connections:

@@ -2,11 +2,15 @@ import logging
 
 
 class Logger(logging.Logger):
-    def __init__(self, filepath, debug=False, **kwargs):
+    def __init__(self, filepath=None, debug=False, **kwargs):
         super().__init__(name="Logger", level=logging.DEBUG, **kwargs)
-        self.addHandler(logging.FileHandler(filepath))
         if debug:
-            self.addHandler(logging.StreamHandler())
+            handler = logging.StreamHandler()
+        else:
+            handler = logging.FileHandler(filepath)
+        formatter = logging.Formatter("%(asctime)s - %(message)s")
+        handler.setFormatter(formatter)
+        self.addHandler(handler)
 
     def close(self):
         for handler in self.handlers:

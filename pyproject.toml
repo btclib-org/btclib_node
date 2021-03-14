@@ -37,6 +37,7 @@ omit = ["*/site-packages/*"]
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+precision = 2
 
 [tool.isort]
 profile = "hug"

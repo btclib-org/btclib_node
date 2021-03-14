@@ -11,6 +11,7 @@ class RpcManager(threading.Thread):
     def __init__(self, node, port):
         super().__init__()
         self.node = node
+        self.logger = node.logger
         self.chain = node.chain
         self.connections = {}
         self.messages = deque()
@@ -44,6 +45,7 @@ class RpcManager(threading.Thread):
                 conn.task = task
 
     def run(self):
+        self.logger.info("Starting RPC manager")
         loop = self.loop
         asyncio.set_event_loop(loop)
         asyncio.run_coroutine_threadsafe(self.server(loop), loop)
@@ -61,3 +63,4 @@ class RpcManager(threading.Thread):
             with suppress(asyncio.CancelledError):
                 self.loop.run_until_complete(task)
         self.loop.close()
+        self.logger.info("Stopping RPC manager")

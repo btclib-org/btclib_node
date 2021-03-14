@@ -48,7 +48,10 @@ class BlockInfo:
 
 # TODO: currently if does not support blockchain reorganizations
 class BlockIndex:
-    def __init__(self, data_dir, chain):
+    def __init__(self, data_dir, chain, logger):
+
+        self.logger = logger
+
         data_dir = data_dir / "index"
         data_dir.mkdir(exist_ok=True, parents=True)
         self.db = plyvel.DB(str(data_dir), create_if_missing=True)
@@ -72,6 +75,7 @@ class BlockIndex:
         self.init_from_db()
 
     def init_from_db(self):
+        self.logger.info("Start Index initialization")
         for key, value in self.db:
             prefix, key = key[:1], key[1:]
             if prefix == b"b":
@@ -80,8 +84,10 @@ class BlockIndex:
         self.generate_active_chain()
         self.generate_block_candidates()
         self.generate_header_index()
+        self.logger.info("Finished Index initialization")
 
     def close(self):
+        self.logger.info("Closing Index db")
         self.db.close()
 
     def calculate_chainwork(self):

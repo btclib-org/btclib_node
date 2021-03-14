@@ -23,7 +23,7 @@ def handle_p2p(node):
     msg_type, msg, conn_id = node.p2p_manager.messages.popleft()
     if conn_id in node.p2p_manager.connections:
         conn = node.p2p_manager.connections[conn_id]
-        node.logger.info(f"Received message: {msg_type}, {conn_id}")
+        node.logger.info(f"Received p2p message: {msg_type}, {conn_id}")
         try:
             if msg_type in callbacks:
                 if conn.status == P2pConnStatus.Connected:
@@ -32,6 +32,7 @@ def handle_p2p(node):
                     pass
                 else:
                     conn.stop()
+                node.logger.debug("Finished p2p\n")
         except Exception:
             conn.stop()
             node.logger.exception("Exception occurred")

@@ -6,7 +6,7 @@ from btclib_node.block_db import RevBlock
 
 
 class Chainstate:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, logger):
         data_dir = data_dir / "chainstate"
         data_dir.mkdir(exist_ok=True, parents=True)
 
@@ -15,15 +15,20 @@ class Chainstate:
         self.removed_utxos = []
         self.updated_utxo_set = {}
 
+        self.logger = logger
+
         self.init_from_db()
 
     def init_from_db(self):
+        self.logger.info("Start Chainstate initialization")
         for key, value in self.db:
             key = key.hex()
             value = TxOut.deserialize(value)
             self.utxo_dict[key] = value
+        self.logger.info("Finished Chainstate initialization")
 
     def close(self):
+        self.logger.info("Closing Chainstate db")
         self.db.close()
 
     def get_output(self, out_point):
@@ -38,10 +43,14 @@ class Chainstate:
         added = []
         complete_transactions = []
 
+        self.logger.debug(1)
+
         for i, tx_out in enumerate(block.transactions[0].vout):
             out_point = OutPoint(block.transactions[0].txid, i)
             self.updated_utxo_set[out_point.serialize().hex()] = tx_out
             added.append(out_point)
+
+        self.logger.debug(2)
 
         for tx in block.transactions[1:]:
 
@@ -74,6 +83,8 @@ class Chainstate:
             complete_transactions.append([prev_outputs, tx])
 
         rev_block = RevBlock(hash=block.header.hash, to_add=removed, to_remove=added)
+
+        self.logger.debug(3)
 
         return complete_transactions, rev_block
 

@@ -45,6 +45,9 @@ def verack(node, msg, conn):
     conn.send(Getaddr())
     block_locators = node.index.get_block_locator_hashes()
     conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
+    node.logger.info(
+        f"Connected to {conn.client.getpeername()[0]}:{conn.client.getpeername()[1]}"
+    )
 
 
 def ping(node, msg, conn):

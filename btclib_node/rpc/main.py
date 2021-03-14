@@ -41,6 +41,8 @@ def handle_rpc(node):
     if not conn:
         return
 
+    node.logger.debug(f"Received rpc message: {conn_id}")
+
     response = []
     for request in data:
         if not is_valid_rpc(request):
@@ -65,4 +67,5 @@ def handle_rpc(node):
                 response.append(error_msg(-32603))
 
     conn.send(response)
+    node.logger.debug("Finished rpc\n")
     # node.rpc_manager.connections.pop(conn_id)
