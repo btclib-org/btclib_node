@@ -58,11 +58,11 @@ class Node(threading.Thread):
             self.rpc_manager.start()
         self.status = NodeStatus.SyncingHeaders
         while not self.terminate_flag.is_set():
-            if self.p2p_manager and len(self.p2p_manager.handshake_messages):
+            if len(self.p2p_manager.handshake_messages):
                 handle_p2p_handshake(self)
-            elif self.rpc_manager and len(self.rpc_manager.messages):
+            elif len(self.rpc_manager.messages):
                 handle_rpc(self)
-            elif self.p2p_manager and len(self.p2p_manager.messages):
+            elif len(self.p2p_manager.messages):
                 handle_p2p(self)
             else:
                 time.sleep(0.0001)

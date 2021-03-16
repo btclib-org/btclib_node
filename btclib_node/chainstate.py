@@ -12,7 +12,7 @@ class Chainstate:
 
         self.db = plyvel.DB(str(data_dir), create_if_missing=True)
         self.utxo_dict = {}
-        self.removed_utxos = []
+        self.removed_utxos = set()
         self.updated_utxo_set = {}
 
         self.logger = logger
@@ -43,16 +43,14 @@ class Chainstate:
         added = []
         complete_transactions = []
 
-        self.logger.debug(1)
-
         for i, tx_out in enumerate(block.transactions[0].vout):
             out_point = OutPoint(block.transactions[0].txid, i)
             self.updated_utxo_set[out_point.serialize().hex()] = tx_out
             added.append(out_point)
 
-        self.logger.debug(2)
-
         for tx in block.transactions[1:]:
+
+            tx_id = tx.txid
 
             prev_outputs = []
 
@@ -69,22 +67,20 @@ class Chainstate:
                 elif prevout_hex in self.utxo_dict:
                     prevout = self.utxo_dict[prevout_hex]
                     prev_outputs.append(prevout)
-                    self.removed_utxos.append(prevout_hex)
+                    self.removed_utxos.add(prevout_hex)
                 else:
                     raise Exception
 
                 removed.append((tx_in.prevout, prevout))
 
             for i, tx_out in enumerate(tx.vout):
-                out_point = OutPoint(tx.txid, i)
+                out_point = OutPoint(tx_id, i)
                 self.updated_utxo_set[out_point.serialize().hex()] = tx_out
                 added.append(out_point)
 
             complete_transactions.append([prev_outputs, tx])
 
         rev_block = RevBlock(hash=block.header.hash, to_add=removed, to_remove=added)
-
-        self.logger.debug(3)
 
         return complete_transactions, rev_block
 
@@ -98,7 +94,7 @@ class Chainstate:
             if out_point_hex in self.updated_utxo_set:
                 self.updated_utxo_set.pop(out_point_hex)
             elif out_point_hex in self.utxo_dict:
-                self.removed_utxos.append(out_point_hex)
+                self.removed_utxos.add(out_point_hex)
             else:
                 raise Exception
 
@@ -109,12 +105,13 @@ class Chainstate:
         for x in self.removed_utxos:
             self.utxo_dict.pop(x)
             self.db.delete(bytes.fromhex(x))
-        for out_point_hex, tx_out in self.updated_utxo_set.items():
-            self.utxo_dict[out_point_hex] = tx_out
-            self.db.put(bytes.fromhex(out_point_hex), tx_out.serialize())
-        self.removed_utxos = []
+        with self.db.write_batch() as wb:
+            for out_point_hex, tx_out in self.updated_utxo_set.items():
+                self.utxo_dict[out_point_hex] = tx_out
+                wb.put(bytes.fromhex(out_point_hex), tx_out.serialize())
+        self.removed_utxos = set()
         self.updated_utxo_set = {}
 
     def rollback(self):
-        self.removed_utxos = []
+        self.removed_utxos = set()
         self.updated_utxo_set = {}

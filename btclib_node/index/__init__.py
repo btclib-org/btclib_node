@@ -129,19 +129,22 @@ class BlockIndex:
     # TODO: improve speed
     def generate_header_index(self):
         self.header_index = self.active_chain[:]
+        header_index_set = set(self.header_index)
         sorted_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
         for block_hash in sorted_dict:
-            if block_hash in self.header_index:
+            if block_hash in header_index_set:
                 continue
             block_info = self.get_block_info(block_hash)
             header = block_info.header
             best_header = self.header_index[-1]
             if header.previousblockhash == self.header_index[-1]:
                 self.header_index.append(block_hash)
+                header_index_set.add(block_hash)
             elif block_info.chainwork > self.get_block_info(best_header).chainwork:
                 add, remove = self.get_fork_details(header.hash, self.header_index)
                 self.header_index = self.header_index[: -len(remove)]
                 self.header_index.extend(add)
+                header_index_set = set(self.header_index)
 
     # TODO: should use copy to preserve immutability
     def insert_block_info(self, block_info):
@@ -163,8 +166,8 @@ class BlockIndex:
         while True:
             block_info = self.get_block_info(header_hash)
             header_hash = block_info.header.previousblockhash
-            if header_hash in chain:
-                anchestor_index = chain.index(header_hash)
+            if header_hash == chain[block_info.index - 1]:
+                anchestor_index = block_info.index - 1
                 break
             else:
                 fork.append(header_hash)

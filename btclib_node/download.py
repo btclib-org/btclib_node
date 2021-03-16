@@ -18,7 +18,7 @@ def block_download(node):
             if not node.index.get_block_info(x).downloaded
         ]
 
-        connections = node.p2p_manager.connections.values()
+        connections = list(node.p2p_manager.connections.values())
         pending = []
         exit = True
         for conn in connections:
