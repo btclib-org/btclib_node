@@ -11,31 +11,14 @@ class Chainstate:
         data_dir.mkdir(exist_ok=True, parents=True)
 
         self.db = plyvel.DB(str(data_dir), create_if_missing=True)
-        self.utxo_dict = {}
         self.removed_utxos = set()
         self.updated_utxo_set = {}
 
         self.logger = logger
 
-        self.init_from_db()
-
-    def init_from_db(self):
-        self.logger.info("Start Chainstate initialization")
-        for key, value in self.db:
-            key = key.hex()
-            value = TxOut.deserialize(value)
-            self.utxo_dict[key] = value
-        self.logger.info("Finished Chainstate initialization")
-
     def close(self):
         self.logger.info("Closing Chainstate db")
         self.db.close()
-
-    def get_output(self, out_point):
-        prev_out_hash = out_point.serialize().hex()
-        if prev_out_hash in self.utxo_dict:
-            return self.utxo_dict[prev_out_hash]
-        return None
 
     def add_block(self, block):
 
@@ -45,7 +28,7 @@ class Chainstate:
 
         for i, tx_out in enumerate(block.transactions[0].vout):
             out_point = OutPoint(block.transactions[0].txid, i)
-            self.updated_utxo_set[out_point.serialize().hex()] = tx_out
+            self.updated_utxo_set[out_point.serialize()] = tx_out
             added.append(out_point)
 
         for tx in block.transactions[1:]:
@@ -56,26 +39,28 @@ class Chainstate:
 
             for tx_in in tx.vin:
 
-                prevout_hex = tx_in.prevout.serialize().hex()
+                prevout_bytes = tx_in.prevout.serialize()
 
-                if prevout_hex in self.removed_utxos:
+                if prevout_bytes in self.removed_utxos:
                     raise Exception
-                if prevout_hex in self.updated_utxo_set:
-                    prevout = self.updated_utxo_set[prevout_hex]
+                if prevout_bytes in self.updated_utxo_set:
+                    prevout = self.updated_utxo_set[prevout_bytes]
                     prev_outputs.append(prevout)
-                    self.updated_utxo_set.pop(prevout_hex)
-                elif prevout_hex in self.utxo_dict:
-                    prevout = self.utxo_dict[prevout_hex]
-                    prev_outputs.append(prevout)
-                    self.removed_utxos.add(prevout_hex)
+                    self.updated_utxo_set.pop(prevout_bytes)
                 else:
-                    raise Exception
+                    prevout = self.db.get(prevout_bytes)
+                    if prevout:
+                        prevout = TxOut.deserialize(prevout)
+                        prev_outputs.append(prevout)
+                        self.removed_utxos.add(prevout_bytes)
+                    else:
+                        raise Exception
 
                 removed.append((tx_in.prevout, prevout))
 
             for i, tx_out in enumerate(tx.vout):
                 out_point = OutPoint(tx_id, i)
-                self.updated_utxo_set[out_point.serialize().hex()] = tx_out
+                self.updated_utxo_set[out_point.serialize()] = tx_out
                 added.append(out_point)
 
             complete_transactions.append([prev_outputs, tx])
@@ -87,28 +72,27 @@ class Chainstate:
     def apply_rev_block(self, rev_block):
         for out_point in rev_block.to_remove:
 
-            out_point_hex = out_point.serialize().hex()
+            out_point_bytes = out_point.serialize()
 
-            if out_point_hex in self.removed_utxos:
+            if out_point_bytes in self.removed_utxos:
                 raise Exception
-            if out_point_hex in self.updated_utxo_set:
-                self.updated_utxo_set.pop(out_point_hex)
-            elif out_point_hex in self.utxo_dict:
-                self.removed_utxos.add(out_point_hex)
+            if out_point_bytes in self.updated_utxo_set:
+                self.updated_utxo_set.pop(out_point_bytes)
             else:
-                raise Exception
+                if self.db.get(out_point_bytes):
+                    self.removed_utxos.add(out_point_bytes)
+                else:
+                    raise Exception
 
         for out_point, tx_out in rev_block.to_add:
-            self.updated_utxo_set[out_point.serialize().hex()] = tx_out
+            self.updated_utxo_set[out_point.serialize()] = tx_out
 
     def finalize(self):
         for x in self.removed_utxos:
-            self.utxo_dict.pop(x)
-            self.db.delete(bytes.fromhex(x))
+            self.db.delete(x)
         with self.db.write_batch() as wb:
-            for out_point_hex, tx_out in self.updated_utxo_set.items():
-                self.utxo_dict[out_point_hex] = tx_out
-                wb.put(bytes.fromhex(out_point_hex), tx_out.serialize())
+            for out_point_bytes, tx_out in self.updated_utxo_set.items():
+                wb.put(out_point_bytes, tx_out.serialize())
         self.removed_utxos = set()
         self.updated_utxo_set = {}
 

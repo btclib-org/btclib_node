@@ -14,9 +14,12 @@ def test_long_init(tmp_path):
     for block in chain:
         chainstate.add_block(block)
     chainstate.finalize()
-    chainstate.db.close()
+    chainstate_dict = dict(chainstate.db)
+    chainstate.close()
     new_chainstate = Chainstate(tmp_path, Logger(debug=True))
-    assert chainstate.utxo_dict == new_chainstate.utxo_dict
+    new_chainstate_dict = dict(new_chainstate.db)
+    new_chainstate.close()
+    assert chainstate_dict == new_chainstate_dict
 
 
 def test_rev_patch(tmp_path):
@@ -29,5 +32,4 @@ def test_rev_patch(tmp_path):
     rev_patches.reverse()
     for rev_patch in rev_patches:
         chainstate.apply_rev_block(rev_patch)
-    chainstate.finalize()
-    assert chainstate.utxo_dict == {}
+    assert chainstate.updated_utxo_set == {}
