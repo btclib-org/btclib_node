@@ -1,5 +1,6 @@
 from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockStatus
+from btclib_node.script_engine import check_transactions
 
 
 def update_block_status(index, hash, status):
@@ -42,7 +43,7 @@ def update_chain(node):
             node.chainstate.apply_rev_block(rev_block)
         for block in to_add:
             transactions, rev_patch = node.chainstate.add_block(block)
-            # script_engine.validate(transactions)
+            check_transactions(transactions)
             generated_rev_patches.append(rev_patch)
             update_block_status(node.index, block.header.hash, BlockStatus.valid)
     except Exception:
@@ -62,16 +63,27 @@ def update_chain(node):
 
     if success:
         for rev_block in to_remove:
+
             node.index.remove_from_active_chain(rev_block.hash)
             update_block_status(node.index, rev_block.hash, BlockStatus.valid)
             node.logger.debug(f"Removed block {rev_block.hash}")
+
+            block = node.block_db.get_block(rev_block.hash)
+            for tx in block.transactions[1:]:
+                node.mempool.add_tx(tx)
+
         for rev_block, block in zip(generated_rev_patches, to_add):
-            node.index.add_to_active_chain(block.header.hash)
-            node.block_db.add_rev_block(rev_block)
-            update_block_status(
-                node.index, block.header.hash, BlockStatus.in_active_chain
-            )
+
+            block_hash = block.header.hash
+            node.index.add_to_active_chain(block_hash)
+            update_block_status(node.index, block_hash, BlockStatus.in_active_chain)
             node.logger.debug(f"Added block {block.header.hash}")
+
+            node.block_db.add_rev_block(rev_block)
+
+            for tx in block.transactions:
+                node.mempool.remove_tx(tx.txid)
+
     else:
         update_header_index(node.index)
 

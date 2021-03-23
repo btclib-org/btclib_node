@@ -25,10 +25,10 @@ def version(node, msg, conn):
     if version_msg.version < ProtocolVersion:
         conn.stop()
         return
-    if not version_msg.services & 1:  # for now we only connect to full nodes
+    if not version_msg.services & 8:  # we only connect to witness nodes
         conn.stop()
         return
-    if not version_msg.services & 8:  # we only connect to witness nodes
+    if not version_msg.services & 1 and node.status >= NodeStatus.BlockSynced:
         conn.stop()
         return
 
@@ -64,6 +64,11 @@ def pong(node, msg, conn):
         conn.latency = time.time() - conn.ping_sent
         conn.ping_sent = 0
         conn.ping_nonce = 0
+
+
+# TODO: send our node location
+def getaddr(node, msg, conn):
+    pass
 
 
 def addr(node, msg, conn):
@@ -106,7 +111,7 @@ def inv(node, msg, conn):
     blocks = [x[1] for x in inv.inventory if x[0] == 2 or x[0] == 0x40000002]
     if blocks:
         block_locators = node.index.get_block_locator_hashes()
-        conn.send(Getheaders(7015, block_locators, blocks[-1]))
+        conn.send(Getheaders(ProtocolVersion, block_locators, blocks[-1]))
 
     missing_tx = node.mempool.get_missing(transactions)
     if missing_tx:
@@ -174,4 +179,5 @@ callbacks = {
     "headers": headers,
     "notfound": not_found,
     "addr": addr,
+    "getaddr": getaddr,
 }

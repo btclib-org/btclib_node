@@ -1,3 +1,4 @@
+import shutil
 import time
 
 import pytest
@@ -17,33 +18,42 @@ def test_download(tmp_path):
     chain = generate_random_chain(length, RegTest().genesis.hash)
     headers = [block.header for block in chain]
 
-    download_nodes = []
-    for x in range(10):
-        download_nodes.append(
-            Node(
-                config=Config(
-                    chain="regtest",
-                    data_dir=tmp_path / f"node{x}",
-                    p2p_port=get_random_port(),
-                    allow_rpc=False,
-                )
+    bootstrap_node = Node(
+        config=Config(
+            chain="regtest",
+            data_dir=tmp_path / "node0",
+            p2p_port=get_random_port(),
+            allow_rpc=False,
+        )
+    )
+    bootstrap_node.status = NodeStatus.HeaderSynced
+    for x in range(0, length, 2000):
+        bootstrap_node.index.add_headers(headers[x : x + 2000])
+    for x in bootstrap_node.index.header_dict:
+        block_info = bootstrap_node.index.get_block_info(x)
+        block_info.downloaded = True
+        bootstrap_node.index.insert_block_info(block_info)
+    for block in chain:
+        bootstrap_node.block_db.add_block(block)
+    for x in range(len(chain)):
+        update_chain(bootstrap_node)
+    assert bootstrap_node.status == NodeStatus.BlockSynced
+    bootstrap_node.start()
+
+    download_nodes = [bootstrap_node]
+    for x in range(1, 10):
+        shutil.copytree(tmp_path / "node0", tmp_path / f"node{x}")
+        node = Node(
+            config=Config(
+                chain="regtest",
+                data_dir=tmp_path / f"node{x}",
+                p2p_port=get_random_port(),
+                allow_rpc=False,
             )
         )
-
-    for node in download_nodes:
-        node.status = NodeStatus.HeaderSynced
-        for x in range(0, length, 2000):
-            node.index.add_headers(headers[x : x + 2000])
-        for x in node.index.header_dict:
-            block_info = node.index.get_block_info(x)
-            block_info.downloaded = True
-            node.index.insert_block_info(block_info)
-        for block in chain:
-            node.block_db.add_block(block)
-        for x in range(len(chain)):
-            update_chain(node)
-        assert node.status == NodeStatus.BlockSynced
         node.start()
+        time.sleep(0.1)
+        download_nodes.append(node)
 
     main_node = Node(
         config=Config(
@@ -51,7 +61,6 @@ def test_download(tmp_path):
             data_dir=tmp_path / "main",
             p2p_port=get_random_port(),
             allow_rpc=False,
-            # debug=True,
         )
     )
     main_node.start()

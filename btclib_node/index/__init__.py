@@ -46,7 +46,6 @@ class BlockInfo:
         return out
 
 
-# TODO: currently if does not support blockchain reorganizations
 class BlockIndex:
     def __init__(self, data_dir, chain, logger):
 
@@ -57,20 +56,18 @@ class BlockIndex:
         self.db = plyvel.DB(str(data_dir), create_if_missing=True)
 
         genesis = chain.genesis
-        genesis_info = BlockInfo(
-            genesis, 0, BlockStatus.in_active_chain, True, calculate_work(genesis)
-        )
+        genesis_info = BlockInfo(genesis, 0, BlockStatus.in_active_chain, True)
 
         self.header_dict = {genesis.hash: genesis_info}
 
         # the actual block chain; it contains only valid blocks
-        self.active_chain = [genesis.hash]
+        self.active_chain = []
 
         # blocks that are waiting to be connected to the active chain
         self.block_candidates = []
 
         # list all header hashes, even if not already checked, needed for the block locators
-        self.header_index = [genesis.hash]
+        self.header_index = []
 
         self.init_from_db()
 
@@ -94,14 +91,13 @@ class BlockIndex:
         sorted_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
         for block_hash in sorted_dict:
             block_info = self.get_block_info(block_hash)
-            if block_hash == self.active_chain[0]:  # genesis
-                pass
+            if block_info.index == 0:  # genesis
+                old_work = 0
             else:
-                previous_block_hash = block_info.header.previousblockhash
-                previous_block = self.get_block_info(previous_block_hash)
-                new_work = previous_block.chainwork + calculate_work(block_info.header)
-                block_info.chainwork = new_work
-                self.insert_block_info(block_info)
+                previousblockhash = block_info.header.previousblockhash
+                old_work = self.get_block_info(previousblockhash).chainwork
+            block_info.chainwork = old_work + calculate_work(block_info.header)
+            self.insert_block_info(block_info)
 
     def generate_active_chain(self):
         chain_dict = {}
@@ -110,7 +106,6 @@ class BlockIndex:
                 chain_dict[block_info.index] = block_hash
         for index in sorted(chain_dict.keys()):
             self.active_chain.append(chain_dict[index])
-        del self.active_chain[0]  # TODO: ugly, done to prevent doubles in active chain
 
     def generate_block_candidates(self):
         active_chain_set = set(self.active_chain)
@@ -126,7 +121,6 @@ class BlockIndex:
             if block_info.chainwork > current_work:
                 self.block_candidates.append([header.hash, block_info.chainwork])
 
-    # TODO: improve speed
     def generate_header_index(self):
         self.header_index = self.active_chain[:]
         header_index_set = set(self.header_index)
@@ -190,8 +184,9 @@ class BlockIndex:
             for hash, work in self.block_candidates:
                 block_info = self.get_block_info(hash)
                 if block_info.chainwork > chainwork:
-                    self.block_candidates = self.block_candidates[i:]
                     return block_info
+                else:
+                    self.block_candidates = self.block_candidates[i:]
                 i += 1
         return None
 
@@ -199,6 +194,9 @@ class BlockIndex:
         added = False  # flag that signals if there is a new header in this message
         current_work = self.get_block_info(self.active_chain[-1]).chainwork
         for header in headers:
+
+            # TODO: validate timestamp and difficulty
+
             if header.hash in self.header_dict:
                 continue
             if header.previousblockhash not in self.header_dict:
@@ -238,7 +236,7 @@ class BlockIndex:
             if i >= len(self.block_candidates):
                 break
             candidate = self.block_candidates[i][0]
-            if self.get_block_info(candidate).chainwork < chainwork:
+            if self.get_block_info(candidate).chainwork <= chainwork:
                 continue
             if candidate not in candidates:
                 new_candidates = [candidate]

@@ -1,3 +1,6 @@
+from btclib_node.constants import P2pConnStatus
+
+
 def get_best_block_hash(node, conn, _):
     return node.index.header_index[-1]
 
@@ -28,20 +31,21 @@ def get_block_header(node, conn, params):
 def get_peer_info(node, conn, _):
     out = []
     for id, p2p_conn in node.p2p_manager.connections.items():
-        try:
+        if p2p_conn.status == P2pConnStatus.Connected:
+
+            addr = p2p_conn.client.getpeername()
+            addrbind = p2p_conn.client.getsockname()
+            addrlocal_ip = p2p_conn.version_message.addr_from.ip.ipv4_mapped
+            if not addrlocal_ip:
+                addrlocal_ip = addrbind[0]
+
             conn_dict = {}
             conn_dict["id"] = id
-            addr = (
-                f"{p2p_conn.client.getpeername()[0]}:{p2p_conn.client.getpeername()[1]}"
-            )
-            conn_dict["addr"] = addr
-            addrbind = (
-                f"{p2p_conn.client.getsockname()[0]}:{p2p_conn.client.getsockname()[1]}"
-            )
-            conn_dict["addrbind"] = addrbind
+            conn_dict["addr"] = f"{addr[0]}:{addr[1]}"
+            conn_dict["addrbind"] = f"{addrbind[0]}:{addrbind[1]}"
+            conn_dict["addrlocal"] = f"{addrlocal_ip}:{addrbind[1]}"
             out.append(conn_dict)
-        except OSError:
-            pass
+
     return out
 
 

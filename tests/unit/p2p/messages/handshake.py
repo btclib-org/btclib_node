@@ -11,34 +11,34 @@ def test_verack():
 
 
 def test_version():
-    services = 1032 + 1 * 0  # TODO: for now we don't have blocks, only headers
+    services = 1032 + 1
     msg = Version(
         version=ProtocolVersion,
         services=services,
         timestamp=1,
-        addr_recv=NetworkAddress(0, to_ipv6("0.0.0.0"), 1),  # TODO
-        addr_from=NetworkAddress(services, to_ipv6("0.0.0.0"), 1),  # TODO
+        addr_recv=NetworkAddress(0, to_ipv6("0.0.0.0"), 1),
+        addr_from=NetworkAddress(services, to_ipv6("0.0.0.0"), 1),
         nonce=1,
         user_agent="/Btclib/",
-        start_height=0,  # TODO
-        relay=True,  # TODO
+        start_height=0,
+        relay=True,
     )
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Version.deserialize(get_payload(msg_bytes)[1])
 
 
 def test_version_without_agent():
-    services = 1032 + 1 * 0  # TODO: for now we don't have blocks, only headers
+    services = 1032 + 1
     msg = Version(
         version=ProtocolVersion,
         services=services,
         timestamp=1,
-        addr_recv=NetworkAddress(0, to_ipv6("0.0.0.0"), 1),  # TODO
-        addr_from=NetworkAddress(services, to_ipv6("0.0.0.0"), 1),  # TODO
+        addr_recv=NetworkAddress(0, to_ipv6("0.0.0.0"), 1),
+        addr_from=NetworkAddress(services, to_ipv6("0.0.0.0"), 1),
         nonce=1,
         user_agent="",
-        start_height=0,  # TODO
-        relay=True,  # TODO
+        start_height=0,
+        relay=True,
     )
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Version.deserialize(get_payload(msg_bytes)[1])

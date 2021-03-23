@@ -63,25 +63,23 @@ class Connection:
         asyncio.run_coroutine_threadsafe(self.async_send(msg), self.loop)
 
     async def send_version(self):
-        # TODO: for now we don't have blocks but we say we have them
         services = 1024 + 8 + 1
         nonce = random.randint(0, 0xFFFFFFFFFFFF)
         self.manager.nonces.append(nonce)
         self.manager.nonces = self.manager.nonces[:10]
+
         version = Version(
             version=ProtocolVersion,
             services=services,
             timestamp=int(time.time()),
             addr_recv=NetworkAddress(
                 0, to_ipv6(self.client.getpeername()[0]), self.client.getpeername()[1]
-            ),  # TODO
-            addr_from=NetworkAddress(
-                services, to_ipv6("0.0.0.0"), self.manager.port
-            ),  # TODO
+            ),
+            addr_from=NetworkAddress(services, to_ipv6("::"), self.manager.port),
             nonce=nonce,
             user_agent="/Btclib/",
-            start_height=0,  # TODO
-            relay=True,  # TODO
+            start_height=0,
+            relay=True,
         )
         await self.async_send(version)
 

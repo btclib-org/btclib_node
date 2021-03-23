@@ -9,14 +9,13 @@ def block_download(node):
 
         if not node.download_window:
             node.download_window = node.index.get_download_candidates()
-        if not node.download_window:
-            return
-
         node.download_window = [
             x
             for x in node.download_window
             if not node.index.get_block_info(x).downloaded
         ]
+        if not node.download_window:
+            return
 
         connections = list(node.p2p_manager.connections.values())
         pending = []

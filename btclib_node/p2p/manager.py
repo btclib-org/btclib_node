@@ -123,7 +123,7 @@ class P2pManager(threading.Thread):
 
     def stop(self):
         self.loop.call_soon_threadsafe(self.loop.stop)
-        for conn in self.connections.values():
+        for conn in self.connections.copy().values():
             conn.stop()
         while self.loop.is_running():
             pass
@@ -140,5 +140,5 @@ class P2pManager(threading.Thread):
             self.connections[id].send(msg)
 
     def sendall(self, msg):
-        for conn in self.connections.values():
+        for conn in self.connections.copy().values():
             conn.send(msg)
