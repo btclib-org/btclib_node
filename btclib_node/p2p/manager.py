@@ -7,6 +7,7 @@ from collections import deque
 from contextlib import suppress
 
 from btclib_node.constants import NodeStatus, P2pConnStatus
+from btclib_node.p2p.address import NetworkAddress, to_ipv6
 from btclib_node.p2p.connection import Connection
 from btclib_node.p2p.messages.ping import Ping
 
@@ -21,9 +22,13 @@ async def get_dns_nodes(chain):
             continue
         for ip in ips:
             addresses.append(ip[4])
-    addresses = list(set(addresses))
-    random.shuffle(addresses)
-    return addresses
+    network_addresses = []
+    for address in list(set(addresses)):
+        network_addresses.append(
+            NetworkAddress(ip=to_ipv6(address[0]), port=address[1])
+        )
+    random.shuffle(network_addresses)
+    return network_addresses
 
 
 class P2pManager(threading.Thread):
@@ -54,21 +59,16 @@ class P2pManager(threading.Thread):
             self.connections[id].stop()
             self.connections.pop(id)
 
-    async def async_connect(self, address):
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.settimeout(0)
-        try:
-            client.connect(address)
-        except BlockingIOError:
-            await asyncio.sleep(1)
-            try:
-                client.getpeername()
-                self.create_connection(client, address)
-            except socket.error:
-                client.close()
+    async def async_create_connection(self, address):
+        client = await address.connect()
+        if client:
+            self.create_connection(client, address)
 
     def connect(self, address):
-        asyncio.run_coroutine_threadsafe(self.async_connect(address), self.loop)
+        address = NetworkAddress(ip=to_ipv6(address[0]), port=address[1])
+        asyncio.run_coroutine_threadsafe(
+            self.async_create_connection(address), self.loop
+        )
 
     async def manage_connections(self, loop):
         self.addresses = await get_dns_nodes(self.chain)
@@ -94,11 +94,14 @@ class P2pManager(threading.Thread):
                 continue
             already_connected = [conn.address for conn in self.connections.values()]
             self.addresses = list(set(self.addresses))
-            addresses = [x for x in self.addresses if tuple(x) not in already_connected]
+            addresses = [x for x in self.addresses if x not in already_connected]
             random.shuffle(addresses)
             if len(self.connections) < self.connection_num and addresses:
                 try:
-                    await self.async_connect(addresses[0])
+                    address = addresses[0]
+                    sock = await address.connect()
+                    if sock:
+                        self.create_connection(sock, address)
                 except Exception:
                     self.logger.exception("Exception occurred")
 
@@ -111,7 +114,8 @@ class P2pManager(threading.Thread):
         with server_socket:
             while True:
                 client, addr = await loop.sock_accept(server_socket)
-                self.create_connection(client, addr)
+                address = NetworkAddress(ip=to_ipv6(addr[0]), port=addr[1])
+                self.create_connection(client, address)
 
     def run(self):
         self.logger.info("Starting P2P manager")

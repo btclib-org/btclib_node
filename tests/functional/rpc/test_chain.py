@@ -1,12 +1,11 @@
 import json
-import time
 
 import requests
 
 from btclib_node import Node
 from btclib_node.chains import RegTest
 from btclib_node.config import Config
-from tests.helpers import generate_random_header_chain, get_random_port
+from tests.helpers import generate_random_header_chain, get_random_port, wait_until
 
 
 def test_best_block_hash(tmp_path):
@@ -19,7 +18,8 @@ def test_best_block_hash(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     chain = generate_random_header_chain(2000, RegTest().genesis.hash)
     node.index.add_headers(chain)
@@ -51,10 +51,12 @@ def test_block_hash(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     chain = generate_random_header_chain(2000, RegTest().genesis.hash)
     node.index.add_headers(chain)
+
     response = json.loads(
         requests.post(
             url=f"http://127.0.0.1:{node.rpc_port}",
@@ -84,10 +86,12 @@ def test_block_header_last(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     chain = generate_random_header_chain(2000, RegTest().genesis.hash)
     node.index.add_headers(chain)
+
     response = json.loads(
         requests.post(
             url=f"http://127.0.0.1:{node.rpc_port}",
@@ -121,10 +125,12 @@ def test_block_header_middle(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     chain = generate_random_header_chain(2000, RegTest().genesis.hash)
     node.index.add_headers(chain)
+
     response = json.loads(
         requests.post(
             url=f"http://127.0.0.1:{node.rpc_port}",

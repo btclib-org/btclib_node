@@ -1,12 +1,11 @@
 import json
-import time
 
 import requests
 
 from btclib_node import Node
 from btclib_node.config import Config
 from btclib_node.constants import P2pConnStatus
-from tests.helpers import get_random_port
+from tests.helpers import get_random_port, wait_until
 
 
 def test_get_connection_count(tmp_path):
@@ -28,15 +27,16 @@ def test_get_connection_count(tmp_path):
     )
     node1.start()
     node2.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node1.rpc_manager.is_alive())
+    wait_until(lambda: node2.rpc_manager.is_alive())
 
     node2.p2p_manager.connect(("0.0.0.0", node1.p2p_port))
-    while not len(node1.p2p_manager.connections):
-        time.sleep(0.001)
-    while node1.p2p_manager.connections[0].status != P2pConnStatus.Connected:
-        time.sleep(0.001)
-    while node2.p2p_manager.connections[0].status != P2pConnStatus.Connected:
-        time.sleep(0.001)
+    wait_until(lambda: len(node1.p2p_manager.connections))
+    connection = node1.p2p_manager.connections[0]
+    wait_until(lambda: connection.status == P2pConnStatus.Connected)
+    connection = node2.p2p_manager.connections[0]
+    wait_until(lambda: connection.status == P2pConnStatus.Connected)
 
     response = json.loads(
         requests.post(
@@ -77,15 +77,16 @@ def test_get_peer_info(tmp_path):
     )
     node1.start()
     node2.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node1.rpc_manager.is_alive())
+    wait_until(lambda: node2.rpc_manager.is_alive())
 
     node2.p2p_manager.connect(("0.0.0.0", node1.p2p_port))
-    while not len(node1.p2p_manager.connections):
-        time.sleep(0.001)
-    while node1.p2p_manager.connections[0].status != P2pConnStatus.Connected:
-        time.sleep(0.001)
-    while node2.p2p_manager.connections[0].status != P2pConnStatus.Connected:
-        time.sleep(0.001)
+    wait_until(lambda: len(node1.p2p_manager.connections))
+    connection = node1.p2p_manager.connections[0]
+    wait_until(lambda: connection.status == P2pConnStatus.Connected)
+    connection = node2.p2p_manager.connections[0]
+    wait_until(lambda: connection.status == P2pConnStatus.Connected)
 
     local_port = node1.p2p_manager.connections[0].client.getpeername()[1]
 

@@ -1,10 +1,10 @@
 import json
-import time
 
 import requests
 
 from btclib_node import Node
 from btclib_node.config import Config
+from tests.helpers import wait_until
 
 
 def test_init(tmp_path):
@@ -14,7 +14,8 @@ def test_init(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     response = json.loads(
         requests.post(
@@ -31,3 +32,5 @@ def test_init(tmp_path):
     )
 
     assert response["result"] == "Btclib node stopping"
+
+    node.stop()

@@ -1,7 +1,6 @@
-import time
-
 from btclib_node import Node
 from btclib_node.config import Config
+from tests.helpers import wait_until
 
 
 def test_init(tmp_path):
@@ -11,6 +10,7 @@ def test_init(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.p2p_manager.is_alive())
 
     node.stop()

@@ -1,5 +1,6 @@
 import random
 import socket
+import time
 
 from btclib import script
 from btclib.blocks import Block, BlockHeader, _generate_merkle_root
@@ -99,3 +100,12 @@ def get_random_port():
             return port
         except OSError:
             sock.close()
+
+
+def wait_until(func, timeout=2):
+    start = time.time()
+    while time.time() - start < timeout:
+        if func():
+            return
+        time.sleep(0.025)
+    raise Exception

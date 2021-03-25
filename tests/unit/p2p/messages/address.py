@@ -12,7 +12,7 @@ def test_empty_addr():
 
 
 def test_valid_addr():
-    msg = Addr([(1, NetworkAddress(0, IPv6Address(1), 1))])
+    msg = Addr([NetworkAddress(0, 0, IPv6Address(1), 1)])
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Addr.deserialize(get_payload(msg_bytes)[1])
 

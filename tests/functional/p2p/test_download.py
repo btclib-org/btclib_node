@@ -8,7 +8,7 @@ from btclib_node.chains import RegTest
 from btclib_node.config import Config
 from btclib_node.constants import NodeStatus
 from btclib_node.main import update_chain
-from tests.helpers import generate_random_chain, get_random_port
+from tests.helpers import generate_random_chain, get_random_port, wait_until
 
 
 @pytest.mark.run(order=1)
@@ -52,7 +52,7 @@ def test_download(tmp_path):
             )
         )
         node.start()
-        time.sleep(0.1)
+        wait_until(lambda: node.p2p_manager.is_alive())
         download_nodes.append(node)
 
     main_node = Node(
@@ -64,19 +64,14 @@ def test_download(tmp_path):
         )
     )
     main_node.start()
-    time.sleep(0.01)
+    wait_until(lambda: main_node.p2p_manager.is_alive())
+
     for node in download_nodes:
         main_node.p2p_manager.connect(("0.0.0.0", node.p2p_port))
         time.sleep(0.25)
 
-    while True:
-        time.sleep(0.001)
-        if len(main_node.index.active_chain) == length + 1:
-            break
-
-    time.sleep(1)
-
-    assert main_node.status == NodeStatus.BlockSynced
+    wait_until(lambda: len(main_node.index.active_chain) == length + 1, timeout=20)
+    wait_until(lambda: main_node.status == NodeStatus.BlockSynced, timeout=0.5)
 
     main_node.stop()
     main_node.join()

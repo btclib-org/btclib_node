@@ -1,11 +1,10 @@
 import json
-import time
 
 import requests
 
 from btclib_node import Node
 from btclib_node.config import Config
-from tests.helpers import get_random_port
+from tests.helpers import get_random_port, wait_until
 
 
 def test_no_method(tmp_path):
@@ -18,7 +17,8 @@ def test_no_method(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     response = json.loads(
         requests.post(
@@ -48,7 +48,8 @@ def test_no_id(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     response = json.loads(
         requests.post(
@@ -78,7 +79,8 @@ def test_invalid_method(tmp_path):
         )
     )
     node.start()
-    time.sleep(0.1)
+
+    wait_until(lambda: node.rpc_manager.is_alive())
 
     response = json.loads(
         requests.post(

@@ -4,7 +4,7 @@ import re
 import time
 
 from btclib_node.constants import P2pConnStatus, ProtocolVersion
-from btclib_node.p2p.address import NetworkAddress, to_ipv6
+from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
 from btclib_node.p2p.messages.handshake import Version
 
@@ -72,10 +72,8 @@ class Connection:
             version=ProtocolVersion,
             services=services,
             timestamp=int(time.time()),
-            addr_recv=NetworkAddress(
-                0, to_ipv6(self.client.getpeername()[0]), self.client.getpeername()[1]
-            ),
-            addr_from=NetworkAddress(services, to_ipv6("::"), self.manager.port),
+            addr_recv=self.address,
+            addr_from=NetworkAddress(services=services, port=self.manager.port),
             nonce=nonce,
             user_agent="/Btclib/",
             start_height=0,

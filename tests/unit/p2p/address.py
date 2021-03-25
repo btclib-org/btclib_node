@@ -14,7 +14,7 @@ def test_serialization():
             services = 2 ** y
             for z in range(1, 17):
                 port = 2 ** z - 1
-                network_address = NetworkAddress(services, ipv6, port)
+                network_address = NetworkAddress(0, services, ipv6, port)
                 assert network_address == NetworkAddress.deserialize(
                     network_address.serialize()
                 )
