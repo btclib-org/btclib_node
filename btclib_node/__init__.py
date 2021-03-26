@@ -10,6 +10,7 @@ from btclib_node.index import BlockIndex
 from btclib_node.log import Logger
 from btclib_node.main import update_chain
 from btclib_node.mempool import Mempool
+from btclib_node.p2p.address import PeerDB
 from btclib_node.p2p.main import handle_p2p, handle_p2p_handshake
 from btclib_node.p2p.manager import P2pManager
 from btclib_node.rpc.main import handle_rpc
@@ -40,7 +41,8 @@ class Node(threading.Thread):
             self.p2p_port = config.p2p_port
         else:
             self.p2p_port = None
-        self.p2p_manager = P2pManager(self, self.p2p_port)
+        peer_db = PeerDB(self.chain, self.data_dir)
+        self.p2p_manager = P2pManager(self, self.p2p_port, peer_db)
 
         if config.rpc_port:
             self.rpc_port = config.rpc_port

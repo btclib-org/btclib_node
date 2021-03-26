@@ -73,9 +73,7 @@ def getaddr(node, msg, conn):
 
 def addr(node, msg, conn):
     addresses = Addr.deserialize(msg).addresses
-    addresses = [x for x in addresses if x.ip.ipv4_mapped]
-    addresses = [(x.ip.ipv4_mapped.compressed, x.port) for x in addresses]
-    node.p2p_manager.addresses.extend(addresses)
+    node.p2p_manager.peer_db.add_addresses(addresses)
 
 
 # TODO: sends to many messages

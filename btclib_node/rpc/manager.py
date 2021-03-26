@@ -53,14 +53,13 @@ class RpcManager(threading.Thread):
 
     def stop(self):
         self.loop.call_soon_threadsafe(self.loop.stop)
-        for conn in self.connections.values():
-            conn.close()
         while self.loop.is_running():
             pass
-        pending = asyncio.all_tasks(self.loop)
-        for task in pending:
+        for task in asyncio.all_tasks(self.loop):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 self.loop.run_until_complete(task)
+        for conn in self.connections.values():
+            conn.close()
         self.loop.close()
         self.logger.info("Stopping RPC manager")

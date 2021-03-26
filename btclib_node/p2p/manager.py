@@ -1,5 +1,4 @@
 import asyncio
-import random
 import socket
 import threading
 import time
@@ -12,39 +11,21 @@ from btclib_node.p2p.connection import Connection
 from btclib_node.p2p.messages.ping import Ping
 
 
-async def get_dns_nodes(chain):
-    loop = asyncio.get_running_loop()
-    addresses = []
-    for dns_server in chain.addresses:
-        try:
-            ips = await loop.getaddrinfo(dns_server, chain.port)
-        except socket.gaierror:
-            continue
-        for ip in ips:
-            addresses.append(ip[4])
-    network_addresses = []
-    for address in list(set(addresses)):
-        network_addresses.append(
-            NetworkAddress(ip=to_ipv6(address[0]), port=address[1])
-        )
-    random.shuffle(network_addresses)
-    return network_addresses
-
-
 class P2pManager(threading.Thread):
-    def __init__(self, node, port):
+    def __init__(self, node, port, peer_db):
         super().__init__()
         self.node = node
         self.logger = node.logger
-        self.chain = node.chain
+        self.port = port
+        self.peer_db = peer_db
+
         self.connections = {}
         self.messages = deque()
         self.handshake_messages = deque()
-        self.addresses = []
         self.nonces = []
-        self.loop = asyncio.new_event_loop()
-        self.port = port
         self.last_connection_id = -1
+
+        self.loop = asyncio.new_event_loop()
 
     def create_connection(self, client, address):
         client.settimeout(0.0)
@@ -71,7 +52,7 @@ class P2pManager(threading.Thread):
         )
 
     async def manage_connections(self, loop):
-        self.addresses = await get_dns_nodes(self.chain)
+        await self.peer_db.get_dns_nodes()
         while True:
             now = time.time()
             for conn in self.connections.copy().values():
@@ -85,25 +66,21 @@ class P2pManager(threading.Thread):
                         conn.ping_nonce = ping_msg.nonce
                     elif now - conn.ping_sent > 120:
                         self.remove_connection(conn.id)
-            await asyncio.sleep(0.1)
             if self.node.status < NodeStatus.HeaderSynced:
-                self.connection_num = 1
+                connection_num = 1
             else:
-                self.connection_num = 10
-            if not self.addresses:
-                continue
-            already_connected = [conn.address for conn in self.connections.values()]
-            self.addresses = list(set(self.addresses))
-            addresses = [x for x in self.addresses if x not in already_connected]
-            random.shuffle(addresses)
-            if len(self.connections) < self.connection_num and addresses:
+                connection_num = 10
+            if len(self.connections) < connection_num and not self.peer_db.is_empty():
+                already_connected = [conn.address for conn in self.connections.values()]
                 try:
-                    address = addresses[0]
-                    sock = await address.connect()
-                    if sock:
-                        self.create_connection(sock, address)
+                    address = self.peer_db.random_address()
+                    if address not in already_connected:
+                        sock = await address.connect()
+                        if sock:
+                            self.create_connection(sock, address)
                 except Exception:
                     self.logger.exception("Exception occurred")
+            await asyncio.sleep(0.1)
 
     async def server(self, loop):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -1,4 +1,9 @@
-from btclib_node.p2p.address import NetworkAddress, to_ipv6
+import asyncio
+
+import pytest
+
+from btclib_node.chains import Main, SigNet, TestNet
+from btclib_node.p2p.address import NetworkAddress, PeerDB, to_ipv6
 
 
 def test_to_ipv6():
@@ -18,3 +23,24 @@ def test_serialization():
                 assert network_address == NetworkAddress.deserialize(
                     network_address.serialize()
                 )
+
+
+@pytest.mark.remote_data
+def test_main_boostrap_nodes():
+    peer_db = PeerDB(Main(), None)
+    asyncio.run(peer_db.get_dns_nodes())
+    assert not peer_db.is_empty()
+
+
+@pytest.mark.remote_data
+def test_testnet_boostrap_nodes():
+    peer_db = PeerDB(SigNet(), None)
+    asyncio.run(peer_db.get_dns_nodes())
+    assert not peer_db.is_empty()
+
+
+@pytest.mark.remote_data
+def test_signet_boostrap_nodes():
+    peer_db = PeerDB(TestNet(), None)
+    asyncio.run(peer_db.get_dns_nodes())
+    assert not peer_db.is_empty()
