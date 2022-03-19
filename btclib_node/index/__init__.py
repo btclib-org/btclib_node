@@ -97,7 +97,6 @@ class BlockIndex:
                 previousblockhash = block_info.header.previousblockhash
                 old_work = self.get_block_info(previousblockhash).chainwork
             block_info.chainwork = old_work + calculate_work(block_info.header)
-            self.insert_block_info(block_info)
 
     def generate_active_chain(self):
         chain_dict = {}

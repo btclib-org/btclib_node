@@ -179,7 +179,7 @@ class BlockDB:
         return data
 
     def add_block(self, block):
-        data = block.serialize()
+        data = block.serialize(assert_valid=False)
         file = self.__find_block_file()
         index, block_size = self.__add_data_to_file(file, data)
         block_location = BlockLocation(file.name[-10:], index, block_size)

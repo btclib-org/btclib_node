@@ -81,8 +81,9 @@ def update_chain(node):
 
             node.block_db.add_rev_block(rev_block)
 
-            for tx in block.transactions:
-                node.mempool.remove_tx(tx.txid)
+            if node.status == NodeStatus.BlockSynced:
+                for tx in block.transactions:
+                    node.mempool.remove_tx(tx.txid)
 
     else:
         update_header_index(node.index)

@@ -86,7 +86,6 @@ def tx(node, msg, conn):
 
 def block(node, msg, conn):
     block = BlockMsg.deserialize(msg).block
-    block.assert_valid()
 
     if block.header.hash in conn.block_download_queue:
         conn.block_download_queue.remove(block.header.hash)
@@ -135,7 +134,6 @@ def headers(node, msg, conn):
     valid_headers = []
     for header in headers:
         try:
-            header.assert_valid()
             valid_headers.append(header)
         except BTClibValueError:
             continue

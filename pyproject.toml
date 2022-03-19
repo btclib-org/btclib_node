@@ -40,5 +40,5 @@ skip_empty = true
 precision = 2
 
 [tool.isort]
-profile = "hug"
+profile = "black"
 src_paths = ["btclib_node", "tests"]
