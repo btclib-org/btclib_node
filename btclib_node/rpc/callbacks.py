@@ -10,13 +10,14 @@ def get_block_hash(node, conn, params):
 
 
 def get_block_header(node, conn, params):
-    block_info = node.index.get_block_info(params[0])
+    block_hash = bytes.fromhex(params[0])
+    block_info = node.index.get_block_info(block_hash)
     header = header = block_info.header
     out = header.to_dict()
     out["hash"] = header.hash
 
     # TODO: fix if is not in main chain
-    height = node.index.header_index.index(params[0])
+    height = node.index.header_index.index(block_hash)
     out["height"] = height
     out["confirmations"] = len(node.index.header_index) - height
     if height > 0:

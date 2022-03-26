@@ -49,6 +49,7 @@ def test_get_connection_count(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
 
@@ -101,6 +102,7 @@ def test_get_peer_info(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
     assert response["result"][0]["id"] == 0
@@ -119,6 +121,7 @@ def test_get_peer_info(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
     assert response["result"][0]["id"] == 0

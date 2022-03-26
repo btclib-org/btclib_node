@@ -1,11 +1,13 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import List
 
-from btclib import script
-from btclib.blocks import BlockHeader, _generate_merkle_root
-from btclib.tx import Tx
-from btclib.tx_in import OutPoint, TxIn
-from btclib.tx_out import TxOut
+from btclib.hashes import hash256, merkle_root
+from btclib.script import script
+from btclib.tx.blocks import BlockHeader
+from btclib.tx.tx import Tx
+from btclib.tx.tx_in import OutPoint, TxIn
+from btclib.tx.tx_out import TxOut
 
 
 def create_genesis(time, nonce, difficulty, version, reward):
@@ -23,30 +25,31 @@ def create_genesis(time, nonce, difficulty, version, reward):
         ]
     )
     tx_in = TxIn(
-        prevout=OutPoint(),
-        scriptSig=script_sig,
+        prev_out=OutPoint(),
+        script_sig=script_sig,
         sequence=0xFFFFFFFF,
-        txinwitness=[],
     )
     tx_out = TxOut(
         value=reward,
-        scriptPubKey=script_pub_key,
+        script_pub_key=script_pub_key,
     )
     tx = Tx(
         version=1,
-        locktime=0,
+        lock_time=0,
         vin=[tx_in],
         vout=[tx_out],
     )
     header = BlockHeader(
         version=version,
-        previousblockhash="00" * 32,
-        merkleroot="00" * 32,
-        time=time,
+        previous_block_hash="00" * 32,
+        merkle_root_="00" * 32,
+        time=datetime.fromtimestamp(time, timezone.utc),
         bits=difficulty.to_bytes(4, "big"),
         nonce=nonce,
+        check_validity=False,
     )
-    header.merkleroot = _generate_merkle_root([tx])
+    header.merkle_root = merkle_root([tx.serialize(False)], hash256)[::-1]
+    header.assert_valid()
     return header
 
 

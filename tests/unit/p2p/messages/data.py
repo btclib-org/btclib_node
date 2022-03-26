@@ -1,28 +1,31 @@
-from btclib import script
-from btclib.blocks import Block as BlockData
-from btclib.blocks import BlockHeader, _generate_merkle_root
-from btclib.tx import Tx as TxData
-from btclib.tx import TxIn, TxOut
-from btclib.tx_in import OutPoint
+from datetime import datetime, timezone
+
+from btclib.hashes import hash256, merkle_root
+from btclib.script import script
+from btclib.tx.blocks import Block as BlockData
+from btclib.tx.blocks import BlockHeader
+from btclib.tx.tx import Tx as TxData
+from btclib.tx.tx import TxIn, TxOut
+from btclib.tx.tx_in import OutPoint
 
 from btclib_node.p2p.messages import get_payload
 from btclib_node.p2p.messages.data import Block, Blocktxn, Headers, Inv, Tx
+from tests.helpers import brute_force_nonce
 
 
 def test_tx():
     tx_in = TxIn(
-        prevout=OutPoint(),
-        scriptSig=script.serialize(["00"]),
+        prev_out=OutPoint(),
+        script_sig=script.serialize(["00"]),
         sequence=0xFFFFFFFF,
-        txinwitness=[],
     )
     tx_out = TxOut(
         value=50 * 10 ** 8,
-        scriptPubKey=script.serialize(["00"]),
+        script_pub_key=script.serialize(["00"]),
     )
     tx = TxData(
         version=1,
-        locktime=0,
+        lock_time=0,
         vin=[tx_in],
         vout=[tx_out],
     )
@@ -35,31 +38,34 @@ def test_block():
     transactions = []
     for x in range(10):
         tx_in = TxIn(
-            prevout=OutPoint(),
-            scriptSig=script.serialize([f"{x}{x}"]),
+            prev_out=OutPoint(),
+            script_sig=script.serialize([f"{x}{x}"]),
             sequence=0xFFFFFFFF,
-            txinwitness=[],
         )
         tx_out = TxOut(
             value=50 * 10 ** 8,
-            scriptPubKey=script.serialize([f"{x}{x}"]),
+            script_pub_key=script.serialize([f"{x}{x}"]),
         )
         tx = TxData(
             version=1,
-            locktime=0,
+            lock_time=0,
             vin=[tx_in],
             vout=[tx_out],
         )
         transactions.append(tx)
     header = BlockHeader(
         version=1,
-        previousblockhash="00" * 32,
-        merkleroot="00" * 32,
-        time=1,
-        bits=b"\x23\x00\x00\x01",
+        previous_block_hash="00" * 32,
+        merkle_root_="00" * 32,
+        time=datetime.fromtimestamp(1231006506, timezone.utc),
+        bits=b"\x20\xFF\xFF\xFF",
         nonce=1,
+        check_validity=False,
     )
-    header.merkleroot = _generate_merkle_root(transactions)
+    brute_force_nonce(header)
+    header.merkle_root = merkle_root(
+        [tx.serialize(False) for tx in transactions], hash256
+    )[::-1]
     msg = Block(BlockData(header, transactions))
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Block.deserialize(get_payload(msg_bytes)[1])
@@ -74,23 +80,24 @@ def test_empty_headers():
 def test_headers():
     headers = []
     for x in range(10):
-        headers.append(
-            BlockHeader(
-                version=70015,
-                previousblockhash=f"{x}{x}" * 32,
-                merkleroot="00" * 32,
-                time=1,
-                bits=b"\x23\x00\x00\x01",
-                nonce=1,
-            )
+        header = BlockHeader(
+            version=70015,
+            previous_block_hash=f"{x}{x}" * 32,
+            merkle_root_="00" * 32,
+            time=datetime.fromtimestamp(1231006506, timezone.utc),
+            bits=b"\x20\xFF\xFF\xFF",
+            nonce=1,
+            check_validity=False,
         )
+        brute_force_nonce(header)
+        headers.append(header)
     msg = Headers(headers)
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Headers.deserialize(get_payload(msg_bytes)[1])
 
 
 def test_empty_blocktxn():
-    msg = Blocktxn("00" * 32, [])
+    msg = Blocktxn(b"\x00" * 32, [])
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Blocktxn.deserialize(get_payload(msg_bytes)[1])
 
@@ -99,23 +106,22 @@ def test_blocktxn():
     transactions = []
     for x in range(10):
         tx_in = TxIn(
-            prevout=OutPoint(),
-            scriptSig=script.serialize([f"{x}{x}"]),
+            prev_out=OutPoint(),
+            script_sig=script.serialize([f"{x}{x}"]),
             sequence=0xFFFFFFFF,
-            txinwitness=[],
         )
         tx_out = TxOut(
             value=50 * 10 ** 8,
-            scriptPubKey=script.serialize([f"{x}{x}"]),
+            script_pub_key=script.serialize([f"{x}{x}"]),
         )
         tx = TxData(
             version=1,
-            locktime=0,
+            lock_time=0,
             vin=[tx_in],
             vout=[tx_out],
         )
         transactions.append(tx)
-    msg = Blocktxn("00" * 32, transactions)
+    msg = Blocktxn(b"\x00" * 32, transactions)
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Blocktxn.deserialize(get_payload(msg_bytes)[1])
 
@@ -127,12 +133,12 @@ def test_empty_inv():
 
 
 def test_filled_inv():
-    msg = Inv([(1, "00" * 32)])
+    msg = Inv([(1, b"\x00" * 32)])
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Inv.deserialize(get_payload(msg_bytes)[1])
 
 
 def test_invalid_inv():
-    msg = Inv([(1, "00"), (1, "00")])
+    msg = Inv([(1, b"\x00"), (1, b"\x00")])
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg != Inv.deserialize(get_payload(msg_bytes)[1])

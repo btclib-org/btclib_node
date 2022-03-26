@@ -66,7 +66,7 @@ def update_chain(node):
 
             node.index.remove_from_active_chain(rev_block.hash)
             update_block_status(node.index, rev_block.hash, BlockStatus.valid)
-            node.logger.debug(f"Removed block {rev_block.hash}")
+            node.logger.debug(f"Removed block {rev_block.hash.hex()}")
 
             block = node.block_db.get_block(rev_block.hash)
             for tx in block.transactions[1:]:
@@ -77,13 +77,13 @@ def update_chain(node):
             block_hash = block.header.hash
             node.index.add_to_active_chain(block_hash)
             update_block_status(node.index, block_hash, BlockStatus.in_active_chain)
-            node.logger.debug(f"Added block {block.header.hash}")
+            node.logger.debug(f"Added block {block.header.hash.hex()}")
 
             node.block_db.add_rev_block(rev_block)
 
             if node.status == NodeStatus.BlockSynced:
                 for tx in block.transactions:
-                    node.mempool.remove_tx(tx.txid)
+                    node.mempool.remove_tx(tx.id)
 
     else:
         update_header_index(node.index)

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from btclib import varint
+from btclib import var_int
 from btclib.utils import bytesio_from_binarydata
 
 from btclib_node.p2p.address import NetworkAddress
@@ -28,7 +28,7 @@ class Version:
         addr_recv = NetworkAddress.deserialize(stream, version_msg=True)
         addr_from = NetworkAddress.deserialize(stream, version_msg=True)
         nonce = int.from_bytes(stream.read(8), "little")
-        user_agent_len = varint.decode(stream)
+        user_agent_len = var_int.parse(stream)
         user_agent = stream.read(user_agent_len).decode()
         start_height = int.from_bytes(stream.read(4), "little")
         relay = bool(int.from_bytes(stream.read(1), "little"))
@@ -52,10 +52,10 @@ class Version:
         payload += self.addr_from.serialize(version_msg=True)
         payload += self.nonce.to_bytes(8, "little")
         if self.user_agent:
-            payload += varint.encode(len(self.user_agent))
+            payload += var_int.serialize(len(self.user_agent))
             payload += self.user_agent.encode()
         else:
-            payload += varint.encode(0)
+            payload += var_int.serialize(0)
         payload += self.start_height.to_bytes(4, "little")
         payload += self.relay.to_bytes(1, "little")
         return add_headers("version", payload)

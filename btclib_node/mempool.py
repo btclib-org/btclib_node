@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-from btclib.tx import Tx
+from btclib.tx.tx import Tx
 
 
 @dataclass
 class Mempool:
-    transactions: Dict[str, Tx] = field(default_factory=lambda: {})
+    transactions: Dict[bytes, Tx] = field(default_factory=lambda: {})
     size: int = 0
 
     def is_full(self):
@@ -27,8 +27,8 @@ class Mempool:
 
     def add_tx(self, tx):
         if not self.is_full():
-            self.transactions[tx.txid] = tx
-            self.size += len(tx.serialize())
+            self.transactions[tx.id] = tx
+            self.size += len(tx.serialize(include_witness=True))
 
     def remove_tx(self, tx_id):
         if tx_id in self.transactions:

@@ -1,11 +1,14 @@
 import random
 import socket
 import time
+from datetime import datetime, timezone
 
-from btclib import script
-from btclib.blocks import Block, BlockHeader, _generate_merkle_root
-from btclib.tx import Tx, TxIn, TxOut
-from btclib.tx_in import OutPoint
+from btclib.exceptions import BTClibValueError
+from btclib.hashes import hash256, merkle_root
+from btclib.script import script
+from btclib.tx.blocks import Block, BlockHeader
+from btclib.tx.tx import Tx, TxIn, TxOut
+from btclib.tx.tx_in import OutPoint
 
 
 def generate_random_header_chain(length, start):
@@ -13,19 +16,20 @@ def generate_random_header_chain(length, start):
     chain = []
     for x in range(length):
         if chain:
-            previousblockhash = chain[-1].hash
+            previous_block_hash = chain[-1].hash
         else:
-            previousblockhash = start
-        chain.append(
-            BlockHeader(
-                version=70015,
-                previousblockhash=previousblockhash,
-                merkleroot=random.randrange(256 ** 32).to_bytes(32, "big").hex(),
-                time=1,
-                bits=b"\x23\x00\x00\x01",
-                nonce=1,
-            )
+            previous_block_hash = start
+        header = BlockHeader(
+            version=70015,
+            previous_block_hash=previous_block_hash,
+            merkle_root_=random.randrange(256 ** 32).to_bytes(32, "big"),
+            time=datetime.fromtimestamp(1231006505 + x + 1, timezone.utc),
+            bits=b"\x20\xFF\xFF\xFF",
+            nonce=1,
+            check_validity=False,
         )
+        brute_force_nonce(header)
+        chain.append(header)
     return chain
 
 
@@ -35,56 +39,58 @@ def generate_random_chain(length, start):
     for x in range(length):
         previous_block_hash = chain[-1].header.hash if chain else start
         coinbase_in = TxIn(
-            prevout=OutPoint(),
-            scriptSig=script.serialize(
-                [random.randrange(256 ** 32).to_bytes(32, "big").hex()]
+            prev_out=OutPoint(),
+            script_sig=script.serialize(
+                [random.randrange(256 ** 32).to_bytes(32, "big")]
             ),
             sequence=0xFFFFFFFF,
-            txinwitness=[],
         )
         coinbase_out = TxOut(
             value=50 * 10 ** 8,
-            scriptPubKey=script.serialize(
-                [random.randrange(256 ** 32).to_bytes(32, "big").hex()]
+            script_pub_key=script.serialize(
+                [random.randrange(256 ** 32).to_bytes(32, "big")]
             ),
         )
         coinbase = Tx(
             version=1,
-            locktime=0,
+            lock_time=0,
             vin=[coinbase_in],
             vout=[coinbase_out],
         )
         transactions = [coinbase]
         if chain:
             tx_in = TxIn(
-                prevout=OutPoint(chain[x - 1].transactions[0].txid, 0),
-                scriptSig=script.serialize(
-                    [random.randrange(256 ** 32).to_bytes(32, "big").hex()]
+                prev_out=OutPoint(chain[x - 1].transactions[0].id, 0),
+                script_sig=script.serialize(
+                    [random.randrange(256 ** 32).to_bytes(32, "big")]
                 ),
                 sequence=0xFFFFFFFF,
-                txinwitness=[],
             )
             tx_out = TxOut(
                 value=50 * 10 ** 8,
-                scriptPubKey=script.serialize(
-                    [random.randrange(256 ** 32).to_bytes(32, "big").hex()]
+                script_pub_key=script.serialize(
+                    [random.randrange(256 ** 32).to_bytes(32, "big")]
                 ),
             )
             tx = Tx(
                 version=1,
-                locktime=0,
+                lock_time=0,
                 vin=[tx_in],
                 vout=[tx_out],
             )
             transactions.append(tx)
         header = BlockHeader(
             version=70015,
-            previousblockhash=previous_block_hash,
-            merkleroot=_generate_merkle_root(transactions),
-            time=1,
-            bits=b"\x23\x00\x00\x01",
+            previous_block_hash=previous_block_hash,
+            merkle_root_=merkle_root(
+                [tx.serialize(False) for tx in transactions], hash256
+            )[::-1],
+            time=datetime.fromtimestamp(1231006505 + x + 1, timezone.utc),
+            bits=b"\x20\xFF\xFF\xFF",
             nonce=1,
+            check_validity=False,
         )
+        brute_force_nonce(header)
         block = Block(header, transactions)
         chain.append(block)
     return chain
@@ -109,3 +115,13 @@ def wait_until(func, timeout=2):
             return
         time.sleep(0.025)
     raise Exception
+
+
+def brute_force_nonce(header):
+    for _ in range(100):
+        try:
+            header.assert_valid_pow()
+            break
+        except BTClibValueError:
+            header.nonce += 1
+    header.assert_valid()

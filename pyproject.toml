@@ -8,12 +8,12 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 plyvel = "^1.3.0"
-btclib = "2020.11.23"
+btclib = "2022.2.9"
 http-parser = "^0.9.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.2"
-pytest-cov = "^2.10.1"
+pytest-cov = {extras = ["toml"], version = "^3.0.0"}
 pytest-xdist = "^2.2.0"
 pytest-remotedata = "^0.3.2"
 pydeps = "^1.9.13"

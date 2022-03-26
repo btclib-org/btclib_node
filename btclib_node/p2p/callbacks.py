@@ -44,7 +44,7 @@ def verack(node, msg, conn):
     conn.send(Sendheaders())
     conn.send(Getaddr())
     block_locators = node.index.get_block_locator_hashes()
-    conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
+    conn.send(Getheaders(ProtocolVersion, block_locators, b"\x00" * 32))
     node.logger.info(
         f"Connected to {conn.client.getpeername()[0]}:{conn.client.getpeername()[1]}"
     )
@@ -81,7 +81,7 @@ def addr(node, msg, conn):
 def tx(node, msg, conn):
     tx = TxMsg.deserialize(msg).tx
     node.mempool.add_tx(tx)
-    node.p2p_manager.sendall(Inv([(1, tx.txid)]))
+    node.p2p_manager.sendall(Inv([(1, tx.id)]))
 
 
 def block(node, msg, conn):
@@ -96,7 +96,7 @@ def block(node, msg, conn):
         block_info.downloaded = True
         node.index.insert_block_info(block_info)
         node.block_db.add_block(block)
-        node.logger.info(f"Received new block with hash:{block.header.hash}")
+        node.logger.info(f"Received new block with hash:{block.header.hash.hex()}")
 
 
 def inv(node, msg, conn):
@@ -130,6 +130,7 @@ def getdata(node, msg, conn):
 
 
 def headers(node, msg, conn):
+    node.logger.warning(1)
     headers = Headers.deserialize(msg).headers
     valid_headers = []
     for header in headers:
@@ -142,7 +143,7 @@ def headers(node, msg, conn):
     # TODO: now it doesn't support long reorganizations (> 2000 headers)
     if len(headers) == 2000 and added:  # we have to require more headers
         block_locators = node.index.get_block_locator_hashes()
-        conn.send(Getheaders(ProtocolVersion, block_locators, "00" * 32))
+        conn.send(Getheaders(ProtocolVersion, block_locators, b"\x00" * 32))
     else:
         if node.status == NodeStatus.SyncingHeaders:
             node.status = NodeStatus.HeaderSynced

@@ -7,6 +7,13 @@ except ImportError:
 import json
 
 
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, bytes):
+            return obj.hex()
+        return super().default(obj)
+
+
 class Connection:
     def __init__(self, loop, client, manager, id):
         super().__init__()
@@ -49,7 +56,7 @@ class Connection:
     async def async_send(self, response):
         if len(response) == 1:
             response = response[0]
-        output_str = json.dumps(response, separators=(",", ":"))
+        output_str = json.dumps(response, separators=(",", ":"), cls=JSONEncoder)
         response = "HTTP/1.1 200 OK\n"
         response += "Content-Type: application/json\n"
         response += f"Content-Length: {len(output_str)+1}\n"

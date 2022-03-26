@@ -30,6 +30,7 @@ def test_no_method(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
 
@@ -61,6 +62,7 @@ def test_no_id(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
 
@@ -93,6 +95,7 @@ def test_invalid_method(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
 

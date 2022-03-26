@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from btclib import varint
+from btclib import var_int
 from btclib.utils import bytesio_from_binarydata
 
 from btclib_node.p2p.messages import add_headers
@@ -9,99 +9,99 @@ from btclib_node.p2p.messages import add_headers
 
 @dataclass
 class Getdata:
-    inventory: List[Tuple[int, str]]
+    inventory: List[Tuple[int, bytes]]
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
-        inventory_length = varint.decode(stream)
+        inventory_length = var_int.parse(stream)
         inventory = []
         for x in range(inventory_length):
             item_type = int.from_bytes(stream.read(4), "little")
-            item_hash = stream.read(32)[::-1].hex()
+            item_hash = stream.read(32)[::-1]
             inventory.append((item_type, item_hash))
         return cls(inventory)
 
     def serialize(self):
-        payload = varint.encode(len(self.inventory))
+        payload = var_int.serialize(len(self.inventory))
         for item in self.inventory:
             payload += item[0].to_bytes(4, "little")
-            payload += bytes.fromhex(item[1])[::-1]
+            payload += item[1][::-1]
         return add_headers("getdata", payload)
 
 
 @dataclass
 class Getblocks:
     version: int
-    block_hashes: List[str]
-    hash_stop: str
+    block_hashes: List[bytes]
+    hash_stop: bytes
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         version = int.from_bytes(stream.read(4), "little")
         block_hashes = []
-        for x in range(varint.decode(stream)):
-            block_hash = stream.read(32)[::-1].hex()
+        for x in range(var_int.parse(stream)):
+            block_hash = stream.read(32)[::-1]
             block_hashes.append(block_hash)
-        hash_stop = stream.read(32)[::-1].hex()
+        hash_stop = stream.read(32)[::-1]
         return cls(version=version, block_hashes=block_hashes, hash_stop=hash_stop)
 
     def serialize(self):
         payload = self.version.to_bytes(4, "little")
-        payload += varint.encode(len(self.block_hashes))
+        payload += var_int.serialize(len(self.block_hashes))
         for hash in self.block_hashes:
-            payload += bytes.fromhex(hash)[::-1]
-        payload += bytes.fromhex(self.hash_stop)[::-1]
+            payload += hash[::-1]
+        payload += self.hash_stop[::-1]
         return add_headers("getblocks", payload)
 
 
 @dataclass
 class Getheaders:
     version: int
-    block_hashes: List[str]
-    hash_stop: str
+    block_hashes: List[bytes]
+    hash_stop: bytes
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         version = int.from_bytes(stream.read(4), "little")
         block_hashes = []
-        for x in range(varint.decode(stream)):
-            block_hash = stream.read(32)[::-1].hex()
+        for x in range(var_int.parse(stream)):
+            block_hash = stream.read(32)[::-1]
             block_hashes.append(block_hash)
-        hash_stop = stream.read(32)[::-1].hex()
+        hash_stop = stream.read(32)[::-1]
         return cls(version=version, block_hashes=block_hashes, hash_stop=hash_stop)
 
     def serialize(self):
         payload = self.version.to_bytes(4, "little")
-        payload += varint.encode(len(self.block_hashes))
+        payload += var_int.serialize(len(self.block_hashes))
         for hash in self.block_hashes:
-            payload += bytes.fromhex(hash)[::-1]
-        payload += bytes.fromhex(self.hash_stop)[::-1]
+            payload += hash[::-1]
+        payload += self.hash_stop[::-1]
         return add_headers("getheaders", payload)
 
 
 @dataclass
 class Getblocktxn:
-    blockhash: str
+    blockhash: bytes
     indexes: List[int]
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
-        blockhash = stream.read(32)[::-1].hex()
-        num_indexes = varint.decode(stream)
+        blockhash = stream.read(32)[::-1]
+        num_indexes = var_int.parse(stream)
         indexes = []
         for x in range(num_indexes):
-            indexes.append(varint.decode(stream))
+            indexes.append(var_int.parse(stream))
         return cls(blockhash=blockhash, indexes=indexes)
 
     def serialize(self):
-        payload = bytes.fromhex(self.blockhash)[::-1]
-        payload += varint.encode(len(self.indexes))
+        payload = self.blockhash[::-1]
+        payload += var_int.serialize(len(self.indexes))
         for id in self.indexes:
-            payload += varint.encode(id)
+            payload += var_int.serialize(id)
         return add_headers("getblocktxn", payload)
 
 

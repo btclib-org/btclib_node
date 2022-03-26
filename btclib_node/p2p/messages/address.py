@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from btclib import varint
+from btclib import var_int
 from btclib.utils import bytesio_from_binarydata
 
 from btclib_node.p2p.address import NetworkAddress
@@ -15,14 +15,14 @@ class Addr:
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
-        len_addresses = varint.decode(stream)
+        len_addresses = var_int.parse(stream)
         addresses = []
         for x in range(len_addresses):
             addresses.append(NetworkAddress.deserialize(stream))
         return cls(addresses=addresses)
 
     def serialize(self):
-        payload = varint.encode(len(self.addresses))
+        payload = var_int.serialize(len(self.addresses))
         for address in self.addresses:
             payload += address.serialize()
         return add_headers("addr", payload)

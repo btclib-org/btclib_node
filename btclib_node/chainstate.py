@@ -1,6 +1,6 @@
 import plyvel
-from btclib.tx_in import OutPoint
-from btclib.tx_out import TxOut
+from btclib.tx.tx_in import OutPoint
+from btclib.tx.tx_out import TxOut
 
 from btclib_node.block_db import RevBlock
 
@@ -27,19 +27,19 @@ class Chainstate:
         complete_transactions = []
 
         for i, tx_out in enumerate(block.transactions[0].vout):
-            out_point = OutPoint(block.transactions[0].txid, i)
+            out_point = OutPoint(block.transactions[0].id, i)
             self.updated_utxo_set[out_point.serialize()] = tx_out
             added.append(out_point)
 
         for tx in block.transactions[1:]:
 
-            tx_id = tx.txid
+            tx_id = tx.id
 
             prev_outputs = []
 
             for tx_in in tx.vin:
 
-                prevout_bytes = tx_in.prevout.serialize()
+                prevout_bytes = tx_in.prev_out.serialize()
 
                 if prevout_bytes in self.removed_utxos:
                     raise Exception
@@ -50,13 +50,13 @@ class Chainstate:
                 else:
                     prevout = self.db.get(prevout_bytes)
                     if prevout:
-                        prevout = TxOut.deserialize(prevout)
+                        prevout = TxOut.parse(prevout)
                         prev_outputs.append(prevout)
                         self.removed_utxos.add(prevout_bytes)
                     else:
                         raise Exception
 
-                removed.append((tx_in.prevout, prevout))
+                removed.append((tx_in.prev_out, prevout))
 
             for i, tx_out in enumerate(tx.vout):
                 out_point = OutPoint(tx_id, i)

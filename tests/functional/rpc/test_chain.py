@@ -34,9 +34,10 @@ def test_best_block_hash(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
-    assert response["result"] == chain[-1].hash
+    assert response["result"] == chain[-1].hash.hex()
 
     node.stop()
 
@@ -69,9 +70,10 @@ def test_block_hash(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
-    assert response["result"] == chain[-1].hash
+    assert response["result"] == chain[-1].hash.hex()
 
     node.stop()
 
@@ -100,16 +102,17 @@ def test_block_header_last(tmp_path):
                     "jsonrpc": "1.0",
                     "id": "pytest",
                     "method": "getblockheader",
-                    "params": [chain[-1].hash],
+                    "params": [chain[-1].hash.hex()],
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
 
-    assert response["result"]["hash"] == chain[-1].hash
+    assert response["result"]["hash"] == chain[-1].hash.hex()
     assert response["result"]["height"] == 2000
-    assert response["result"]["previousblockhash"] == chain[-2].hash
+    assert response["result"]["previousblockhash"] == chain[-2].hash.hex()
     assert "nextblockhash" not in response["result"]
 
     node.stop()
@@ -139,16 +142,17 @@ def test_block_header_middle(tmp_path):
                     "jsonrpc": "1.0",
                     "id": "pytest",
                     "method": "getblockheader",
-                    "params": [chain[-1001].hash],
+                    "params": [chain[-1001].hash.hex()],
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
 
-    assert response["result"]["hash"] == chain[-1001].hash
+    assert response["result"]["hash"] == chain[-1001].hash.hex()
     assert response["result"]["height"] == 1000
-    assert response["result"]["previousblockhash"] == chain[-1002].hash
-    assert response["result"]["nextblockhash"] == chain[-1000].hash
+    assert response["result"]["previousblockhash"] == chain[-1002].hash.hex()
+    assert response["result"]["nextblockhash"] == chain[-1000].hash.hex()
 
     node.stop()

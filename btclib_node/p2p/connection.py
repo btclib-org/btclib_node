@@ -3,6 +3,8 @@ import random
 import re
 import time
 
+from btclib.exceptions import BTClibValueError
+
 from btclib_node.constants import P2pConnStatus, ProtocolVersion
 from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
@@ -57,7 +59,14 @@ class Connection:
             pass
 
     async def async_send(self, msg):
-        await self._send(msg.serialize())
+
+        self.node.logger.debug(f"Sending message: {msg.__class__.__name__}")
+
+        try:
+            serialized_message = msg.serialize()
+        except Exception as e:
+            self.node.logger.warning(f"error in serializing message: {str(e)}")
+        await self._send(serialized_message)
 
     def send(self, msg):
         asyncio.run_coroutine_threadsafe(self.async_send(msg), self.loop)

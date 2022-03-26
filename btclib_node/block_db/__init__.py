@@ -2,41 +2,41 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 import plyvel
-from btclib import varint
-from btclib.blocks import Block
-from btclib.tx_in import OutPoint
-from btclib.tx_out import TxOut
+from btclib import var_int
+from btclib.tx.blocks import Block
+from btclib.tx.tx_in import OutPoint
+from btclib.tx.tx_out import TxOut
 from btclib.utils import bytesio_from_binarydata
 
 
 @dataclass
 class RevBlock:
-    hash: str
+    hash: bytes
     to_add: List[Tuple[OutPoint, TxOut]]
     to_remove: List[OutPoint]
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
-        hash = stream.read(32).hex()
+        hash = stream.read(32)
         to_add = []
-        for x in range(varint.decode(stream)):
-            out_point = OutPoint.deserialize(stream)
-            tx_out = TxOut.deserialize(stream)
+        for x in range(var_int.parse(stream)):
+            out_point = OutPoint.parse(stream)
+            tx_out = TxOut.parse(stream)
             to_add.append([out_point, tx_out])
         to_remove = []
-        for x in range(varint.decode(stream)):
-            out_point = OutPoint.deserialize(stream)
+        for x in range(var_int.parse(stream)):
+            out_point = OutPoint.parse(stream)
             to_remove.append(out_point)
         return cls(hash, to_add, to_remove)
 
     def serialize(self):
-        out = bytes.fromhex(self.hash)
-        out += varint.encode(len(self.to_add))
+        out = self.hash
+        out += var_int.serialize(len(self.to_add))
         for out_point, tx_out in self.to_add:
             out += out_point.serialize()
             out += tx_out.serialize()
-        out += varint.encode(len(self.to_remove))
+        out += var_int.serialize(len(self.to_remove))
         for out_point in self.to_remove:
             out += out_point.serialize()
         return out
@@ -52,14 +52,14 @@ class BlockLocation:
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         filename = stream.read(10).decode()
-        index = varint.decode(stream)
-        size = varint.decode(stream)
+        index = var_int.parse(stream)
+        size = var_int.parse(stream)
         return cls(filename, index, size)
 
     def serialize(self):
         out = self.filename.encode()
-        out += varint.encode(self.index)
-        out += varint.encode(self.size)
+        out += var_int.serialize(self.index)
+        out += var_int.serialize(self.size)
         return out
 
 
@@ -72,12 +72,12 @@ class FileMetadata:
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         filename = stream.read(10).decode()
-        size = varint.decode(stream)
+        size = var_int.parse(stream)
         return cls(filename, size)
 
     def serialize(self):
         out = self.filename.encode()
-        out += varint.encode(self.size)
+        out += var_int.serialize(self.size)
         return out
 
 
@@ -105,9 +105,9 @@ class BlockDB:
             if key[:1] == b"f":
                 self.files[key[1:].decode()] = FileMetadata.deserialize(value)
             elif key[:1] == b"b":
-                self.blocks[key[1:].hex()] = BlockLocation.deserialize(value)
+                self.blocks[key[1:]] = BlockLocation.deserialize(value)
             elif key[:1] == b"r":
-                self.rev_patches[key[1:].hex()] = BlockLocation.deserialize(value)
+                self.rev_patches[key[1:]] = BlockLocation.deserialize(value)
             elif key == b"i":
                 self.file_index = int.from_bytes(value, "big")
         self.logger.info("Finished Block database initialization")
@@ -179,12 +179,12 @@ class BlockDB:
         return data
 
     def add_block(self, block):
-        data = block.serialize(assert_valid=False)
+        data = block.serialize(check_validity=False)
         file = self.__find_block_file()
         index, block_size = self.__add_data_to_file(file, data)
         block_location = BlockLocation(file.name[-10:], index, block_size)
         self.blocks[block.header.hash] = block_location
-        self.db.put(b"b" + bytes.fromhex(block.header.hash), block_location.serialize())
+        self.db.put(b"b" + block.header.hash, block_location.serialize())
 
     def add_rev_block(self, rev_block):
         data = rev_block.serialize()
@@ -192,7 +192,7 @@ class BlockDB:
         index, block_size = self.__add_data_to_file(file, data)
         block_location = BlockLocation(file.name[-10:], index, block_size)
         self.rev_patches[rev_block.hash] = block_location
-        self.db.put(b"r" + bytes.fromhex(rev_block.hash), block_location.serialize())
+        self.db.put(b"r" + rev_block.hash, block_location.serialize())
 
     def get_block(self, hash):
         if hash not in self.blocks:
@@ -202,7 +202,7 @@ class BlockDB:
         block_data = self.__get_data_from_file(
             file, block_location.index, block_location.size
         )
-        return Block.deserialize(block_data)
+        return Block.parse(block_data)
 
     def get_rev_block(self, hash):
         if hash not in self.rev_patches:

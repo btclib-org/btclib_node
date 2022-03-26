@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from btclib import varint
-from btclib.blocks import BlockHeader
-from btclib.tx import Tx
+from btclib import var_int
+from btclib.tx.blocks import BlockHeader
+from btclib.tx.tx import Tx
 from btclib.utils import bytesio_from_binarydata
 
 from btclib_node.p2p.messages import add_headers
@@ -31,23 +31,24 @@ class Sendcmpct:
 class Cmpctblock:
     header: BlockHeader
     nonce: int
-    short_ids: List[str]
+    short_ids: List[bytes]
     prefilled_tx_list: List[Tuple[int, Tx]]
+    include_witness: bool = True
 
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
-        header = BlockHeader.deserialize(stream)
+        header = BlockHeader.parse(stream)
         nonce = int.from_bytes(stream.read(8), "little")
         short_ids = []
-        short_ids_length = varint.decode(stream)
+        short_ids_length = var_int.parse(stream)
         for x in range(short_ids_length):
-            short_ids.append(stream.read(6)[::-1].hex())
+            short_ids.append(stream.read(6)[::-1])
         prefilled_tx_list = []
-        prefilled_tx_num = varint.decode(stream)
+        prefilled_tx_num = var_int.parse(stream)
         for x in range(prefilled_tx_num):
-            tx_index = varint.decode(stream)
-            tx = Tx.deserialize(stream)
+            tx_index = var_int.parse(stream)
+            tx = Tx.parse(stream)
             prefilled_tx_list.append((tx_index, tx))
         return cls(
             header=header,
@@ -59,11 +60,11 @@ class Cmpctblock:
     def serialize(self):
         payload = self.header.serialize()
         payload += self.nonce.to_bytes(8, "little")
-        payload += varint.encode(len(self.short_ids))
+        payload += var_int.serialize(len(self.short_ids))
         for short_id in self.short_ids:
-            payload += bytes.fromhex(short_id)[::-1]
-        payload += varint.encode(len(self.prefilled_tx_list))
+            payload += short_id[::-1]
+        payload += var_int.serialize(len(self.prefilled_tx_list))
         for tx_index, tx in self.prefilled_tx_list:
-            payload += varint.encode(tx_index)
-            payload += tx.serialize()
+            payload += var_int.serialize(tx_index)
+            payload += tx.serialize(self.include_witness)
         return add_headers("cmptblock", payload)

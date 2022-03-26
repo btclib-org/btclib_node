@@ -1,13 +1,23 @@
-from btclib.blocks import BlockHeader
+from datetime import datetime, timezone
+
+from btclib.tx.blocks import BlockHeader
 
 from btclib_node.chains import Main, RegTest
 from btclib_node.index import BlockIndex, BlockInfo, BlockStatus, calculate_work
 from btclib_node.log import Logger
-from tests.helpers import generate_random_header_chain
+from tests.helpers import brute_force_nonce, generate_random_header_chain
 
 
 def test_calculate_work():
-    header = BlockHeader(1, "00" * 32, "00" * 32, 1, b"\x23\x00\x00\x01", 1)
+    header = BlockHeader(
+        1,
+        "00" * 32,
+        "00" * 32,
+        datetime.fromtimestamp(1231006506, timezone.utc),
+        b"\x20\xFF\xFF\xFF",
+        1,
+    )
+    brute_force_nonce(header)
     assert calculate_work(header) == 1
 
 
@@ -80,7 +90,16 @@ def test_generate_block_candidates_2(tmp_path):
 
 
 def test_block_info_serialization():
-    header = BlockHeader(1, "00" * 32, "00" * 32, 1, b"\x23\x00\x00\x01", 1)
+    header = BlockHeader(
+        1,
+        "00" * 32,
+        "00" * 32,
+        datetime.fromtimestamp(1231006506, timezone.utc),
+        b"\x20\xFF\xFF\xFF",
+        1,
+        check_validity=False,
+    )
+    brute_force_nonce(header)
     for status in BlockStatus:
         for downloaded in (True, False):
             for x in range(1, 64):

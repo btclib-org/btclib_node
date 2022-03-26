@@ -1,12 +1,15 @@
-from btclib import script
-from btclib.blocks import Block as BlockData
-from btclib.blocks import BlockHeader, _generate_merkle_root
-from btclib.tx import Tx as TxData
-from btclib.tx import TxIn, TxOut
-from btclib.tx_in import OutPoint
+from datetime import datetime, timezone
+
+from btclib.script import script
+from btclib.tx.blocks import Block as BlockData
+from btclib.tx.blocks import BlockHeader
+from btclib.tx.tx import Tx as TxData
+from btclib.tx.tx import TxIn, TxOut
+from btclib.tx.tx_in import OutPoint
 
 from btclib_node.p2p.messages import get_payload
 from btclib_node.p2p.messages.compact import Cmpctblock, Sendcmpct
+from tests.helpers import brute_force_nonce
 
 
 def test_sendcmpt():
@@ -22,34 +25,35 @@ def test_cmpctblock():
     transactions = []
     for x in range(10):
         tx_in = TxIn(
-            prevout=OutPoint(),
-            scriptSig=script.serialize([f"{x}{x}"]),
+            prev_out=OutPoint(),
+            script_sig=script.serialize([f"{x}{x}"]),
             sequence=0xFFFFFFFF,
-            txinwitness=[],
         )
         tx_out = TxOut(
             value=50 * 10 ** 8,
-            scriptPubKey=script.serialize([f"{x}{x}"]),
+            script_pub_key=script.serialize([f"{x}{x}"]),
         )
         tx = TxData(
             version=1,
-            locktime=0,
+            lock_time=0,
             vin=[tx_in],
             vout=[tx_out],
         )
         transactions.append(tx)
     header = BlockHeader(
         version=1,
-        previousblockhash="00" * 32,
-        merkleroot="00" * 32,
-        time=1,
-        bits=b"\x23\x00\x00\x01",
+        previous_block_hash="00" * 32,
+        merkle_root_="00" * 32,
+        time=datetime.fromtimestamp(1231006506, timezone.utc),
+        bits=b"\x20\xFF\xFF\xFF",
         nonce=1,
+        check_validity=False,
     )
+    brute_force_nonce(header)
     msg = Cmpctblock(
         header,
         1,
-        ["00" * 6 for x in range(10)],
+        [b"\x00" * 6 for x in range(10)],
         [(x, transactions[x]) for x in range(10)],
     )
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()

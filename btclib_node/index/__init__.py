@@ -2,8 +2,8 @@ import enum
 from dataclasses import dataclass
 
 import plyvel
-from btclib import varint
-from btclib.blocks import BlockHeader
+from btclib import var_int
+from btclib.tx.blocks import BlockHeader
 from btclib.utils import bytesio_from_binarydata
 
 
@@ -32,15 +32,15 @@ class BlockInfo:
     @classmethod
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
-        header = BlockHeader.deserialize(stream)
-        index = varint.decode(stream)
+        header = BlockHeader.parse(stream)
+        index = var_int.parse(stream)
         status = BlockStatus.from_bytes(stream.read(1), "little")
         downloaded = bool(int.from_bytes(stream.read(1), "little"))
         return cls(header, index, status, downloaded)
 
     def serialize(self):
         out = self.header.serialize()
-        out += varint.encode(self.index)
+        out += var_int.serialize(self.index)
         out += self.status.to_bytes(1, "little")
         out += int(self.downloaded).to_bytes(1, "little")
         return out
@@ -76,7 +76,7 @@ class BlockIndex:
         for key, value in self.db:
             prefix, key = key[:1], key[1:]
             if prefix == b"b":
-                self.header_dict[key.hex()] = BlockInfo.deserialize(value)
+                self.header_dict[key] = BlockInfo.deserialize(value)
         self.calculate_chainwork()
         self.generate_active_chain()
         self.generate_block_candidates()
@@ -94,7 +94,7 @@ class BlockIndex:
             if block_info.index == 0:  # genesis
                 old_work = 0
             else:
-                previousblockhash = block_info.header.previousblockhash
+                previousblockhash = block_info.header.previous_block_hash
                 old_work = self.get_block_info(previousblockhash).chainwork
             block_info.chainwork = old_work + calculate_work(block_info.header)
 
@@ -130,7 +130,7 @@ class BlockIndex:
             block_info = self.get_block_info(block_hash)
             header = block_info.header
             best_header = self.header_index[-1]
-            if header.previousblockhash == self.header_index[-1]:
+            if header.previous_block_hash == self.header_index[-1]:
                 self.header_index.append(block_hash)
                 header_index_set.add(block_hash)
             elif block_info.chainwork > self.get_block_info(best_header).chainwork:
@@ -143,7 +143,7 @@ class BlockIndex:
     def insert_block_info(self, block_info):
         new_block_info = block_info
         self.header_dict[block_info.header.hash] = new_block_info
-        key = b"b" + bytes.fromhex(new_block_info.header.hash)
+        key = b"b" + new_block_info.header.hash
         value = new_block_info.serialize()
         self.db.put(key, value)
 
@@ -158,7 +158,7 @@ class BlockIndex:
         fork = [header_hash]
         while True:
             block_info = self.get_block_info(header_hash)
-            header_hash = block_info.header.previousblockhash
+            header_hash = block_info.header.previous_block_hash
             if header_hash == chain[block_info.index - 1]:
                 anchestor_index = block_info.index - 1
                 break
@@ -198,10 +198,10 @@ class BlockIndex:
 
             if header.hash in self.header_dict:
                 continue
-            if header.previousblockhash not in self.header_dict:
+            if header.previous_block_hash not in self.header_dict:
                 continue
             added = True
-            previous_block_info = self.get_block_info(header.previousblockhash)
+            previous_block_info = self.get_block_info(header.previous_block_hash)
             new_work = previous_block_info.chainwork + calculate_work(header)
             block_info = BlockInfo(
                 header,
@@ -216,7 +216,7 @@ class BlockIndex:
                 self.block_candidates.append([header.hash, new_work])
 
             best_header = self.header_index[-1]
-            if header.previousblockhash == best_header:
+            if header.previous_block_hash == best_header:
                 self.header_index.append(header.hash)
             elif new_work > self.get_block_info(best_header).chainwork:
                 add, remove = self.get_fork_details(header.hash, self.header_index)
@@ -241,7 +241,7 @@ class BlockIndex:
                 new_candidates = [candidate]
                 while True:
                     block_info = self.get_block_info(candidate)
-                    candidate = block_info.header.previousblockhash
+                    candidate = block_info.header.previous_block_hash
                     if candidate in candidates or candidate in self.active_chain:
                         break
                     if not block_info.downloaded:
