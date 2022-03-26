@@ -168,7 +168,7 @@ def test_add_headers_long(tmp_path):
 
 def test_long_init(tmp_path):
     index = BlockIndex(tmp_path, RegTest(), Logger(debug=True))
-    length = 10  # 2000
+    length = 50  # 2000
     chain = generate_random_header_chain(2000 * length, RegTest().genesis.hash)
     for x in range(length):
         index.add_headers(chain[x * 2000 : (x + 1) * 2000])

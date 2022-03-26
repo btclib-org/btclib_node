@@ -30,9 +30,9 @@ class BlockInfo:
     chainwork: int = 0
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data, check_validity=True):
         stream = bytesio_from_binarydata(data)
-        header = BlockHeader.parse(stream)
+        header = BlockHeader.parse(stream, check_validity)
         index = var_int.parse(stream)
         status = BlockStatus.from_bytes(stream.read(1), "little")
         downloaded = bool(int.from_bytes(stream.read(1), "little"))
@@ -75,21 +75,29 @@ class BlockIndex:
         self.logger.info("Start Index initialization")
         for key, value in self.db:
             prefix, key = key[:1], key[1:]
-            if prefix == b"b":
-                self.header_dict[key] = BlockInfo.deserialize(value)
+            # if prefix == b"b":
+            self.header_dict[key] = BlockInfo.deserialize(value, check_validity=False)
+
+        self.sorted_header_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
+
+        self.logger.info('Start calculate_chainwork')
         self.calculate_chainwork()
+        self.logger.info('Start generate_active_chain')
         self.generate_active_chain()
+        self.logger.info('Start generate_block_candidates')
         self.generate_block_candidates()
+        self.logger.info('Start generate_header_index')
         self.generate_header_index()
         self.logger.info("Finished Index initialization")
+
+        self.sorted_header_dict = []
 
     def close(self):
         self.logger.info("Closing Index db")
         self.db.close()
 
     def calculate_chainwork(self):
-        sorted_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
-        for block_hash in sorted_dict:
+        for block_hash in self.sorted_header_dict:
             block_info = self.get_block_info(block_hash)
             if block_info.index == 0:  # genesis
                 old_work = 0
@@ -109,22 +117,20 @@ class BlockIndex:
     def generate_block_candidates(self):
         active_chain_set = set(self.active_chain)
         current_work = self.get_block_info(self.active_chain[-1]).chainwork
-        sorted_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
-        for block_hash in sorted_dict:
+        for block_hash in self.sorted_header_dict:
             if block_hash in active_chain_set:
                 continue
             block_info = self.get_block_info(block_hash)
             if block_info.status != BlockStatus.valid_header:
                 continue
-            header = block_info.header
+            # header = block_info.header
             if block_info.chainwork > current_work:
-                self.block_candidates.append([header.hash, block_info.chainwork])
+                self.block_candidates.append([block_hash, block_info.chainwork])
 
     def generate_header_index(self):
         self.header_index = self.active_chain[:]
         header_index_set = set(self.header_index)
-        sorted_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
-        for block_hash in sorted_dict:
+        for block_hash in self.sorted_header_dict:
             if block_hash in header_index_set:
                 continue
             block_info = self.get_block_info(block_hash)
@@ -134,7 +140,7 @@ class BlockIndex:
                 self.header_index.append(block_hash)
                 header_index_set.add(block_hash)
             elif block_info.chainwork > self.get_block_info(best_header).chainwork:
-                add, remove = self.get_fork_details(header.hash, self.header_index)
+                add, remove = self.get_fork_details(block_hash, self.header_index)
                 self.header_index = self.header_index[: -len(remove)]
                 self.header_index.extend(add)
                 header_index_set = set(self.header_index)
@@ -196,7 +202,9 @@ class BlockIndex:
 
             # TODO: validate timestamp and difficulty
 
-            if header.hash in self.header_dict:
+            header_hash = header.hash
+
+            if header_hash in self.header_dict:
                 continue
             if header.previous_block_hash not in self.header_dict:
                 continue
@@ -213,13 +221,13 @@ class BlockIndex:
             self.insert_block_info(block_info)
 
             if new_work > current_work:
-                self.block_candidates.append([header.hash, new_work])
+                self.block_candidates.append([header_hash, new_work])
 
             best_header = self.header_index[-1]
             if header.previous_block_hash == best_header:
-                self.header_index.append(header.hash)
+                self.header_index.append(header_hash)
             elif new_work > self.get_block_info(best_header).chainwork:
-                add, remove = self.get_fork_details(header.hash, self.header_index)
+                add, remove = self.get_fork_details(header_hash, self.header_index)
                 self.header_index = self.header_index[: -len(remove)]
                 self.header_index.extend(add)
 
