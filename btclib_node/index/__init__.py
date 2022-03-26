@@ -165,7 +165,7 @@ class BlockIndex:
         while True:
             block_info = self.get_block_info(header_hash)
             header_hash = block_info.header.previous_block_hash
-            if header_hash == chain[block_info.index - 1]:
+            if block_info.index <= len(chain) and header_hash == chain[block_info.index - 1]:
                 anchestor_index = block_info.index - 1
                 break
             else:
