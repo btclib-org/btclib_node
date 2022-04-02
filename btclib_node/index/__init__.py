@@ -5,6 +5,7 @@ import plyvel
 from btclib import var_int
 from btclib.tx.blocks import BlockHeader
 from btclib.utils import bytesio_from_binarydata
+from collections import deque
 
 
 # TODO: should be implemented in btclib
@@ -64,7 +65,7 @@ class BlockIndex:
         self.active_chain = []
 
         # blocks that are waiting to be connected to the active chain
-        self.block_candidates = []
+        self.block_candidates = deque()
 
         # list all header hashes, even if not already checked, needed for the block locators
         self.header_index = []
@@ -182,19 +183,6 @@ class BlockIndex:
             raise Exception
         self.active_chain.pop()
 
-    def get_first_candidate(self):
-        chainwork = self.get_block_info(self.active_chain[-1]).chainwork
-        i = 0
-        if self.block_candidates:
-            for hash, work in self.block_candidates:
-                block_info = self.get_block_info(hash)
-                if block_info.chainwork > chainwork:
-                    return block_info
-                else:
-                    self.block_candidates = self.block_candidates[i:]
-                i += 1
-        return None
-
     def add_headers(self, headers):
         added = False  # flag that signals if there is a new header in this message
         current_work = self.get_block_info(self.active_chain[-1]).chainwork
@@ -232,6 +220,17 @@ class BlockIndex:
                 self.header_index.extend(add)
 
         return added
+
+    def get_first_candidate(self):
+        chainwork = self.get_block_info(self.active_chain[-1]).chainwork
+        if not self.block_candidates:
+            return
+        while self.block_candidates:
+            hash, work = self.block_candidates[0]
+            if work > chainwork:
+                return self.get_block_info(hash)
+            else:
+                self.block_candidates.popleft()
 
     # return a list of blocks that have to be downloaded
     def get_download_candidates(self):

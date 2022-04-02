@@ -5,7 +5,7 @@ import time
 
 from btclib.exceptions import BTClibValueError
 
-from btclib_node.constants import P2pConnStatus, ProtocolVersion
+from btclib_node.constants import P2pConnStatus, ProtocolVersion, NodeStatus
 from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
 from btclib_node.p2p.messages.handshake import Version
@@ -86,7 +86,7 @@ class Connection:
             nonce=nonce,
             user_agent="/Btclib/",
             start_height=0,
-            relay=True,
+            relay=self.node.status == NodeStatus.BlockSynced,
         )
         await self.async_send(version)
 

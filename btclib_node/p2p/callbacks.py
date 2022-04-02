@@ -85,18 +85,24 @@ def tx(node, msg, conn):
 
 
 def block(node, msg, conn):
-    block = BlockMsg.deserialize(msg).block
 
-    if block.header.hash in conn.block_download_queue:
-        conn.block_download_queue.remove(block.header.hash)
+    block = BlockMsg.deserialize(msg, check_validity=False).block
+    block_hash = block.header.hash
 
-    block_info = node.index.get_block_info(block.header.hash)
+    if block_hash in conn.block_download_queue:
+        conn.block_download_queue.remove(block_hash)
+
+    block_info = node.index.get_block_info(block_hash)
 
     if not block_info.downloaded:
+        try:
+            block.assert_valid()
+        except Exception as e: # should set block to invalid
+            raise e
+        node.block_db.add_block(block)
+        node.logger.info(f"Received new block with hash:{block_hash.hex()}")
         block_info.downloaded = True
         node.index.insert_block_info(block_info)
-        node.block_db.add_block(block)
-        node.logger.info(f"Received new block with hash:{block.header.hash.hex()}")
 
 
 def inv(node, msg, conn):
@@ -130,7 +136,6 @@ def getdata(node, msg, conn):
 
 
 def headers(node, msg, conn):
-    node.logger.warning(1)
     headers = Headers.deserialize(msg).headers
     valid_headers = []
     for header in headers:

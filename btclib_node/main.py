@@ -1,6 +1,6 @@
 from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockStatus
-from btclib_node.script_engine import check_transactions
+from btclib_node.p2p.messages.filters import Filterclear
 
 
 def update_block_status(index, hash, status):
@@ -14,6 +14,12 @@ def update_header_index(index):
     pass
 
 
+def finish_sync(node):
+    node.status = NodeStatus.BlockSynced
+    for conn in list(node.p2p_manager.connections.values()):
+        conn.send(Filterclear())
+
+
 # TODO: support for failed updates
 def update_chain(node):
     if node.status < NodeStatus.HeaderSynced:
@@ -21,8 +27,8 @@ def update_chain(node):
 
     first_candidate = node.index.get_first_candidate()
     if not first_candidate:
-        node.status = NodeStatus.BlockSynced
-        return
+        return finish_sync(node)
+
     to_add, to_remove = node.index.get_fork_details(first_candidate.header.hash)
     for hash in to_add:
         if not node.index.get_block_info(hash).downloaded:
@@ -43,7 +49,7 @@ def update_chain(node):
             node.chainstate.apply_rev_block(rev_block)
         for block in to_add:
             transactions, rev_patch = node.chainstate.add_block(block)
-            check_transactions(transactions)
+            # check_transactions(transactions)
             generated_rev_patches.append(rev_patch)
             update_block_status(node.index, block.header.hash, BlockStatus.valid)
     except Exception:
@@ -91,4 +97,4 @@ def update_chain(node):
     node.logger.debug("Finished main\n")
 
     if not node.index.get_first_candidate():
-        node.status = NodeStatus.BlockSynced
+        return finish_sync(node)

@@ -27,8 +27,8 @@ class Chainstate:
         complete_transactions = []
 
         for i, tx_out in enumerate(block.transactions[0].vout):
-            out_point = OutPoint(block.transactions[0].id, i)
-            self.updated_utxo_set[out_point.serialize()] = tx_out
+            out_point = OutPoint(block.transactions[0].id, i, check_validity=False)
+            self.updated_utxo_set[out_point.serialize(check_validity=False)] = tx_out
             added.append(out_point)
 
         for tx in block.transactions[1:]:
@@ -39,7 +39,7 @@ class Chainstate:
 
             for tx_in in tx.vin:
 
-                prevout_bytes = tx_in.prev_out.serialize()
+                prevout_bytes = tx_in.prev_out.serialize(check_validity=False)
 
                 if prevout_bytes in self.removed_utxos:
                     raise Exception
@@ -50,7 +50,7 @@ class Chainstate:
                 else:
                     prevout = self.db.get(prevout_bytes)
                     if prevout:
-                        prevout = TxOut.parse(prevout)
+                        prevout = TxOut.parse(prevout, check_validity=False)
                         prev_outputs.append(prevout)
                         self.removed_utxos.add(prevout_bytes)
                     else:
@@ -59,8 +59,8 @@ class Chainstate:
                 removed.append((tx_in.prev_out, prevout))
 
             for i, tx_out in enumerate(tx.vout):
-                out_point = OutPoint(tx_id, i)
-                self.updated_utxo_set[out_point.serialize()] = tx_out
+                out_point = OutPoint(tx_id, i, check_validity=False)
+                self.updated_utxo_set[out_point.serialize(check_validity=False)] = tx_out
                 added.append(out_point)
 
             complete_transactions.append([prev_outputs, tx])
@@ -72,7 +72,7 @@ class Chainstate:
     def apply_rev_block(self, rev_block):
         for out_point in rev_block.to_remove:
 
-            out_point_bytes = out_point.serialize()
+            out_point_bytes = out_point.serialize(check_validity=False)
 
             if out_point_bytes in self.removed_utxos:
                 raise Exception
@@ -85,12 +85,12 @@ class Chainstate:
                     raise Exception
 
         for out_point, tx_out in rev_block.to_add:
-            self.updated_utxo_set[out_point.serialize()] = tx_out
+            self.updated_utxo_set[out_point.serialize(check_validity=False)] = tx_out
 
     def finalize(self):
-        for x in self.removed_utxos:
-            self.db.delete(x)
         with self.db.write_batch() as wb:
+            for x in self.removed_utxos:
+                wb.delete(x)
             for out_point_bytes, tx_out in self.updated_utxo_set.items():
                 wb.put(out_point_bytes, tx_out.serialize())
         self.removed_utxos = set()

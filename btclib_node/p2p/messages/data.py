@@ -31,8 +31,8 @@ class Block:
     include_witness: bool = True
 
     @classmethod
-    def deserialize(cls, data):
-        block = BlockData.parse(data)
+    def deserialize(cls, data, check_validity=True):
+        block = BlockData.parse(data, check_validity)
         return cls(block)
 
     def serialize(self):

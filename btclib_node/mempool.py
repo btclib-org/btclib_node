@@ -33,4 +33,4 @@ class Mempool:
     def remove_tx(self, tx_id):
         if tx_id in self.transactions:
             tx = self.transactions.pop(tx_id)
-            self.size -= len(tx.serialize())
+            self.size -= len(tx.serialize(include_witness=True))

@@ -16,29 +16,29 @@ class RevBlock:
     to_remove: List[OutPoint]
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data, check_validity=False):
         stream = bytesio_from_binarydata(data)
         hash = stream.read(32)
         to_add = []
         for x in range(var_int.parse(stream)):
-            out_point = OutPoint.parse(stream)
-            tx_out = TxOut.parse(stream)
+            out_point = OutPoint.parse(stream, check_validity)
+            tx_out = TxOut.parse(stream, check_validity)
             to_add.append([out_point, tx_out])
         to_remove = []
         for x in range(var_int.parse(stream)):
-            out_point = OutPoint.parse(stream)
+            out_point = OutPoint.parse(stream, check_validity)
             to_remove.append(out_point)
         return cls(hash, to_add, to_remove)
 
-    def serialize(self):
+    def serialize(self, check_validity=False):
         out = self.hash
         out += var_int.serialize(len(self.to_add))
         for out_point, tx_out in self.to_add:
-            out += out_point.serialize()
-            out += tx_out.serialize()
+            out += out_point.serialize(check_validity)
+            out += tx_out.serialize(check_validity)
         out += var_int.serialize(len(self.to_remove))
         for out_point in self.to_remove:
-            out += out_point.serialize()
+            out += out_point.serialize(check_validity)
         return out
 
 
@@ -179,20 +179,26 @@ class BlockDB:
         return data
 
     def add_block(self, block):
+        block_hash = block.header.hash
+        if block_hash in self.blocks:
+            return
         data = block.serialize(check_validity=False)
         file = self.__find_block_file()
         index, block_size = self.__add_data_to_file(file, data)
         block_location = BlockLocation(file.name[-10:], index, block_size)
-        self.blocks[block.header.hash] = block_location
-        self.db.put(b"b" + block.header.hash, block_location.serialize())
+        self.blocks[block_hash] = block_location
+        self.db.put(b"b" + block_hash, block_location.serialize())
 
     def add_rev_block(self, rev_block):
+        rev_block_hash = rev_block.hash
+        if rev_block_hash in self.rev_patches:
+            return
         data = rev_block.serialize()
         file = self.__find_rev_file()
         index, block_size = self.__add_data_to_file(file, data)
         block_location = BlockLocation(file.name[-10:], index, block_size)
-        self.rev_patches[rev_block.hash] = block_location
-        self.db.put(b"r" + rev_block.hash, block_location.serialize())
+        self.rev_patches[rev_block_hash] = block_location
+        self.db.put(b"r" + rev_block_hash, block_location.serialize())
 
     def get_block(self, hash):
         if hash not in self.blocks:
@@ -202,7 +208,7 @@ class BlockDB:
         block_data = self.__get_data_from_file(
             file, block_location.index, block_location.size
         )
-        return Block.parse(block_data)
+        return Block.parse(block_data, check_validity=False)
 
     def get_rev_block(self, hash):
         if hash not in self.rev_patches:

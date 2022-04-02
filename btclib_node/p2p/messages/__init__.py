@@ -1,5 +1,5 @@
 import struct
-from hashlib import sha256
+from btclib.hashes import hash256
 
 
 class WrongChecksumError(Exception):
@@ -10,17 +10,18 @@ class WrongChecksumError(Exception):
 def add_headers(name: str, payload: bytes):
     command = name + ((12 - len(name)) * "\00")
     payload_len = struct.pack("I", len(payload))
-    checksum = sha256(sha256(payload).digest()).digest()[:4]
+    checksum = hash256(payload)[:4]
     return command.encode() + payload_len + checksum + payload
 
 
 def verify_headers(message: bytes):
+    if len(message) < 24:
+        raise ValueError("Not enough data")
     payload_len = int.from_bytes(message[16:20], "little")
     checksum = message[20:24]
-    payload = message[24 : 24 + payload_len]
-    if len(message) < 24 or len(payload) != payload_len:
+    if len(message) < 24 + payload_len:
         raise ValueError("Not enough data")
-    if checksum != sha256(sha256(payload).digest()).digest()[:4]:
+    if checksum != hash256(message[24 : 24 + payload_len])[:4]:
         raise WrongChecksumError("Wrong checksum, the message might have been tampered")
     return True
 
