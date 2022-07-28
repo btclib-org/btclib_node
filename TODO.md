@@ -3,3 +3,4 @@
 - Improve time spent while connecting when starting to download blocks
 - support for ipv6
 - store reverse patches in the file corresponding to its block
+- when there is an old header of a stale branch the node hangs

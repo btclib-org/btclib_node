@@ -15,11 +15,17 @@ from btclib_node.p2p.main import handle_p2p, handle_p2p_handshake
 from btclib_node.p2p.manager import P2pManager
 from btclib_node.rpc.main import handle_rpc
 from btclib_node.rpc.manager import RpcManager
+from multiprocessing.pool import Pool
+import signal
 
 
 class Node(threading.Thread):
     def __init__(self, config=Config()):
         super().__init__()
+
+        def sigint_handler(signal, frame):
+            self.stop()
+        signal.signal(signal.SIGINT, sigint_handler)
 
         self.chain = config.chain
         self.data_dir = config.data_dir
@@ -32,6 +38,8 @@ class Node(threading.Thread):
         self.chainstate = Chainstate(self.data_dir, self.logger)
         self.block_db = BlockDB(self.data_dir, self.logger)
         self.mempool = Mempool()
+
+        self.worker_pool = Pool(processes=8)
 
         self.status = NodeStatus.Starting
 
@@ -80,6 +88,8 @@ class Node(threading.Thread):
         self.index.close()
         self.chainstate.close()
         self.block_db.close()
+
+        self.worker_pool.terminate()
 
         self.logger.info("Stopping node")
         self.logger.close()

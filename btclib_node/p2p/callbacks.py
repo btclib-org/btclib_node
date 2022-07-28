@@ -97,7 +97,7 @@ def block(node, msg, conn):
     if not block_info.downloaded:
         try:
             block.assert_valid()
-        except Exception as e: # should set block to invalid
+        except Exception as e:  # should set block to invalid
             raise e
         node.block_db.add_block(block)
         node.logger.info(f"Received new block with hash:{block_hash.hex()}")

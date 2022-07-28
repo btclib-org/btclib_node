@@ -1,6 +1,7 @@
 from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockStatus
 from btclib_node.p2p.messages.filters import Filterclear
+from btclib_node.interpreter import check_transactions
 
 
 def update_block_status(index, hash, status):
@@ -9,12 +10,14 @@ def update_block_status(index, hash, status):
     index.insert_block_info(block_info)
 
 
-# TODO: we have to check it there are more blocks ahead to put into the header node.index
+# TODO: we have to check it there are more blocks ahead to invalidate
 def update_header_index(index):
     pass
 
 
 def finish_sync(node):
+    if node.status == NodeStatus.BlockSynced:
+        return
     node.status = NodeStatus.BlockSynced
     for conn in list(node.p2p_manager.connections.values()):
         conn.send(Filterclear())
@@ -22,6 +25,7 @@ def finish_sync(node):
 
 # TODO: support for failed updates
 def update_chain(node):
+
     if node.status < NodeStatus.HeaderSynced:
         return
 
@@ -29,15 +33,18 @@ def update_chain(node):
     if not first_candidate:
         return finish_sync(node)
 
-    to_add, to_remove = node.index.get_fork_details(first_candidate.header.hash)
-    for hash in to_add:
+    to_add_hash, to_remove_hash = node.index.get_fork_details(
+        first_candidate.header.hash
+    )
+
+    for hash in to_add_hash:
         if not node.index.get_block_info(hash).downloaded:
             return
 
     node.logger.debug("Start getting blocks")
 
-    to_add = [node.block_db.get_block(hash) for hash in to_add]
-    to_remove = [node.block_db.get_rev_block(hash) for hash in to_remove]
+    to_add = [node.block_db.get_block(hash) for hash in to_add_hash]
+    to_remove = [node.block_db.get_rev_block(hash) for hash in to_remove_hash]
 
     node.logger.debug("Got all blocks")
     node.logger.debug("Start chainstate test")
@@ -47,9 +54,10 @@ def update_chain(node):
     try:
         for rev_block in to_remove:
             node.chainstate.apply_rev_block(rev_block)
-        for block in to_add:
+        for hash, block in zip(to_add_hash, to_add):
             transactions, rev_patch = node.chainstate.add_block(block)
-            # check_transactions(transactions)
+            indx = node.index.get_block_info(hash).index
+            check_transactions(transactions, indx, node)
             generated_rev_patches.append(rev_patch)
             update_block_status(node.index, block.header.hash, BlockStatus.valid)
     except Exception:

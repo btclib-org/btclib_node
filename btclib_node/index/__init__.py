@@ -79,15 +79,17 @@ class BlockIndex:
             # if prefix == b"b":
             self.header_dict[key] = BlockInfo.deserialize(value, check_validity=False)
 
-        self.sorted_header_dict = sorted(self.header_dict, key=lambda x: self.header_dict[x].index)
+        self.sorted_header_dict = sorted(
+            self.header_dict, key=lambda x: self.header_dict[x].index
+        )
 
-        self.logger.info('Start calculate_chainwork')
+        self.logger.info("Start calculate_chainwork")
         self.calculate_chainwork()
-        self.logger.info('Start generate_active_chain')
+        self.logger.info("Start generate_active_chain")
         self.generate_active_chain()
-        self.logger.info('Start generate_block_candidates')
+        self.logger.info("Start generate_block_candidates")
         self.generate_block_candidates()
-        self.logger.info('Start generate_header_index')
+        self.logger.info("Start generate_header_index")
         self.generate_header_index()
         self.logger.info("Finished Index initialization")
 
@@ -166,7 +168,10 @@ class BlockIndex:
         while True:
             block_info = self.get_block_info(header_hash)
             header_hash = block_info.header.previous_block_hash
-            if block_info.index <= len(chain) and header_hash == chain[block_info.index - 1]:
+            if (
+                block_info.index <= len(chain)
+                and header_hash == chain[block_info.index - 1]
+            ):
                 anchestor_index = block_info.index - 1
                 break
             else:
