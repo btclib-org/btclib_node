@@ -83,7 +83,7 @@ def generate_random_chain(length, start):
             version=70015,
             previous_block_hash=previous_block_hash,
             merkle_root_=merkle_root(
-                [tx.serialize(False) for tx in transactions], hash256
+                [tx.serialize(True, False) for tx in transactions], hash256
             )[::-1],
             time=datetime.fromtimestamp(1231006505 + x + 1, timezone.utc),
             bits=b"\x20\xFF\xFF\xFF",

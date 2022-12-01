@@ -5,7 +5,7 @@ import time
 
 from btclib.exceptions import BTClibValueError
 
-from btclib_node.constants import P2pConnStatus, ProtocolVersion, NodeStatus
+from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion
 from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import WrongChecksumError, get_payload, verify_headers
 from btclib_node.p2p.messages.handshake import Version

@@ -1,4 +1,5 @@
 import struct
+
 from btclib.hashes import hash256
 
 

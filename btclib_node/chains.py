@@ -82,6 +82,15 @@ class Main(Chain):
         self.genesis = create_genesis(
             1231006505, 2083236893, 0x1D00FFFF, 1, 50 * 10 ** 8
         )
+        self.flags = [
+            (170061, "P2SH"),
+            (363725, "DERSIG"),
+            (388381, "CHECKLOCKTIMEVERIFY"),
+            (419328, "CHECKSEQUENCEVERIFY"),
+            (481824, "WITNESS"),
+            (481824, "NULLDUMMY"),
+            (709632, "TAPROOT"),
+        ]
 
 
 @dataclass
@@ -99,6 +108,15 @@ class TestNet(Chain):
         self.genesis = create_genesis(
             1296688602, 414098458, 0x1D00FFFF, 1, 50 * 10 ** 8
         )
+        self.flags = [
+            (395, "P2SH"),
+            (330776, "DERSIG"),
+            (581885, "CHECKLOCKTIMEVERIFY"),
+            (770112, "CHECKSEQUENCEVERIFY"),
+            (834624, "WITNESS"),
+            (834624, "NULLDUMMY"),
+            (1628640000, "TAPROOT"),  # wrong, this is the date
+        ]
 
 
 @dataclass
@@ -109,6 +127,15 @@ class SigNet(Chain):
         self.magic = "0a03cf40"  # default signet
         self.addresses = ["178.128.221.177"]
         self.genesis = create_genesis(1598918400, 52613770, 0x1E0377AE, 1, 50 * 10 ** 8)
+        self.flags = [
+            (0, "P2SH"),
+            (0, "DERSIG"),
+            (0, "CHECKLOCKTIMEVERIFY"),
+            (0, "CHECKSEQUENCEVERIFY"),
+            (0, "WITNESS"),
+            (0, "NULLDUMMY"),
+            (0, "TAPROOT"),
+        ]
 
 
 @dataclass
@@ -119,3 +146,12 @@ class RegTest(Chain):
         self.magic = "fabfb5da"
         self.addresses = []
         self.genesis = create_genesis(1296688602, 2, 0x207FFFFF, 1, 50 * 10 ** 8)
+        self.flags = [
+            (0, "P2SH"),
+            (0, "DERSIG"),
+            (0, "CHECKLOCKTIMEVERIFY"),
+            (0, "CHECKSEQUENCEVERIFY"),
+            (0, "WITNESS"),
+            (0, "NULLDUMMY"),
+            (0, "TAPROOT"),
+        ]

@@ -1,11 +1,11 @@
 import enum
+from collections import deque
 from dataclasses import dataclass
 
 import plyvel
 from btclib import var_int
 from btclib.tx.blocks import BlockHeader
 from btclib.utils import bytesio_from_binarydata
-from collections import deque
 
 
 # TODO: should be implemented in btclib
@@ -228,14 +228,20 @@ class BlockIndex:
 
     def get_first_candidate(self):
         chainwork = self.get_block_info(self.active_chain[-1]).chainwork
+        while self.block_candidates and self.block_candidates[0][1] < chainwork:
+            self.block_candidates.popleft()
         if not self.block_candidates:
             return
-        while self.block_candidates:
-            hash, work = self.block_candidates[0]
+        best_candidate = None
+        for i in range(min(100, len(self.block_candidates))):
+            hash, work = self.block_candidates[i]
             if work > chainwork:
-                return self.get_block_info(hash)
-            else:
-                self.block_candidates.popleft()
+                candidate = self.get_block_info(hash)
+                if not best_candidate:
+                    best_candidate = candidate
+                if candidate.downloaded:
+                    return candidate
+        return best_candidate
 
     # return a list of blocks that have to be downloaded
     def get_download_candidates(self):

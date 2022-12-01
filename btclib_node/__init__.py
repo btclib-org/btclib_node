@@ -1,5 +1,7 @@
+import signal
 import threading
 import time
+from multiprocessing.pool import Pool
 
 from btclib_node.block_db import BlockDB
 from btclib_node.chainstate import Chainstate
@@ -15,8 +17,6 @@ from btclib_node.p2p.main import handle_p2p, handle_p2p_handshake
 from btclib_node.p2p.manager import P2pManager
 from btclib_node.rpc.main import handle_rpc
 from btclib_node.rpc.manager import RpcManager
-from multiprocessing.pool import Pool
-import signal
 
 
 class Node(threading.Thread):
@@ -25,8 +25,10 @@ class Node(threading.Thread):
 
         def sigint_handler(signal, frame):
             self.stop()
+
         signal.signal(signal.SIGINT, sigint_handler)
 
+        self.config = config
         self.chain = config.chain
         self.data_dir = config.data_dir
         self.data_dir.mkdir(exist_ok=True, parents=True)

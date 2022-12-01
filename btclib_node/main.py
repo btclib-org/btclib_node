@@ -1,7 +1,7 @@
 from btclib_node.constants import NodeStatus
 from btclib_node.index import BlockStatus
-from btclib_node.p2p.messages.filters import Filterclear
 from btclib_node.interpreter import check_transactions
+from btclib_node.p2p.messages.filters import Filterclear
 
 
 def update_block_status(index, hash, status):
@@ -39,6 +39,8 @@ def update_chain(node):
 
     for hash in to_add_hash:
         if not node.index.get_block_info(hash).downloaded:
+            # FIXME: naive way to prevent node from blocking due to missing stale block
+            # node.index.block_candidates.insert(100, node.index.block_candidates.popleft())
             return
 
     node.logger.debug("Start getting blocks")

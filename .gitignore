@@ -142,3 +142,4 @@ cython_debug/
 benchmarks
 
 errors
+tmp
