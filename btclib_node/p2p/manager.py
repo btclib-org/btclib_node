@@ -66,10 +66,7 @@ class P2pManager(threading.Thread):
                         conn.ping_nonce = ping_msg.nonce
                     elif now - conn.ping_sent > 120:
                         self.remove_connection(conn.id)
-            if self.node.status < NodeStatus.HeaderSynced:
-                connection_num = 1
-            else:
-                connection_num = 10
+            connection_num = 1 if self.node.status < NodeStatus.HeaderSynced else 10
             if len(self.connections) < connection_num and not self.peer_db.is_empty():
                 already_connected = [conn.address for conn in self.connections.values()]
                 try:

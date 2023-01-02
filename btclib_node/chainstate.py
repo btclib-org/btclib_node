@@ -49,13 +49,12 @@ class Chainstate:
                     self.updated_utxo_set.pop(prevout_bytes)
                 else:
                     prevout = self.db.get(prevout_bytes)
-                    if prevout:
-                        prevout = TxOut.parse(prevout, check_validity=False)
-                        prev_outputs.append(prevout)
-                        self.removed_utxos.add(prevout_bytes)
-                    else:
+                    if not prevout:
                         raise Exception
 
+                    prevout = TxOut.parse(prevout, check_validity=False)
+                    prev_outputs.append(prevout)
+                    self.removed_utxos.add(prevout_bytes)
                 removed.append((tx_in.prev_out, prevout))
 
             for i, tx_out in enumerate(tx.vout):
@@ -80,11 +79,10 @@ class Chainstate:
                 raise Exception
             if out_point_bytes in self.updated_utxo_set:
                 self.updated_utxo_set.pop(out_point_bytes)
+            elif self.db.get(out_point_bytes):
+                self.removed_utxos.add(out_point_bytes)
             else:
-                if self.db.get(out_point_bytes):
-                    self.removed_utxos.add(out_point_bytes)
-                else:
-                    raise Exception
+                raise Exception
 
         for out_point, tx_out in rev_block.to_add:
             self.updated_utxo_set[out_point.serialize(check_validity=False)] = tx_out

@@ -9,9 +9,7 @@ import json
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, bytes):
-            return obj.hex()
-        return super().default(obj)
+        return obj.hex() if isinstance(obj, bytes) else super().default(obj)
 
 
 class Connection:
@@ -57,8 +55,7 @@ class Connection:
         if len(response) == 1:
             response = response[0]
         output_str = json.dumps(response, separators=(",", ":"), cls=JSONEncoder)
-        response = "HTTP/1.1 200 OK\n"
-        response += "Content-Type: application/json\n"
+        response = "HTTP/1.1 200 OK\n" + "Content-Type: application/json\n"
         response += f"Content-Length: {len(output_str)+1}\n"
         response += "\n"  # Important!
         response += output_str

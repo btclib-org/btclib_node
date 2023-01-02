@@ -4,10 +4,7 @@ import logging
 class Logger(logging.Logger):
     def __init__(self, filepath=None, debug=False, **kwargs):
         super().__init__(name="Logger", level=logging.DEBUG, **kwargs)
-        if debug:
-            handler = logging.StreamHandler()
-        else:
-            handler = logging.FileHandler(filepath)
+        handler = logging.StreamHandler() if debug else logging.FileHandler(filepath)
         formatter = logging.Formatter("%(asctime)s - %(message)s")
         handler.setFormatter(formatter)
         self.addHandler(handler)

@@ -36,15 +36,13 @@ def get_peer_info(node, conn, _):
 
             addr = p2p_conn.client.getpeername()
             addrbind = p2p_conn.client.getsockname()
-            addrlocal_ip = p2p_conn.version_message.addr_from.ip.ipv4_mapped
-            if not addrlocal_ip:
-                addrlocal_ip = addrbind[0]
-
-            conn_dict = {}
-            conn_dict["id"] = id
-            conn_dict["addr"] = f"{addr[0]}:{addr[1]}"
-            conn_dict["addrbind"] = f"{addrbind[0]}:{addrbind[1]}"
-            conn_dict["addrlocal"] = f"{addrlocal_ip}:{addrbind[1]}"
+            addrlocal_ip = p2p_conn.version_message.addr_from.ip.ipv4_mapped or addrbind[0]
+            conn_dict = {
+                "id": id,
+                "addr": f"{addr[0]}:{addr[1]}",
+                "addrbind": f"{addrbind[0]}:{addrbind[1]}",
+                "addrlocal": f"{addrlocal_ip}:{addrbind[1]}",
+            }
             out.append(conn_dict)
 
     return out

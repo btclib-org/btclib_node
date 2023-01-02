@@ -11,10 +11,7 @@ class Ping:
     nonce: int
 
     def __init__(self, nonce=None):
-        if not nonce:
-            self.nonce = random.randint(0, 2 ** 64 - 1)
-        else:
-            self.nonce = nonce
+        self.nonce = nonce or random.randint(0, 2 ** 64 - 1)
 
     @classmethod
     def deserialize(cls, data):

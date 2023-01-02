@@ -15,10 +15,7 @@ def generate_random_header_chain(length, start):
     # random.seed(42)
     chain = []
     for x in range(length):
-        if chain:
-            previous_block_hash = chain[-1].hash
-        else:
-            previous_block_hash = start
+        previous_block_hash = chain[-1].hash if chain else start
         header = BlockHeader(
             version=70015,
             previous_block_hash=previous_block_hash,

@@ -47,17 +47,11 @@ class Node(threading.Thread):
 
         self.download_window = []
 
-        if config.p2p_port:
-            self.p2p_port = config.p2p_port
-        else:
-            self.p2p_port = None
+        self.p2p_port = config.p2p_port or None
         peer_db = PeerDB(self.chain, self.data_dir)
         self.p2p_manager = P2pManager(self, self.p2p_port, peer_db)
 
-        if config.rpc_port:
-            self.rpc_port = config.rpc_port
-        else:
-            self.rpc_port = None
+        self.rpc_port = config.rpc_port or None
         self.rpc_manager = RpcManager(self, self.rpc_port)
 
     def run(self):
