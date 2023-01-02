@@ -110,28 +110,24 @@ def inv(node, msg, conn):
     if node.status < NodeStatus.BlockSynced:
         return
 
-    transactions = [x[1] for x in inv.inventory if x[0] == 1 or x[0] == 0x40000001]
-    blocks = [x[1] for x in inv.inventory if x[0] == 2 or x[0] == 0x40000002]
-    if blocks:
+    transactions = [x[1] for x in inv.inventory if x[0] in [1, 0x40000001]]
+    if blocks := [x[1] for x in inv.inventory if x[0] in [2, 0x40000002]]:
         block_locators = node.index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, blocks[-1]))
 
-    missing_tx = node.mempool.get_missing(transactions)
-    if missing_tx:
+    if missing_tx := node.mempool.get_missing(transactions):
         conn.send(Getdata([(0x40000001, tx) for tx in missing_tx]))
 
 
 def getdata(node, msg, conn):
     getdata = Getdata.deserialize(msg)
-    transactions = [x[1] for x in getdata.inventory if x[0] == 1 or x[0] == 0x40000001]
-    blocks = [x[1] for x in getdata.inventory if x[0] == 2 or x[0] == 0x40000002]
+    transactions = [x[1] for x in getdata.inventory if x[0] in [1, 0x40000001]]
+    blocks = [x[1] for x in getdata.inventory if x[0] in [2, 0x40000002]]
     for txid in transactions:
-        tx = node.mempool.get_tx(txid)
-        if tx:
+        if tx := node.mempool.get_tx(txid):
             conn.send(TxMsg(tx))
     for block_hash in blocks:
-        block = node.block_db.get_block(block_hash)
-        if block:
+        if block := node.block_db.get_block(block_hash):
             conn.send(BlockMsg(block))
 
 
@@ -149,17 +145,15 @@ def headers(node, msg, conn):
     if len(headers) == 2000 and added:  # we have to require more headers
         block_locators = node.index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, b"\x00" * 32))
-    else:
-        if node.status == NodeStatus.SyncingHeaders:
-            node.status = NodeStatus.HeaderSynced
+    elif node.status == NodeStatus.SyncingHeaders:
+        node.status = NodeStatus.HeaderSynced
 
 
 def getheaders(node, msg, conn):
     getheaders = Getheaders.deserialize(msg)
-    headers = node.index.get_headers_from_locators(
+    if headers := node.index.get_headers_from_locators(
         getheaders.block_hashes, getheaders.hash_stop
-    )
-    if headers:
+    ):
         conn.send(Headers(headers))
 
 

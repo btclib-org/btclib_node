@@ -24,6 +24,6 @@ def test(tmp_path):
         node.index.insert_block_info(block_info)
     for block in chain:
         node.block_db.add_block(block)
-    for x in range(len(chain)):
+    for _ in range(len(chain)):
         update_chain(node)
     assert len(node.index.active_chain) == length + 1

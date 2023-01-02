@@ -40,13 +40,11 @@ class Cmpctblock:
         stream = bytesio_from_binarydata(data)
         header = BlockHeader.parse(stream)
         nonce = int.from_bytes(stream.read(8), "little")
-        short_ids = []
         short_ids_length = var_int.parse(stream)
-        for x in range(short_ids_length):
-            short_ids.append(stream.read(6)[::-1])
+        short_ids = [stream.read(6)[::-1] for _ in range(short_ids_length)]
         prefilled_tx_list = []
         prefilled_tx_num = var_int.parse(stream)
-        for x in range(prefilled_tx_num):
+        for _ in range(prefilled_tx_num):
             tx_index = var_int.parse(stream)
             tx = Tx.parse(stream)
             prefilled_tx_list.append((tx_index, tx))

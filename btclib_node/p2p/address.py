@@ -11,7 +11,7 @@ def to_ipv6(ip):
     try:
         return IPv6Address(ip)
     except AddressValueError:
-        return IPv6Address("::ffff:" + ip)
+        return IPv6Address(f"::ffff:{ip}")
 
 
 @dataclass
@@ -24,10 +24,7 @@ class NetworkAddress:
     @classmethod
     def deserialize(cls, data, version_msg=False):
         stream = bytesio_from_binarydata(data)
-        if not version_msg:
-            time = int.from_bytes(stream.read(4), "little")
-        else:
-            time = 0
+        time = 0 if version_msg else int.from_bytes(stream.read(4), "little")
         services = int.from_bytes(stream.read(8), "little")
         a = stream.read(16)
         ip = IPv6Address(a)

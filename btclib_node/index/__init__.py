@@ -110,10 +110,11 @@ class BlockIndex:
             block_info.chainwork = old_work + calculate_work(block_info.header)
 
     def generate_active_chain(self):
-        chain_dict = {}
-        for block_hash, block_info in self.header_dict.items():
-            if block_info.status == BlockStatus.in_active_chain:
-                chain_dict[block_info.index] = block_hash
+        chain_dict = {
+            block_info.index: block_hash
+            for block_hash, block_info in self.header_dict.items()
+            if block_info.status == BlockStatus.in_active_chain
+        }
         for index in sorted(chain_dict.keys()):
             self.active_chain.append(chain_dict[index])
 
@@ -264,7 +265,7 @@ class BlockIndex:
                         break
                     if not block_info.downloaded:
                         new_candidates.append(candidate)
-                candidates = candidates + new_candidates[::-1]
+                candidates += new_candidates[::-1]
         return candidates[:1024]
 
     # return a list of block hashes looking at the current best chain
@@ -272,9 +273,7 @@ class BlockIndex:
         i = 1
         step = 1
         block_locators = []
-        while True:
-            if i > len(self.header_index):
-                break
+        while i <= len(self.header_index):
             block_locators.append(self.header_index[-i])
             if i >= 10:
                 step *= 2

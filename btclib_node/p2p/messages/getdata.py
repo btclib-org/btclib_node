@@ -16,7 +16,7 @@ class Getdata:
         stream = bytesio_from_binarydata(data)
         inventory_length = var_int.parse(stream)
         inventory = []
-        for x in range(inventory_length):
+        for _ in range(inventory_length):
             item_type = int.from_bytes(stream.read(4), "little")
             item_hash = stream.read(32)[::-1]
             inventory.append((item_type, item_hash))
@@ -41,7 +41,7 @@ class Getblocks:
         stream = bytesio_from_binarydata(data)
         version = int.from_bytes(stream.read(4), "little")
         block_hashes = []
-        for x in range(var_int.parse(stream)):
+        for _ in range(var_int.parse(stream)):
             block_hash = stream.read(32)[::-1]
             block_hashes.append(block_hash)
         hash_stop = stream.read(32)[::-1]
@@ -67,7 +67,7 @@ class Getheaders:
         stream = bytesio_from_binarydata(data)
         version = int.from_bytes(stream.read(4), "little")
         block_hashes = []
-        for x in range(var_int.parse(stream)):
+        for _ in range(var_int.parse(stream)):
             block_hash = stream.read(32)[::-1]
             block_hashes.append(block_hash)
         hash_stop = stream.read(32)[::-1]
@@ -92,9 +92,7 @@ class Getblocktxn:
         stream = bytesio_from_binarydata(data)
         blockhash = stream.read(32)[::-1]
         num_indexes = var_int.parse(stream)
-        indexes = []
-        for x in range(num_indexes):
-            indexes.append(var_int.parse(stream))
+        indexes = [var_int.parse(stream) for _ in range(num_indexes)]
         return cls(blockhash=blockhash, indexes=indexes)
 
     def serialize(self):

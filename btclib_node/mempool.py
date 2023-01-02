@@ -15,15 +15,11 @@ class Mempool:
     def get_missing(self, transactions):
         missing = []
         if not self.is_full():
-            for tx in transactions:
-                if tx not in self.transactions:
-                    missing.append(tx)
+            missing.extend(tx for tx in transactions if tx not in self.transactions)
         return missing
 
     def get_tx(self, txid):
-        if txid in self.transactions:
-            return self.transactions[txid]
-        return None
+        return self.transactions[txid] if txid in self.transactions else None
 
     def add_tx(self, tx):
         if not self.is_full():

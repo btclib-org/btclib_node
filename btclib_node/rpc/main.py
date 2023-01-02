@@ -3,8 +3,7 @@ from btclib_node.rpc.callbacks import callbacks
 
 def get_connection(manager, id):
     try:
-        conn = manager.connections[id]
-        return conn
+        return manager.connections[id]
     except Exception:
         return None
 
@@ -12,11 +11,7 @@ def get_connection(manager, id):
 def is_valid_rpc(request):
     if not isinstance(request, dict):
         return False
-    if "method" not in request:
-        return False
-    if "id" not in request:
-        return False
-    return True
+    return False if "method" not in request else "id" in request
 
 
 def error_msg(code):
@@ -51,10 +46,7 @@ def handle_rpc(node):
             response.append(error_msg(-32601))
         else:
             try:
-                if "params" in request:
-                    params = request["params"]
-                else:
-                    params = []
+                params = request["params"] if "params" in request else []
                 response.append(
                     {
                         "jsonrpc": "2.0",

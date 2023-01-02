@@ -49,7 +49,7 @@ class Headers:
         stream = bytesio_from_binarydata(data)
         headers_num = var_int.parse(stream)
         headers = []
-        for x in range(headers_num):
+        for _ in range(headers_num):
             header = BlockHeader.parse(stream)
             stream.read(1)
             headers.append(header)
@@ -74,9 +74,7 @@ class Blocktxn:
         stream = bytesio_from_binarydata(data)
         blockhash = stream.read(32)[::-1]
         num_transactions = var_int.parse(stream)
-        transactions = []
-        for x in range(num_transactions):
-            transactions.append(TxData.parse(stream))
+        transactions = [TxData.parse(stream) for _ in range(num_transactions)]
         return cls(blockhash=blockhash, transactions=transactions)
 
     def serialize(self):
@@ -96,7 +94,7 @@ class Inv:
         stream = bytesio_from_binarydata(data)
         inventory_length = var_int.parse(stream)
         inventory = []
-        for x in range(inventory_length):
+        for _ in range(inventory_length):
             item_type = int.from_bytes(stream.read(4), "little")
             item_hash = stream.read(32)[::-1]
             inventory.append((item_type, item_hash))

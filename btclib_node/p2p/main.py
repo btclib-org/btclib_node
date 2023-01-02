@@ -10,9 +10,7 @@ def handle_p2p_handshake(node):
         try:
             if conn.status == P2pConnStatus.Open:
                 handshake_callbacks[msg_type](node, msg, conn)
-            elif conn.status == P2pConnStatus.Closed:
-                pass
-            else:
+            elif conn.status != P2pConnStatus.Closed:
                 conn.stop()
         except Exception:
             conn.stop()
@@ -28,9 +26,7 @@ def handle_p2p(node):
             if msg_type in callbacks:
                 if conn.status == P2pConnStatus.Connected:
                     callbacks[msg_type](node, msg, conn)
-                elif conn.status == P2pConnStatus.Closed:
-                    pass
-                else:
+                elif conn.status != P2pConnStatus.Closed:
                     conn.stop()
                 node.logger.debug("Finished p2p\n")
         except Exception:

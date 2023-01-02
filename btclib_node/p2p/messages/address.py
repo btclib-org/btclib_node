@@ -16,9 +16,7 @@ class Addr:
     def deserialize(cls, data):
         stream = bytesio_from_binarydata(data)
         len_addresses = var_int.parse(stream)
-        addresses = []
-        for x in range(len_addresses):
-            addresses.append(NetworkAddress.deserialize(stream))
+        addresses = [NetworkAddress.deserialize(stream) for _ in range(len_addresses)]
         return cls(addresses=addresses)
 
     def serialize(self):

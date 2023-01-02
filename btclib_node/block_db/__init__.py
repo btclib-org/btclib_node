@@ -20,12 +20,12 @@ class RevBlock:
         stream = bytesio_from_binarydata(data)
         hash = stream.read(32)
         to_add = []
-        for x in range(var_int.parse(stream)):
+        for _ in range(var_int.parse(stream)):
             out_point = OutPoint.parse(stream, check_validity)
             tx_out = TxOut.parse(stream, check_validity)
             to_add.append([out_point, tx_out])
         to_remove = []
-        for x in range(var_int.parse(stream)):
+        for _ in range(var_int.parse(stream)):
             out_point = OutPoint.parse(stream, check_validity)
             to_remove.append(out_point)
         return cls(hash, to_add, to_remove)
@@ -175,8 +175,7 @@ class BlockDB:
 
     def __get_data_from_file(self, file, index, size):
         file.seek(index)
-        data = file.read(size)
-        return data
+        return file.read(size)
 
     def add_block(self, block):
         block_hash = block.header.hash
