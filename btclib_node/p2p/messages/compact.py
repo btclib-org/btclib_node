@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from btclib import var_int
-from btclib.tx.blocks import BlockHeader
+from btclib.block import BlockHeader
 from btclib.tx.tx import Tx
 from btclib.utils import bytesio_from_binarydata
 

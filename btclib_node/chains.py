@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List
 
+from btclib.block import BlockHeader
 from btclib.hashes import hash256, merkle_root
 from btclib.script import script
-from btclib.tx.blocks import BlockHeader
 from btclib.tx.tx import Tx
 from btclib.tx.tx_in import OutPoint, TxIn
 from btclib.tx.tx_out import TxOut

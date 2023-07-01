@@ -3,10 +3,10 @@ import socket
 import time
 from datetime import datetime, timezone
 
+from btclib.block import Block, BlockHeader
 from btclib.exceptions import BTClibValueError
 from btclib.hashes import hash256, merkle_root
 from btclib.script import script
-from btclib.tx.blocks import Block, BlockHeader
 from btclib.tx.tx import Tx, TxIn, TxOut
 from btclib.tx.tx_in import OutPoint
 

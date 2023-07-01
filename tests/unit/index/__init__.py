@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from btclib.tx.blocks import BlockHeader
+from btclib.block import BlockHeader
 
 from btclib_node.chains import Main, RegTest
 from btclib_node.index import BlockIndex, BlockInfo, BlockStatus, calculate_work

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import plyvel
 from btclib import var_int
-from btclib.tx.blocks import BlockHeader
+from btclib.block import BlockHeader
 from btclib.utils import bytesio_from_binarydata
 
 

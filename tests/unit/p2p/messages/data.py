@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 
+from btclib.block import Block as BlockData
+from btclib.block import BlockHeader
 from btclib.hashes import hash256, merkle_root
 from btclib.script import script
-from btclib.tx.blocks import Block as BlockData
-from btclib.tx.blocks import BlockHeader
 from btclib.tx.tx import Tx as TxData
 from btclib.tx.tx import TxIn, TxOut
 from btclib.tx.tx_in import OutPoint
