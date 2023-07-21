@@ -13,8 +13,8 @@ blockindex = BlockIndex(config.data_dir, config.chain, logger)
 fix_idx = 440599
 
 for block_hash in blockindex.active_chain[fix_idx + 1 :]:
-    x = BlockInfo.deserialize(blockindex.db.get(b"b" + block_hash))
-    x.downloaded = False
-    x.status = BlockStatus.valid_header
-    blockindex.db.put(b"b" + block_hash, x.serialize())
+    block_info = blockindex.get_block_info(block_hash)
+    block_info.downloaded = False
+    block_info.status = BlockStatus.valid_header
+    blockindex.insert_block_info(block_info)
     blockdb.db.delete(b"b" + block_hash)

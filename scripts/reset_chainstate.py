@@ -11,9 +11,9 @@ blockindex = BlockIndex(config.data_dir, config.chain, logger)
 chainstate = Chainstate(config.data_dir, logger)
 
 for block_hash in blockindex.active_chain[1:]:
-    x = BlockInfo.deserialize(blockindex.db.get(b"b" + block_hash))
-    x.status = BlockStatus.valid_header
-    blockindex.db.put(b"b" + block_hash, x.serialize())
+    block_info = blockindex.get_block_info(block_hash)
+    block_info.status = BlockStatus.valid_header
+    blockindex.insert_block_info(block_info)
 
 with chainstate.db.write_batch():
     for key, _ in chainstate.db:

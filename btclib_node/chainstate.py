@@ -90,7 +90,7 @@ class Chainstate:
             self.updated_utxo_set[out_point.serialize(check_validity=False)] = tx_out
 
     def finalize(self):
-        with self.db.write_batch() as wb:
+        with self.db.write_batch(transaction=True) as wb:
             for x in self.removed_utxos:
                 wb.delete(x)
             for out_point_bytes, tx_out in self.updated_utxo_set.items():

@@ -23,10 +23,13 @@ class Node(threading.Thread):
     def __init__(self, config=Config()):
         super().__init__()
 
-        def sigint_handler(signal, frame):
+        def stop_handler(signal, frame):
             self.stop()
 
-        signal.signal(signal.SIGINT, sigint_handler)
+        signal.signal(signal.SIGINT, stop_handler)
+        signal.signal(signal.SIGTERM, stop_handler)
+        # for hibernation
+        signal.signal(signal.SIGTSTP, stop_handler)
 
         self.config = config
         self.chain = config.chain
