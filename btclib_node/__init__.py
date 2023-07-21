@@ -34,7 +34,8 @@ class Node(threading.Thread):
         self.data_dir.mkdir(exist_ok=True, parents=True)
 
         self.terminate_flag = threading.Event()
-        self.logger = Logger(self.data_dir / "history.log", config.debug)
+        log_path = self.data_dir / config.log_path if config.log_path else None
+        self.logger = Logger(log_path, config.debug)
 
         self.index = BlockIndex(self.data_dir, self.chain, self.logger)
         self.chainstate = Chainstate(self.data_dir, self.logger)

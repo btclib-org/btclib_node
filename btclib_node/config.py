@@ -23,6 +23,7 @@ class Config:
         allow_rpc=True,
         pruned=False,
         debug=False,
+        log_path="history.log",
     ):
         if isinstance(chain, Chain):
             self.chain = chain
@@ -61,3 +62,4 @@ class Config:
         self.pruned = pruned
 
         self.debug = debug
+        self.log_path = log_path

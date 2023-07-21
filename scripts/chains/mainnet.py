@@ -3,7 +3,12 @@ from btclib_node.config import Config
 
 node = Node(
     config=Config(
-        chain="mainnet", data_dir=".btclib", p2p_port=30000, rpc_port=30001, debug=False
+        chain="mainnet",
+        data_dir=".btclib",
+        p2p_port=30000,
+        rpc_port=30001,
+        debug=False,
+        log_path=None,
     )
 )
 node.start()
