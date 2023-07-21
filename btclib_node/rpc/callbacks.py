@@ -2,11 +2,11 @@ from btclib_node.constants import P2pConnStatus
 
 
 def get_best_block_hash(node, conn, _):
-    return node.index.header_index[-1]
+    return node.index.active_chain[-1]
 
 
 def get_block_hash(node, conn, params):
-    return node.index.header_index[params[0]]
+    return node.index.active_chain[params[0]]
 
 
 def get_block_header(node, conn, params):

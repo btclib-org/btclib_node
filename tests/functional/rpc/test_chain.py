@@ -5,24 +5,34 @@ import requests
 from btclib_node import Node
 from btclib_node.chains import RegTest
 from btclib_node.config import Config
-from tests.helpers import generate_random_header_chain, get_random_port, wait_until
+from btclib_node.constants import NodeStatus
+from btclib_node.main import update_chain
+from tests.helpers import (
+    generate_random_chain,
+    generate_random_header_chain,
+    get_random_port,
+    wait_until,
+)
 
 
-def test_best_block_hash(tmp_path):
-    node = Node(
-        config=Config(
-            chain="regtest",
-            data_dir=tmp_path,
-            allow_p2p=False,
-            rpc_port=get_random_port(),
-        )
-    )
-    node.start()
+def test_best_block_hash(rpc_node):
+    node = rpc_node
 
     wait_until(lambda: node.rpc_manager.is_alive())
 
-    chain = generate_random_header_chain(2000, RegTest().genesis.hash)
-    node.index.add_headers(chain)
+    chain = generate_random_chain(100, RegTest().genesis.hash)
+    header_chain = [block.header for block in chain]
+    node.index.add_headers(header_chain)
+    node.status = NodeStatus.HeaderSynced
+
+    for block in chain:
+        node.block_db.add_block(block)
+        block_info = node.index.get_block_info(block.header.hash)
+        block_info.downloaded = True
+        node.index.insert_block_info(block_info)
+
+    wait_until(lambda: len(node.index.active_chain) == 100 + 1)
+
     response = json.loads(
         requests.post(
             url=f"http://127.0.0.1:{node.rpc_port}",
@@ -37,26 +47,27 @@ def test_best_block_hash(tmp_path):
             timeout=2,
         ).text
     )
-    assert response["result"] == chain[-1].hash.hex()
 
-    node.stop()
+    assert response["result"] == header_chain[-1].hash.hex()
 
 
-def test_block_hash(tmp_path):
-    node = Node(
-        config=Config(
-            chain="regtest",
-            data_dir=tmp_path,
-            allow_p2p=False,
-            rpc_port=get_random_port(),
-        )
-    )
-    node.start()
+def test_block_hash(rpc_node):
+    node = rpc_node
 
     wait_until(lambda: node.rpc_manager.is_alive())
 
-    chain = generate_random_header_chain(2000, RegTest().genesis.hash)
-    node.index.add_headers(chain)
+    chain = generate_random_chain(100, RegTest().genesis.hash)
+    header_chain = [block.header for block in chain]
+    node.index.add_headers(header_chain)
+    node.status = NodeStatus.HeaderSynced
+
+    for block in chain:
+        node.block_db.add_block(block)
+        block_info = node.index.get_block_info(block.header.hash)
+        block_info.downloaded = True
+        node.index.insert_block_info(block_info)
+
+    wait_until(lambda: len(node.index.active_chain) == 100 + 1)
 
     response = json.loads(
         requests.post(
@@ -66,16 +77,14 @@ def test_block_hash(tmp_path):
                     "jsonrpc": "1.0",
                     "id": "pytest",
                     "method": "getblockhash",
-                    "params": [2000],
+                    "params": [50],
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
             timeout=2,
         ).text
     )
-    assert response["result"] == chain[-1].hash.hex()
-
-    node.stop()
+    assert response["result"] == header_chain[50 - 1].hash.hex()
 
 
 def test_block_header_last(tmp_path):
