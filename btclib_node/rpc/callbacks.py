@@ -2,28 +2,32 @@ from btclib_node.constants import P2pConnStatus
 
 
 def get_best_block_hash(node, conn, _):
-    return node.index.active_chain[-1]
+    return node.chainstate.block_index.active_chain[-1]
 
 
 def get_block_hash(node, conn, params):
-    return node.index.active_chain[params[0]]
+    return node.chainstate.block_index.active_chain[params[0]]
 
 
 def get_block_header(node, conn, params):
+
+    block_index = node.chainstate.block_index
+    header_index = block_index.header_index
+
     block_hash = bytes.fromhex(params[0])
-    block_info = node.index.get_block_info(block_hash)
+    block_info = block_index.get_block_info(block_hash)
     header = header = block_info.header
     out = header.to_dict()
     out["hash"] = header.hash
 
     # TODO: fix if is not in main chain
-    height = node.index.header_index.index(block_hash)
+    height = header_index.index(block_hash)
     out["height"] = height
-    out["confirmations"] = len(node.index.header_index) - height
+    out["confirmations"] = len(header_index) - height
     if height > 0:
-        out["previousblockhash"] = node.index.header_index[height - 1]
-    if height < len(node.index.header_index) - 1:
-        out["nextblockhash"] = node.index.header_index[height + 1]
+        out["previousblockhash"] = header_index[height - 1]
+    if height < len(header_index) - 1:
+        out["nextblockhash"] = header_index[height + 1]
     out["chainwork"] = block_info.chainwork
 
     return out

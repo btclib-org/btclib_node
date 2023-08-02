@@ -1,9 +1,5 @@
-import sys
 import traceback
 from itertools import chain
-from math import ceil
-from multiprocessing.pool import Pool
-from os import cpu_count
 from pathlib import Path
 from typing import Tuple
 
@@ -32,6 +28,9 @@ def f(prevouts, tx, i, flags):
 
 
 def check_transactions(transaction_data, index, node):
+
+    # if index < 600000:
+    #     return
 
     if not transaction_data:
         return

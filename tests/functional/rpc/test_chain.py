@@ -22,16 +22,17 @@ def test_best_block_hash(rpc_node):
 
     chain = generate_random_chain(100, RegTest().genesis.hash)
     header_chain = [block.header for block in chain]
-    node.index.add_headers(header_chain)
+    block_index = node.chainstate.block_index
+    block_index.add_headers(header_chain)
     node.status = NodeStatus.HeaderSynced
 
     for block in chain:
         node.block_db.add_block(block)
-        block_info = node.index.get_block_info(block.header.hash)
+        block_info = block_index.get_block_info(block.header.hash)
         block_info.downloaded = True
-        node.index.insert_block_info(block_info)
+        block_index.insert_block_info(block_info)
 
-    wait_until(lambda: len(node.index.active_chain) == 100 + 1)
+    wait_until(lambda: len(block_index.active_chain) == 100 + 1)
 
     response = json.loads(
         requests.post(
@@ -58,16 +59,17 @@ def test_block_hash(rpc_node):
 
     chain = generate_random_chain(100, RegTest().genesis.hash)
     header_chain = [block.header for block in chain]
-    node.index.add_headers(header_chain)
+    block_index = node.chainstate.block_index
+    block_index.add_headers(header_chain)
     node.status = NodeStatus.HeaderSynced
 
     for block in chain:
         node.block_db.add_block(block)
-        block_info = node.index.get_block_info(block.header.hash)
+        block_info = block_index.get_block_info(block.header.hash)
         block_info.downloaded = True
-        node.index.insert_block_info(block_info)
+        block_index.insert_block_info(block_info)
 
-    wait_until(lambda: len(node.index.active_chain) == 100 + 1)
+    wait_until(lambda: len(block_index.active_chain) == 100 + 1)
 
     response = json.loads(
         requests.post(
@@ -101,7 +103,7 @@ def test_block_header_last(tmp_path):
     wait_until(lambda: node.rpc_manager.is_alive())
 
     chain = generate_random_header_chain(2000, RegTest().genesis.hash)
-    node.index.add_headers(chain)
+    node.chainstate.block_index.add_headers(chain)
 
     response = json.loads(
         requests.post(
@@ -141,7 +143,7 @@ def test_block_header_middle(tmp_path):
     wait_until(lambda: node.rpc_manager.is_alive())
 
     chain = generate_random_header_chain(2000, RegTest().genesis.hash)
-    node.index.add_headers(chain)
+    node.chainstate.block_index.add_headers(chain)
 
     response = json.loads(
         requests.post(

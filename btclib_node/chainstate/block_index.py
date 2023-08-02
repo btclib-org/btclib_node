@@ -48,13 +48,11 @@ class BlockInfo:
 
 
 class BlockIndex:
-    def __init__(self, data_dir, chain, logger):
+    def __init__(self, parent_db, chain, logger):
 
         self.logger = logger
 
-        data_dir = data_dir / "index"
-        data_dir.mkdir(exist_ok=True, parents=True)
-        self.db = plyvel.DB(str(data_dir), create_if_missing=True)
+        self.db = parent_db
 
         genesis = chain.genesis
         genesis_info = BlockInfo(genesis, 0, BlockStatus.in_active_chain, True)
@@ -75,8 +73,9 @@ class BlockIndex:
     def init_from_db(self):
         self.logger.info("Start Index initialization")
         for key, value in self.db:
-            prefix, key = key[:1], key[1:]
-            # if prefix == b"b":
+            prefix, key = key[:8], key[8:]
+            if prefix != b"blkinfo-":
+                continue
             self.header_dict[key] = BlockInfo.deserialize(value, check_validity=False)
 
         self.sorted_header_dict = sorted(
@@ -94,10 +93,6 @@ class BlockIndex:
         self.logger.info("Finished Index initialization")
 
         self.sorted_header_dict = []
-
-    def close(self):
-        self.logger.info("Closing Index db")
-        self.db.close()
 
     def calculate_chainwork(self):
         for block_hash in self.sorted_header_dict:
@@ -149,12 +144,13 @@ class BlockIndex:
                 header_index_set = set(self.header_index)
 
     # TODO: should use copy to preserve immutability
-    def insert_block_info(self, block_info):
+    def insert_block_info(self, block_info, wb=None):
         new_block_info = block_info
         self.header_dict[block_info.header.hash] = new_block_info
-        key = b"b" + new_block_info.header.hash
+        key = b"blkinfo-" + new_block_info.header.hash
         value = new_block_info.serialize()
-        self.db.put(key, value)
+        db = wb if wb else self.db
+        db.put(key, value)
 
     # TODO: should use copy to preserve immutability
     def get_block_info(self, hash):

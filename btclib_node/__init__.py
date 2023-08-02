@@ -8,7 +8,6 @@ from btclib_node.chainstate import Chainstate
 from btclib_node.config import Config
 from btclib_node.constants import NodeStatus
 from btclib_node.download import block_download
-from btclib_node.index import BlockIndex
 from btclib_node.log import Logger
 from btclib_node.main import update_chain
 from btclib_node.mempool import Mempool
@@ -40,8 +39,7 @@ class Node(threading.Thread):
         log_path = self.data_dir / config.log_path if config.log_path else None
         self.logger = Logger(log_path, config.debug)
 
-        self.index = BlockIndex(self.data_dir, self.chain, self.logger)
-        self.chainstate = Chainstate(self.data_dir, self.logger)
+        self.chainstate = Chainstate(self.data_dir, self.chain, self.logger)
         self.block_db = BlockDB(self.data_dir, self.logger)
         self.mempool = Mempool()
 
@@ -91,7 +89,6 @@ class Node(threading.Thread):
         self.p2p_manager.stop()
         self.rpc_manager.stop()
 
-        self.index.close()
         self.chainstate.close()
         self.block_db.close()
 

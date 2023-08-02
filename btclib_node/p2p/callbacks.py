@@ -43,7 +43,7 @@ def verack(node, msg, conn):
     conn.send(Sendcmpct(0, 1))
     conn.send(Sendheaders())
     conn.send(Getaddr())
-    block_locators = node.index.get_block_locator_hashes()
+    block_locators = node.chainstate.block_index.get_block_locator_hashes()
     conn.send(Getheaders(ProtocolVersion, block_locators, b"\x00" * 32))
     node.logger.info(
         f"Connected to {conn.client.getpeername()[0]}:{conn.client.getpeername()[1]}"
@@ -92,7 +92,7 @@ def block(node, msg, conn):
     if block_hash in conn.block_download_queue:
         conn.block_download_queue.remove(block_hash)
 
-    block_info = node.index.get_block_info(block_hash)
+    block_info = node.chainstate.block_index.get_block_info(block_hash)
 
     if not block_info.downloaded:
         try:
@@ -102,7 +102,7 @@ def block(node, msg, conn):
         node.block_db.add_block(block)
         node.logger.info(f"Received new block with hash:{block_hash.hex()}")
         block_info.downloaded = True
-        node.index.insert_block_info(block_info)
+        node.chainstate.block_index.insert_block_info(block_info)
 
 
 def inv(node, msg, conn):
@@ -113,7 +113,7 @@ def inv(node, msg, conn):
     transactions = [x[1] for x in inv.inventory if x[0] == 1 or x[0] == 0x40000001]
     blocks = [x[1] for x in inv.inventory if x[0] == 2 or x[0] == 0x40000002]
     if blocks:
-        block_locators = node.index.get_block_locator_hashes()
+        block_locators = node.chainstate.block_index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, blocks[-1]))
 
     missing_tx = node.mempool.get_missing(transactions)
@@ -144,10 +144,10 @@ def headers(node, msg, conn):
         except BTClibValueError:
             continue
     headers = valid_headers
-    added = node.index.add_headers(headers)
+    added = node.chainstate.block_index.add_headers(headers)
     # TODO: now it doesn't support long reorganizations (> 2000 headers)
     if len(headers) == 2000 and added:  # we have to require more headers
-        block_locators = node.index.get_block_locator_hashes()
+        block_locators = node.chainstate.block_index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, b"\x00" * 32))
     else:
         if node.status == NodeStatus.SyncingHeaders:
@@ -156,7 +156,7 @@ def headers(node, msg, conn):
 
 def getheaders(node, msg, conn):
     getheaders = Getheaders.deserialize(msg)
-    headers = node.index.get_headers_from_locators(
+    headers = node.chainstate.block_index.get_headers_from_locators(
         getheaders.block_hashes, getheaders.hash_stop
     )
     if headers:

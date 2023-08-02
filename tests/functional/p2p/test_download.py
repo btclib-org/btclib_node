@@ -27,12 +27,13 @@ def test_download(tmp_path):
         )
     )
     bootstrap_node.status = NodeStatus.HeaderSynced
+    bootstrap_block_index = bootstrap_node.chainstate.block_index
     for x in range(0, length, 2000):
-        bootstrap_node.index.add_headers(headers[x : x + 2000])
-    for x in bootstrap_node.index.header_dict:
-        block_info = bootstrap_node.index.get_block_info(x)
+        bootstrap_block_index.add_headers(headers[x : x + 2000])
+    for x in bootstrap_block_index.header_dict:
+        block_info = bootstrap_block_index.get_block_info(x)
         block_info.downloaded = True
-        bootstrap_node.index.insert_block_info(block_info)
+        bootstrap_block_index.insert_block_info(block_info)
     for block in chain:
         bootstrap_node.block_db.add_block(block)
     for x in range(len(chain)):
@@ -70,7 +71,8 @@ def test_download(tmp_path):
         main_node.p2p_manager.connect(("0.0.0.0", node.p2p_port))
         time.sleep(0.25)
 
-    wait_until(lambda: len(main_node.index.active_chain) == length + 1, timeout=20)
+    block_index = main_node.chainstate.block_index
+    wait_until(lambda: len(block_index.active_chain) == length + 1, timeout=20)
     wait_until(lambda: main_node.status == NodeStatus.BlockSynced, timeout=0.5)
 
     main_node.stop()

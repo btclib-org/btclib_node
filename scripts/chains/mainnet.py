@@ -7,7 +7,7 @@ node = Node(
         data_dir=".btclib",
         p2p_port=30000,
         rpc_port=30001,
-        debug=False,
+        debug=True,
         log_path=None,
     )
 )
