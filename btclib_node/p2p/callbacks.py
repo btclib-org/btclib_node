@@ -89,8 +89,8 @@ def block(node, msg, conn):
     block = BlockMsg.deserialize(msg, check_validity=False).block
     block_hash = block.header.hash
 
-    if block_hash in conn.block_download_queue:
-        conn.block_download_queue.remove(block_hash)
+    if block_hash in conn.download_queue:
+        conn.download_queue.remove(block_hash)
 
     block_info = node.chainstate.block_index.get_block_info(block_hash)
 

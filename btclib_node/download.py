@@ -20,18 +20,18 @@ def block_download(node):
 
     connections = list(node.p2p_manager.connections.values())
     pending = []
-    exit = True
+    skip = True
     for conn in connections:
-        conn_queue = conn.block_download_queue
+        conn_queue = conn.download_queue
         new_queue = []
         for header in conn_queue:
             if not block_index.get_block_info(header).downloaded:
                 new_queue.append(header)
-        conn.block_download_queue = new_queue
+        conn.download_queue = new_queue
         pending.extend(new_queue)
         if not new_queue:
-            exit = False
-    if exit:
+            skip = False
+    if skip:
         return
 
     waiting = [header for header in node.download_window if header not in pending]
@@ -47,5 +47,5 @@ def block_download(node):
                 pending = pending[4:]
             else:
                 return
-            conn.block_download_queue = new
+            conn.download_queue = new
             conn.send(Getdata([(0x40000002, hash) for hash in new]))

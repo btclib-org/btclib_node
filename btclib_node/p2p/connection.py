@@ -31,7 +31,8 @@ class Connection:
         self.latency = 0
 
         self.version_message = None
-        self.block_download_queue = []
+
+        self.download_queue = []
 
     def stop(self, cancel_task=True):
         self.status = P2pConnStatus.Closed

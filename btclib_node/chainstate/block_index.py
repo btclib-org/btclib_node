@@ -74,8 +74,8 @@ class BlockIndex:
         self.logger.info("Start Index initialization")
         for key, value in self.db:
             prefix, key = key[:8], key[8:]
-            if prefix != b"blkinfo-":
-                continue
+            if prefix != b"blkinfo-":  # utxo_index
+                break
             self.header_dict[key] = BlockInfo.deserialize(value, check_validity=False)
 
         self.sorted_header_dict = sorted(
