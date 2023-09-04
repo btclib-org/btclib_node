@@ -13,11 +13,18 @@ blockdb = BlockDB(config.data_dir, logger)
 chainstate = Chainstate(config.data_dir, config.chain, logger)
 blockindex = chainstate.block_index
 
-fix_idx = 406315
+# first index to reset
+fix_idx = 804122
 
-for block_hash in blockindex.active_chain[fix_idx + 1 :]:
-    block_info = blockindex.get_block_info(block_hash)
-    block_info.downloaded = False
-    block_info.status = BlockStatus.valid_header
-    blockindex.insert_block_info(block_info)
-    blockdb.db.delete(b"b" + block_hash)
+# for block_hash in blockindex.header_index[fix_idx:]:
+#     block_info = blockindex.get_block_info(block_hash)
+#     if block_info.status != BlockStatus.valid_header:
+#         print("Error, invalid reset parameters")
+#         exit()
+
+# for block_hash in blockindex.header_index[fix_idx:]:
+#     block_info = blockindex.get_block_info(block_hash)
+#     block_info.downloaded = False
+#     block_info.status = BlockStatus.valid_header
+#     blockindex.insert_block_info(block_info)
+#     blockdb.db.delete(b"b" + block_hash)
