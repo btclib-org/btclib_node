@@ -92,6 +92,9 @@ def block(node, msg, conn):
     if block_hash in conn.download_queue:
         conn.download_queue.remove(block_hash)
 
+    conn.last_block_timestamp = time.time()
+    conn.pending_eviction = False
+
     block_info = node.chainstate.block_index.get_block_info(block_hash)
 
     if not block_info.downloaded:

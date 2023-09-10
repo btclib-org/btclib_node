@@ -1,6 +1,7 @@
 import signal
 import threading
 import time
+from math import log as ln
 from multiprocessing.pool import Pool
 
 from btclib_node.block_db import BlockDB
@@ -72,13 +73,17 @@ class Node(threading.Thread):
             self.rpc_manager.start()
         self.status = NodeStatus.SyncingHeaders
         while not self.terminate_flag.is_set():
-            if len(self.p2p_manager.handshake_messages):
+            wait = True
+            while len(self.p2p_manager.handshake_messages):
                 handle_p2p_handshake(self)
-            elif len(self.rpc_manager.messages):
+                wait = False
+            for _ in range(int(ln(len(self.rpc_manager.messages) + 1, 2))):
                 handle_rpc(self)
-            elif len(self.p2p_manager.messages):
+                wait = False
+            for _ in range(int(ln(len(self.p2p_manager.messages) + 1, 2))):
                 handle_p2p(self)
-            else:
+                wait = False
+            if wait:
                 time.sleep(0.0001)
             try:
                 block_download(self)

@@ -29,9 +29,6 @@ def f(prevouts, tx, i, flags):
 
 def check_transactions(transaction_data, index, node):
 
-    # if index < 600000:
-    #     return
-
     if not transaction_data:
         return
     if any(len(x[0]) != len(x[1].vin) for x in transaction_data):

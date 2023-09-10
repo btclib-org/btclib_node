@@ -33,6 +33,8 @@ class Connection:
         self.version_message = None
 
         self.download_queue = []
+        self.pending_eviction = False
+        self.last_block_timestamp = time.time()
 
     def stop(self, cancel_task=True):
         self.status = P2pConnStatus.Closed

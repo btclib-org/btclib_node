@@ -14,7 +14,7 @@ chainstate = Chainstate(config.data_dir, config.chain, logger)
 blockindex = chainstate.block_index
 
 # first index to reset
-fix_idx = 804122
+fix_idx = 402822
 
 # for block_hash in blockindex.header_index[fix_idx:]:
 #     block_info = blockindex.get_block_info(block_hash)
@@ -25,6 +25,5 @@ fix_idx = 804122
 # for block_hash in blockindex.header_index[fix_idx:]:
 #     block_info = blockindex.get_block_info(block_hash)
 #     block_info.downloaded = False
-#     block_info.status = BlockStatus.valid_header
 #     blockindex.insert_block_info(block_info)
 #     blockdb.db.delete(b"b" + block_hash)

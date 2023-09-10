@@ -248,19 +248,21 @@ class BlockIndex:
             i += 1
             if i >= len(self.block_candidates):
                 break
-            candidate = self.block_candidates[i][0]
-            if self.get_block_info(candidate).chainwork <= chainwork:
+            candidate_hash, candidate_chainwork = self.block_candidates[i]
+            if candidate_chainwork <= chainwork:
                 continue
-            if candidate not in candidates:
-                new_candidates = [candidate]
-                while True:
-                    block_info = self.get_block_info(candidate)
-                    candidate = block_info.header.previous_block_hash
-                    if candidate in candidates or candidate in self.active_chain:
-                        break
-                    if not block_info.downloaded:
-                        new_candidates.append(candidate)
-                candidates = candidates + new_candidates[::-1]
+            while True:
+                block_info = self.get_block_info(candidate_hash)
+                if (
+                    (candidate_hash, block_info.index) in candidates
+                    or block_info.status == BlockStatus.in_active_chain
+                ):
+                    break
+                if not block_info.downloaded:
+                    candidates.append((candidate_hash, block_info.index))
+                candidate_hash = block_info.header.previous_block_hash
+        candidates.sort(key=lambda x: x[1])
+        candidates = [x[0] for x in candidates]
         return candidates[:1024]
 
     # return a list of block hashes looking at the current best chain
