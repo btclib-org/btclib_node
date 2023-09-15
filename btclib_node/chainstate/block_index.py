@@ -243,7 +243,9 @@ class BlockIndex:
     def get_download_candidates(self):
         chainwork = self.get_block_info(self.active_chain[-1]).chainwork
         candidates = []
+        seen = set()
         i = -1
+        self.logger.debug(len(self.block_candidates))
         while len(candidates) < 1024:
             i += 1
             if i >= len(self.block_candidates):
@@ -251,18 +253,19 @@ class BlockIndex:
             candidate_hash, candidate_chainwork = self.block_candidates[i]
             if candidate_chainwork <= chainwork:
                 continue
+            self.logger.debug(f"{i}, {len(candidates)}")
             while True:
                 block_info = self.get_block_info(candidate_hash)
                 if (
-                    (candidate_hash, block_info.index) in candidates
+                    candidate_hash in seen
                     or block_info.status == BlockStatus.in_active_chain
                 ):
                     break
                 if not block_info.downloaded:
-                    candidates.append((candidate_hash, block_info.index))
+                    candidates.append(candidate_hash)
+                seen.add(candidate_hash)
                 candidate_hash = block_info.header.previous_block_hash
-        candidates.sort(key=lambda x: x[1])
-        candidates = [x[0] for x in candidates]
+        candidates.sort(key=lambda x: self.get_block_info(x).index)
         return candidates[:1024]
 
     # return a list of block hashes looking at the current best chain
