@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "btclib-node"
-version = "0.0.0"
+version = "0.1.0"
 description = "Bitcoin node in python"
 authors = ["Giacomo Caironi <giacomo.caironi@gmail.com>"]
 license = "MIT"
