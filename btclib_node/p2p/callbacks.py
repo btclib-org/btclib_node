@@ -3,6 +3,8 @@ import time
 from btclib.exceptions import BTClibValueError
 
 from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion
+from btclib_node.exceptions import MissingPrevoutError
+from btclib_node.main import verify_mempool_acceptance
 from btclib_node.p2p.messages.address import Addr, Getaddr
 from btclib_node.p2p.messages.compact import Sendcmpct
 from btclib_node.p2p.messages.data import Block as BlockMsg
@@ -80,6 +82,11 @@ def addr(node, msg, conn):
 # TODO: check if we have already sent and inv containing this tx
 def tx(node, msg, conn):
     tx = TxMsg.deserialize(msg).tx
+    try:
+        verify_mempool_acceptance(node, tx)
+    except MissingPrevoutError:
+        # We don't have the parents in the mempool
+        return
     node.mempool.add_tx(tx)
     node.p2p_manager.sendall(Inv([(1, tx.id)]))
 

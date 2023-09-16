@@ -1,4 +1,9 @@
+from btclib.exceptions import BTClibValueError
+from btclib.tx import Tx
+
 from btclib_node.constants import P2pConnStatus
+from btclib_node.exceptions import MissingPrevoutError
+from btclib_node.main import verify_mempool_acceptance
 
 
 def get_best_block_hash(node, conn, _):
@@ -58,6 +63,53 @@ def get_connection_count(node, conn, _):
     return len(node.p2p_manager.connections)
 
 
+def get_mempool_info(node, conn, _):
+    mempool = node.mempool
+    out = {"loaded": True, "size": mempool.size, "bytes": mempool.bytesize}
+    return out
+
+
+def test_mempool_accept(node, conn, params):
+    rawtxs = params[0]
+    out = []
+    for rawtx in rawtxs:
+        try:
+            tx = Tx.parse(rawtx)
+        except:
+            out.append({"allowed": False, "reject-reason": "Invalid serialization"})
+            continue
+
+        tx_res = {"txid": tx.id, "wtxid": tx.hash, "allowed": False, "vsize": tx.vsize}
+        try:
+            verify_mempool_acceptance(node, tx)
+            tx_res["allowed"] = True
+            out.append(tx_res)
+        except BTClibValueError:
+            tx_res["reject-reason"] = "Invalid signatures or script"
+        except MissingPrevoutError:
+            tx_res["reject-reason"] = "Missing prevouts"
+        except:
+            tx_res["reject-reason"] = "Unknown error"
+        out.append(tx_res)
+    return out
+
+
+def send_raw_transaction(node, conn, params):
+    rawtx = params[0]
+    try:
+        tx = Tx.parse(rawtx)
+        try:
+            verify_mempool_acceptance(node, tx)
+            node.mempool.add_tx(tx)
+            node.p2p_manager.broadcast_raw_transaction(tx)
+        except Exception:
+            pass
+        finally:
+            return tx.id.hex()
+    except:
+        return None
+
+
 def stop(node, conn, _):
     node.stop()
     return "Btclib node stopping"
@@ -69,5 +121,8 @@ callbacks = {
     "getblockheader": get_block_header,
     "getpeerinfo": get_peer_info,
     "getconnectioncount": get_connection_count,
+    "getmempoolinfo": get_mempool_info,
+    "testmempoolaccept": test_mempool_accept,
+    "sendrawtransaction": send_raw_transaction,
     "stop": stop,
 }

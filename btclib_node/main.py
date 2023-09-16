@@ -1,6 +1,9 @@
+from btclib.tx import TxOut
+
 from btclib_node.chainstate.block_index import BlockStatus
 from btclib_node.constants import NodeStatus
-from btclib_node.interpreter import check_transactions
+from btclib_node.exceptions import MissingPrevoutError
+from btclib_node.interpreter import check_transaction, check_transactions
 from btclib_node.p2p.messages.filters import Filterclear
 
 
@@ -112,3 +115,26 @@ def update_chain(node):
 
     if not block_index.get_first_candidate():
         return finish_sync(node)
+
+
+def verify_mempool_acceptance(node, tx):
+    prev_outputs = []
+
+    block_index = node.chainstate.block_index
+    utxo_index = node.chainstate.utxo_index
+    mempool = node.mempool
+
+    for tx_in in tx.vin:
+        prevout_bytes = tx_in.prev_out.serialize(check_validity=False)
+        serialized_txout = utxo_index.db.get(b"utxo-" + prevout_bytes)
+        if serialized_txout:
+            txout = TxOut.parse(serialized_txout, check_validity=False)
+            prev_outputs.append(txout)
+        else:
+            previous_tx = mempool.get_tx(tx_in.prev_out.tx_id)
+            if previous_tx:
+                prev_outputs.append(previous_tx.vout[tx_in.prev_out.vout])
+            else:
+                raise MissingPrevoutError
+
+    check_transaction(prev_outputs, tx, len(block_index.active_chain) + 1, node)

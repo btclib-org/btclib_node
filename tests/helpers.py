@@ -1,4 +1,5 @@
 import random
+import secrets
 import socket
 import time
 from datetime import datetime, timezone
@@ -22,7 +23,7 @@ def generate_random_header_chain(length, start):
         header = BlockHeader(
             version=70015,
             previous_block_hash=previous_block_hash,
-            merkle_root_=random.randrange(256 ** 32).to_bytes(32, "big"),
+            merkle_root_=secrets.token_bytes(32),
             time=datetime.fromtimestamp(1231006505 + x + 1, timezone.utc),
             bits=b"\x20\xFF\xFF\xFF",
             nonce=1,
@@ -33,6 +34,26 @@ def generate_random_header_chain(length, start):
     return chain
 
 
+def generate_random_transaction(prevouthash=None):
+    prevouthash = prevouthash if prevouthash else secrets.token_bytes(32)
+    tx_in = TxIn(
+        prev_out=OutPoint(prevouthash, 0),
+        script_sig=script.serialize([secrets.token_bytes(32)]),
+        sequence=0xFFFFFFFF,
+    )
+    tx_out = TxOut(
+        value=50 * 10**8,
+        script_pub_key=script.serialize([secrets.token_bytes(32)]),
+    )
+    tx = Tx(
+        version=1,
+        lock_time=0,
+        vin=[tx_in],
+        vout=[tx_out],
+    )
+    return tx
+
+
 def generate_random_chain(length, start):
     # random.seed(42)
     chain = []
@@ -40,16 +61,12 @@ def generate_random_chain(length, start):
         previous_block_hash = chain[-1].header.hash if chain else start
         coinbase_in = TxIn(
             prev_out=OutPoint(),
-            script_sig=script.serialize(
-                [random.randrange(256 ** 32).to_bytes(32, "big")]
-            ),
+            script_sig=script.serialize([secrets.token_bytes(32)]),
             sequence=0xFFFFFFFF,
         )
         coinbase_out = TxOut(
-            value=50 * 10 ** 8,
-            script_pub_key=script.serialize(
-                [random.randrange(256 ** 32).to_bytes(32, "big")]
-            ),
+            value=50 * 10**8,
+            script_pub_key=script.serialize([secrets.token_bytes(32)]),
         )
         coinbase = Tx(
             version=1,
@@ -59,25 +76,7 @@ def generate_random_chain(length, start):
         )
         transactions = [coinbase]
         if chain:
-            tx_in = TxIn(
-                prev_out=OutPoint(chain[x - 1].transactions[0].id, 0),
-                script_sig=script.serialize(
-                    [random.randrange(256 ** 32).to_bytes(32, "big")]
-                ),
-                sequence=0xFFFFFFFF,
-            )
-            tx_out = TxOut(
-                value=50 * 10 ** 8,
-                script_pub_key=script.serialize(
-                    [random.randrange(256 ** 32).to_bytes(32, "big")]
-                ),
-            )
-            tx = Tx(
-                version=1,
-                lock_time=0,
-                vin=[tx_in],
-                vout=[tx_out],
-            )
+            tx = generate_random_transaction(chain[x - 1].transactions[0].id)
             transactions.append(tx)
         header = BlockHeader(
             version=70015,

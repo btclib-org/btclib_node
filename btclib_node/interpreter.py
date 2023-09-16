@@ -45,3 +45,8 @@ def check_transactions(transaction_data, index, node):
             ((x[0], x[1], i, FLAGS) for i in range(len(x[0]))) for x in transaction_data
         ),
     )
+
+
+def check_transaction(prevouts, tx, index, node):
+    flags = get_flags(node.config, index)
+    verify_transaction(prevouts, tx, flags)

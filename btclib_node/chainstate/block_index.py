@@ -245,7 +245,6 @@ class BlockIndex:
         candidates = []
         seen = set()
         i = -1
-        self.logger.debug(len(self.block_candidates))
         while len(candidates) < 1024:
             i += 1
             if i >= len(self.block_candidates):
@@ -253,7 +252,6 @@ class BlockIndex:
             candidate_hash, candidate_chainwork = self.block_candidates[i]
             if candidate_chainwork <= chainwork:
                 continue
-            self.logger.debug(f"{i}, {len(candidates)}")
             while True:
                 block_info = self.get_block_info(candidate_hash)
                 if (

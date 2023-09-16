@@ -8,16 +8,18 @@ from btclib.tx.tx import Tx
 class Mempool:
     transactions: Dict[bytes, Tx] = field(default_factory=lambda: {})
     size: int = 0
+    bytesize: int = 0
+    bytesize_limit: int = 500 * 1000**2  # 500vMB
 
     def is_full(self):
-        return self.size > 1000 ** 3  # 1GB
+        return self.bytesize >= self.bytesize_limit
 
     def get_missing(self, transactions):
         missing = []
         if not self.is_full():
-            for tx in transactions:
-                if tx not in self.transactions:
-                    missing.append(tx)
+            for tx_id in transactions:
+                if tx_id not in self.transactions:
+                    missing.append(tx_id)
         return missing
 
     def get_tx(self, txid):
@@ -28,9 +30,11 @@ class Mempool:
     def add_tx(self, tx):
         if not self.is_full():
             self.transactions[tx.id] = tx
-            self.size += len(tx.serialize(include_witness=True))
+            self.size += 1
+            self.bytesize += tx.vsize
 
     def remove_tx(self, tx_id):
         if tx_id in self.transactions:
             tx = self.transactions.pop(tx_id)
-            self.size -= len(tx.serialize(include_witness=True))
+            self.size -= 1
+            self.bytesize -= tx.vsize
