@@ -6,7 +6,7 @@ from collections import deque
 from contextlib import suppress
 
 from btclib_node.constants import NodeStatus, P2pConnStatus
-from btclib_node.p2p.address import NetworkAddress, to_ipv6
+from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.connection import Connection
 from btclib_node.p2p.messages.data import Tx
 from btclib_node.p2p.messages.ping import Ping
@@ -28,10 +28,10 @@ class P2pManager(threading.Thread):
 
         self.loop = asyncio.new_event_loop()
 
-    def create_connection(self, client, address):
+    def create_connection(self, client, address, inbound):
         client.settimeout(0.0)
         self.last_connection_id += 1
-        conn = Connection(self, client, address, self.last_connection_id)
+        conn = Connection(self, client, address, self.last_connection_id, inbound)
         self.connections[self.last_connection_id] = conn
         task = asyncio.run_coroutine_threadsafe(conn.run(), self.loop)
         conn.task = task
@@ -41,19 +41,17 @@ class P2pManager(threading.Thread):
             self.connections[id].stop()
             self.connections.pop(id)
 
-    async def async_create_connection(self, address):
+    async def async_connect(self, address):
         client = await address.connect()
         if client:
-            self.create_connection(client, address)
+            self.create_connection(client, address, False)
 
     def connect(self, address):
-        address = NetworkAddress(ip=to_ipv6(address[0]), port=address[1])
         asyncio.run_coroutine_threadsafe(
-            self.async_create_connection(address), self.loop
+            self.async_connect(address), self.loop
         )
 
     async def manage_connections(self, loop):
-        await self.peer_db.get_dns_nodes()
         while True:
             now = time.time()
             for conn in self.connections.copy().values():
@@ -61,24 +59,21 @@ class P2pManager(threading.Thread):
                     self.remove_connection(conn.id)
                 if now - conn.last_receive > 120:
                     if not conn.ping_sent:
-                        ping_msg = Ping()
-                        conn.send(ping_msg)
-                        conn.ping_sent = now
-                        conn.ping_nonce = ping_msg.nonce
+                        conn.send_ping()
                     elif now - conn.ping_sent > 120:
                         self.remove_connection(conn.id)
             if self.node.status < NodeStatus.HeaderSynced:
                 connection_num = 1
             else:
                 connection_num = 10
-            if len(self.connections) < connection_num and not self.peer_db.is_empty():
+            if len(self.connections) < connection_num and not self.peer_db.is_empty:
                 already_connected = [conn.address for conn in self.connections.values()]
                 try:
                     address = self.peer_db.random_address()
                     if address not in already_connected:
                         sock = await address.connect()
                         if sock:
-                            self.create_connection(sock, address)
+                            self.create_connection(sock, address, False)
                 except Exception:
                     self.logger.exception("Exception occurred")
             await asyncio.sleep(0.1)
@@ -91,14 +86,15 @@ class P2pManager(threading.Thread):
         server_socket.settimeout(0.0)
         with server_socket:
             while True:
-                client, addr = await loop.sock_accept(server_socket)
-                address = NetworkAddress(ip=to_ipv6(addr[0]), port=addr[1])
-                self.create_connection(client, address)
+                sock, ip_and_port = await loop.sock_accept(server_socket)
+                address = NetworkAddress.from_ip_and_port(*ip_and_port)
+                self.create_connection(sock, address, True)
 
     def run(self):
         self.logger.info("Starting P2P manager")
         loop = self.loop
         asyncio.set_event_loop(loop)
+        asyncio.run_coroutine_threadsafe(self.peer_db.get_addr_from_dns(), loop)
         asyncio.run_coroutine_threadsafe(self.server(loop), loop)
         asyncio.run_coroutine_threadsafe(self.manage_connections(loop), loop)
         loop.run_forever()
@@ -127,3 +123,7 @@ class P2pManager(threading.Thread):
 
     def broadcast_raw_transaction(self, tx):
         self.sendall(Tx(tx))
+
+    def ping_all(self):
+        for conn in self.connections.copy().values():
+            conn.send_ping()

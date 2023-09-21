@@ -4,7 +4,7 @@ from btclib_node import Node
 from btclib_node.config import Config
 from btclib_node.constants import P2pConnStatus
 from btclib_node.p2p.messages.ping import Ping
-from tests.helpers import get_random_port, wait_until
+from tests.helpers import get_random_port, local_addr, wait_until
 
 
 def test_correct_ping(tmp_path):
@@ -30,18 +30,21 @@ def test_correct_ping(tmp_path):
     wait_until(lambda: node1.p2p_manager.is_alive())
     wait_until(lambda: node2.p2p_manager.is_alive())
 
-    node2.p2p_manager.connect(("0.0.0.0", node1.p2p_port))
+    node2.p2p_manager.connect(local_addr(node1.p2p_port))
     wait_until(lambda: len(node1.p2p_manager.connections))
-    connection = node1.p2p_manager.connections[0]
-    wait_until(lambda: connection.status == P2pConnStatus.Connected)
-    connection = node2.p2p_manager.connections[0]
-    wait_until(lambda: connection.status == P2pConnStatus.Connected)
+    conn = node1.p2p_manager.connections[0]
+    wait_until(lambda: conn.status == P2pConnStatus.Connected)
+    conn = node2.p2p_manager.connections[0]
+    wait_until(lambda: conn.status == P2pConnStatus.Connected)
 
-    node1.p2p_manager.connections[0].ping_sent = time.time()
-    node1.p2p_manager.connections[0].ping_nonce = 1
-    node1.p2p_manager.send(Ping(1), 0)
+    conn = node1.p2p_manager.connections[0]
+    # wait until the previous ping is cleared
+    wait_until(lambda: conn.ping_nonce == 0)
 
-    wait_until(lambda: node1.p2p_manager.connections[0].latency)
+    conn.ping_sent = time.time()
+    conn.ping_nonce = 1
+    conn.send(Ping(1))
+    wait_until(lambda: conn.latency)
 
     node1.stop()
     node2.stop()
@@ -70,7 +73,7 @@ def test_wrong_ping(tmp_path):
     wait_until(lambda: node1.p2p_manager.is_alive())
     wait_until(lambda: node2.p2p_manager.is_alive())
 
-    node2.p2p_manager.connect(("0.0.0.0", node1.p2p_port))
+    node2.p2p_manager.connect(local_addr(node1.p2p_port))
     wait_until(lambda: len(node1.p2p_manager.connections))
     connection = node1.p2p_manager.connections[0]
     wait_until(lambda: connection.status == P2pConnStatus.Connected)

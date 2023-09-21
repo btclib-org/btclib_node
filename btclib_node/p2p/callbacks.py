@@ -2,17 +2,22 @@ import time
 
 from btclib.exceptions import BTClibValueError
 
-from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion
+from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion, Services
 from btclib_node.exceptions import MissingPrevoutError
 from btclib_node.main import verify_mempool_acceptance
-from btclib_node.p2p.messages.address import Addr, Getaddr
+from btclib_node.p2p.messages.address import Addr, AddrV2, Getaddr
 from btclib_node.p2p.messages.compact import Sendcmpct
 from btclib_node.p2p.messages.data import Block as BlockMsg
 from btclib_node.p2p.messages.data import Headers, Inv
 from btclib_node.p2p.messages.data import Tx as TxMsg
 from btclib_node.p2p.messages.errors import Notfound
-from btclib_node.p2p.messages.getdata import Getdata, Getheaders, Sendheaders
-from btclib_node.p2p.messages.handshake import Verack, Version
+from btclib_node.p2p.messages.getdata import (
+    Getdata,
+    Getheaders,
+    InventoryType,
+    Sendheaders,
+)
+from btclib_node.p2p.messages.handshake import Sendaddrv2, Verack, Version, Wtxidrelay
 from btclib_node.p2p.messages.ping import Ping, Pong
 
 
@@ -24,32 +29,47 @@ def version(node, msg, conn):
         conn.stop()
         return
 
+    # For semplicity we only allow current protocol version
     if version_msg.version < ProtocolVersion:
         conn.stop()
         return
-    if not version_msg.services & 8:  # we only connect to witness nodes
+    if not version_msg.services & Services.witness:  # we only connect to witness nodes
         conn.stop()
         return
-    if not version_msg.services & 1 and node.status >= NodeStatus.BlockSynced:
+    if (
+        not version_msg.services & Services.network
+        and node.status >= NodeStatus.BlockSynced
+    ):
         conn.stop()
         return
 
+    conn.send(Wtxidrelay())
+    conn.send(Sendaddrv2())
     conn.send(Verack())
 
 
 def verack(node, msg, conn):
-    if not conn.version_message:
+    if not conn.version_message or not conn.wtxidrelay_received:
         conn.stop()
         return
     conn.status = P2pConnStatus.Connected
-    conn.send(Sendcmpct(0, 1))
     conn.send(Sendheaders())
+    conn.send(Sendcmpct(0, 1))
+    conn.send_ping()
     conn.send(Getaddr())
     block_locators = node.chainstate.block_index.get_block_locator_hashes()
     conn.send(Getheaders(ProtocolVersion, block_locators, b"\x00" * 32))
     node.logger.info(
         f"Connected to {conn.client.getpeername()[0]}:{conn.client.getpeername()[1]}"
     )
+
+
+def wtxidrelay(node, msg, conn):
+    conn.wtxidrelay_received = True
+
+
+def sendaddrv2(node, msg, conn):
+    conn.prefer_addressv2 = True
 
 
 def ping(node, msg, conn):
@@ -68,13 +88,24 @@ def pong(node, msg, conn):
         conn.ping_nonce = 0
 
 
-# TODO: send our node location
 def getaddr(node, msg, conn):
-    pass
+    addresses = node.p2p_manager.peer_db.get_active_addresses()
+    if conn.prefer_addressv2:
+        addr_cls = AddrV2
+    else:
+        addr_cls = Addr
+        addresses = [addr for addr in addresses if addr.can_addrv1]
+    for x in range(0, len(addresses), 1000):
+        conn.send(addr_cls(headers[x : x + 1000]))
 
 
 def addr(node, msg, conn):
     addresses = Addr.deserialize(msg).addresses
+    node.p2p_manager.peer_db.add_addresses(addresses)
+
+
+def addrv2(node, msg, conn):
+    addresses = AddrV2.deserialize(msg).addresses
     node.p2p_manager.peer_db.add_addresses(addresses)
 
 
@@ -88,11 +119,10 @@ def tx(node, msg, conn):
         # We don't have the parents in the mempool
         return
     node.mempool.add_tx(tx)
-    node.p2p_manager.sendall(Inv([(1, tx.id)]))
+    node.p2p_manager.sendall(Inv([(InventoryType.wtx, tx.hash)]))
 
 
 def block(node, msg, conn):
-
     block = BlockMsg.deserialize(msg, check_validity=False).block
     block_hash = block.header.hash
 
@@ -116,33 +146,46 @@ def block(node, msg, conn):
 
 
 def inv(node, msg, conn):
-    inv = Inv.deserialize(msg)
     if node.status < NodeStatus.BlockSynced:
         return
+    inv = Inv.deserialize(msg)
 
-    transactions = [x[1] for x in inv.inventory if x[0] == 1 or x[0] == 0x40000001]
-    blocks = [x[1] for x in inv.inventory if x[0] == 2 or x[0] == 0x40000002]
+    blocks = [x[1] for x in inv.inventory if x[0] == InventoryType.block]
     if blocks:
         block_locators = node.chainstate.block_index.get_block_locator_hashes()
         conn.send(Getheaders(ProtocolVersion, block_locators, blocks[-1]))
 
-    missing_tx = node.mempool.get_missing(transactions)
+    wtransactions = [x[1] for x in inv.inventory if x[0] == InventoryType.wtx]
+    missing_tx = node.mempool.get_missing(wtransactions, wtxid=True)
     if missing_tx:
-        conn.send(Getdata([(0x40000001, tx) for tx in missing_tx]))
+        conn.send(Getdata([(InventoryType.wtx, wtxid) for wtxid in missing_tx]))
 
 
 def getdata(node, msg, conn):
     getdata = Getdata.deserialize(msg)
-    transactions = [x[1] for x in getdata.inventory if x[0] == 1 or x[0] == 0x40000001]
-    blocks = [x[1] for x in getdata.inventory if x[0] == 2 or x[0] == 0x40000002]
-    for txid in transactions:
-        tx = node.mempool.get_tx(txid)
+
+    transactions = [
+        x
+        for x in getdata.inventory
+        if x[0] in (InventoryType.tx, InventoryType.wtx, InventoryType.witness_tx)
+    ]
+    for inv_type, txid in transactions:
+        wtxid = inv_type == InventoryType.wtx
+        tx = node.mempool.get_tx(txid, wtxid=wtxid)
         if tx:
-            conn.send(TxMsg(tx))
-    for block_hash in blocks:
+            include_witness = inv_type in (InventoryType.witness_tx, InventoryType.wtx)
+            conn.send(TxMsg(tx, include_witness=include_witness))
+
+    blocks = [
+        x
+        for x in getdata.inventory
+        if x[0] in (InventoryType.block, InventoryType.witness_block)
+    ]
+    for inv_type, block_hash in blocks:
         block = node.block_db.get_block(block_hash)
         if block:
-            conn.send(BlockMsg(block))
+            include_witness = inv_type == InventoryType.witness_block
+            conn.send(BlockMsg(block, include_witness=include_witness))
 
 
 def headers(node, msg, conn):
@@ -178,7 +221,12 @@ def not_found(node, msg, conn):
     node.logger.warning(f"Missing objects:{missing}")
 
 
-handshake_callbacks = {"version": version, "verack": verack}
+handshake_callbacks = {
+    "version": version,
+    "verack": verack,
+    "wtxidrelay": wtxidrelay,
+    "sendaddrv2": sendaddrv2,
+}
 
 callbacks = {
     "ping": ping,
@@ -191,5 +239,6 @@ callbacks = {
     "headers": headers,
     "notfound": not_found,
     "addr": addr,
+    "addrv2": addrv2,
     "getaddr": getaddr,
 }

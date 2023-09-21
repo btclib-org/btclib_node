@@ -5,7 +5,7 @@ import requests
 from btclib_node import Node
 from btclib_node.config import Config
 from btclib_node.constants import P2pConnStatus
-from tests.helpers import get_random_port, wait_until
+from tests.helpers import get_random_port, local_addr, wait_until
 
 
 def test_get_connection_count(tmp_path):
@@ -31,7 +31,7 @@ def test_get_connection_count(tmp_path):
     wait_until(lambda: node1.rpc_manager.is_alive())
     wait_until(lambda: node2.rpc_manager.is_alive())
 
-    node2.p2p_manager.connect(("0.0.0.0", node1.p2p_port))
+    node2.p2p_manager.connect(local_addr(node1.p2p_port))
     wait_until(lambda: len(node1.p2p_manager.connections))
     connection = node1.p2p_manager.connections[0]
     wait_until(lambda: connection.status == P2pConnStatus.Connected)
@@ -66,6 +66,7 @@ def test_get_peer_info(tmp_path):
             data_dir=tmp_path / "node1",
             p2p_port=get_random_port(),
             rpc_port=get_random_port(),
+            debug=True,
         )
     )
     node2 = Node(
@@ -74,6 +75,7 @@ def test_get_peer_info(tmp_path):
             data_dir=tmp_path / "node2",
             p2p_port=get_random_port(),
             rpc_port=get_random_port(),
+            debug=True,
         )
     )
     node1.start()
@@ -82,7 +84,7 @@ def test_get_peer_info(tmp_path):
     wait_until(lambda: node1.rpc_manager.is_alive())
     wait_until(lambda: node2.rpc_manager.is_alive())
 
-    node2.p2p_manager.connect(("0.0.0.0", node1.p2p_port))
+    node2.p2p_manager.connect(local_addr(node1.p2p_port))
     wait_until(lambda: len(node1.p2p_manager.connections))
     connection = node1.p2p_manager.connections[0]
     wait_until(lambda: connection.status == P2pConnStatus.Connected)
@@ -109,6 +111,10 @@ def test_get_peer_info(tmp_path):
     assert response["result"][0]["addr"] == f"127.0.0.1:{node1.p2p_port}"
     assert response["result"][0]["addrbind"] == f"127.0.0.1:{local_port}"
     assert response["result"][0]["addrlocal"] == f"127.0.0.1:{local_port}"
+    assert response["result"][0]["network"] == "ipv4"
+    assert response["result"][0]["services"] == "0000000000000409"
+    assert response["result"][0]["servicesnames"] == ["NETWORK", "WITNESS", "NETWORK_LIMITED"]
+    assert response["result"][0]["inbound"] == False
 
     response = json.loads(
         requests.post(
@@ -127,7 +133,11 @@ def test_get_peer_info(tmp_path):
     assert response["result"][0]["id"] == 0
     assert response["result"][0]["addr"] == f"127.0.0.1:{local_port}"
     assert response["result"][0]["addrbind"] == f"127.0.0.1:{node1.p2p_port}"
-    assert response["result"][0]["addrlocal"] == f"127.0.0.1:{node1.p2p_port}"
+    assert response["result"][0]["addrlocal"] == f"0.0.0.0:{node1.p2p_port}"
+    assert response["result"][0]["network"] == "ipv4"
+    assert response["result"][0]["services"] == "0000000000000409"
+    assert response["result"][0]["servicesnames"] == ["NETWORK", "WITNESS", "NETWORK_LIMITED"]
+    assert response["result"][0]["inbound"] == True
 
     node1.stop()
     node2.stop()

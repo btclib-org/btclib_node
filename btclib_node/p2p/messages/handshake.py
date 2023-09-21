@@ -25,8 +25,8 @@ class Version:
         version = int.from_bytes(stream.read(4), "little")
         services = int.from_bytes(stream.read(8), "little")
         timestamp = int.from_bytes(stream.read(8), "little")
-        addr_recv = NetworkAddress.deserialize(stream, version_msg=True)
-        addr_from = NetworkAddress.deserialize(stream, version_msg=True)
+        addr_recv = NetworkAddress.deserialize(stream, version_msg=True, addrv2=False)
+        addr_from = NetworkAddress.deserialize(stream, version_msg=True, addrv2=False)
         nonce = int.from_bytes(stream.read(8), "little")
         user_agent_len = var_int.parse(stream)
         user_agent = stream.read(user_agent_len).decode()
@@ -69,3 +69,23 @@ class Verack:
 
     def serialize(self):
         return add_headers("verack", b"")
+
+
+@dataclass
+class Wtxidrelay:
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("wtxidrelay", b"")
+
+
+@dataclass
+class Sendaddrv2:
+    @classmethod
+    def deserialize(cls, data):
+        return cls()
+
+    def serialize(self):
+        return add_headers("sendaddrv2", b"")

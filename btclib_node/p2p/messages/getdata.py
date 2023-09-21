@@ -1,3 +1,4 @@
+import enum
 from dataclasses import dataclass
 from typing import List, Tuple
 
@@ -123,3 +124,14 @@ class Sendheaders:
 
     def serialize(self):
         return add_headers("sendheaders", b"")
+
+
+class InventoryType(enum.IntEnum):
+    tx = 1
+    block = 2
+    filtered_block = 3
+    cmpct_block = 4
+    wtx = 5
+    witness_tx = 0x40000001
+    witness_block = 0x40000002
+    filtered_witness_block = 0x40000003

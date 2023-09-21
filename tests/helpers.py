@@ -11,6 +11,8 @@ from btclib.script import script
 from btclib.tx.tx import Tx, TxIn, TxOut
 from btclib.tx.tx_in import OutPoint
 
+from btclib_node.p2p.address import NetworkAddress
+
 
 def generate_random_header_chain(length, start):
     # random.seed(42)
@@ -124,3 +126,7 @@ def brute_force_nonce(header):
         except BTClibValueError:
             header.nonce += 1
     header.assert_valid()
+
+
+def local_addr(port: int, time: int = 0, services: int = 0):
+    return NetworkAddress.from_ip_and_port("0.0.0.0", port, time, services)

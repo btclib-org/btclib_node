@@ -2,7 +2,7 @@ import time
 from collections import Counter
 
 from btclib_node.constants import NodeStatus
-from btclib_node.p2p.messages.getdata import Getdata
+from btclib_node.p2p.messages.getdata import Getdata, InventoryType
 
 
 def block_download(node):
@@ -65,4 +65,4 @@ def block_download(node):
             else:
                 return
             conn.download_queue = new
-            conn.send(Getdata([(0x40000002, hash) for hash in new]))
+            conn.send(Getdata([(InventoryType.witness_block, hash) for hash in new]))

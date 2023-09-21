@@ -1,7 +1,8 @@
 from btclib_node.constants import ProtocolVersion
-from btclib_node.p2p.address import NetworkAddress, to_ipv6
+from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import get_payload
 from btclib_node.p2p.messages.handshake import Verack, Version
+from tests.helpers import local_addr
 
 
 def test_verack():
@@ -16,8 +17,8 @@ def test_version():
         version=ProtocolVersion,
         services=services,
         timestamp=1,
-        addr_recv=NetworkAddress(0, 0, to_ipv6("0.0.0.0"), 1),
-        addr_from=NetworkAddress(0, services, to_ipv6("0.0.0.0"), 1),
+        addr_recv=local_addr(1),
+        addr_from=local_addr(1, services=services),
         nonce=1,
         user_agent="/Btclib/",
         start_height=0,
@@ -33,8 +34,8 @@ def test_version_without_agent():
         version=ProtocolVersion,
         services=services,
         timestamp=1,
-        addr_recv=NetworkAddress(0, 0, to_ipv6("0.0.0.0"), 1),
-        addr_from=NetworkAddress(0, services, to_ipv6("0.0.0.0"), 1),
+        addr_recv=local_addr(1),
+        addr_from=local_addr(1, services=services),
         nonce=1,
         user_agent="",
         start_height=0,

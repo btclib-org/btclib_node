@@ -1,7 +1,7 @@
 from btclib.exceptions import BTClibValueError
 from btclib.tx import Tx
 
-from btclib_node.constants import P2pConnStatus
+from btclib_node.constants import P2pConnStatus, Services
 from btclib_node.exceptions import MissingPrevoutError
 from btclib_node.main import verify_mempool_acceptance
 
@@ -42,18 +42,30 @@ def get_peer_info(node, conn, _):
     out = []
     for id, p2p_conn in node.p2p_manager.connections.items():
         if p2p_conn.status == P2pConnStatus.Connected:
+            try:
+                addr = p2p_conn.client.getpeername()
+                addrbind = p2p_conn.client.getsockname()
+            except Exception:
+                continue
 
-            addr = p2p_conn.client.getpeername()
-            addrbind = p2p_conn.client.getsockname()
-            addrlocal_ip = p2p_conn.version_message.addr_from.ip.ipv4_mapped
-            if not addrlocal_ip:
-                addrlocal_ip = addrbind[0]
+            services = p2p_conn.version_message.services
+            servicesnames = [s.name.upper() for s in Services if services & s]
 
             conn_dict = {}
             conn_dict["id"] = id
             conn_dict["addr"] = f"{addr[0]}:{addr[1]}"
             conn_dict["addrbind"] = f"{addrbind[0]}:{addrbind[1]}"
-            conn_dict["addrlocal"] = f"{addrlocal_ip}:{addrbind[1]}"
+            conn_dict["addrlocal"] = str(p2p_conn.version_message.addr_recv)
+            conn_dict["network"] = p2p_conn.address.netid.name
+            conn_dict["lastsend"] = p2p_conn.last_send
+            conn_dict["lastrecv"] = p2p_conn.last_receive
+            conn_dict["last_block"] = p2p_conn.last_block_timestamp
+            conn_dict["pingtime"] = p2p_conn.latency
+            conn_dict["version"] = p2p_conn.version_message.version
+            conn_dict["services"] = f"{services:016x}"
+            conn_dict["servicesnames"] = servicesnames
+            conn_dict["inbound"] = p2p_conn.inbound
+
             out.append(conn_dict)
 
     return out
@@ -110,6 +122,10 @@ def send_raw_transaction(node, conn, params):
         return None
 
 
+def ping(node, conn, _):
+    node.p2p_manager.ping_all()
+
+
 def stop(node, conn, _):
     node.stop()
     return "Btclib node stopping"
@@ -124,5 +140,6 @@ callbacks = {
     "getmempoolinfo": get_mempool_info,
     "testmempoolaccept": test_mempool_accept,
     "sendrawtransaction": send_raw_transaction,
+    "ping": ping,
     "stop": stop,
 }

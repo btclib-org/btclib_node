@@ -1,6 +1,15 @@
 import enum
 
-ProtocolVersion = 70015
+ProtocolVersion = 70016
+
+
+class Services(enum.IntEnum):
+    network = 1
+    getuxxo = 2
+    bloom = 4
+    witness = 8
+    compact_filters = 64
+    network_limited = 1024
 
 
 class P2pConnStatus(enum.IntEnum):

@@ -1,7 +1,7 @@
 from btclib_node import Node
 from btclib_node.config import Config
 from btclib_node.constants import P2pConnStatus
-from tests.helpers import get_random_port, wait_until
+from tests.helpers import get_random_port, local_addr, wait_until
 
 
 def test_simple_connection(tmp_path):
@@ -27,7 +27,7 @@ def test_simple_connection(tmp_path):
     wait_until(lambda: node1.p2p_manager.is_alive())
     wait_until(lambda: node2.p2p_manager.is_alive())
 
-    node2.p2p_manager.connect(("0.0.0.0", node1.p2p_port))
+    node2.p2p_manager.connect(local_addr(node1.p2p_port))
     wait_until(lambda: len(node1.p2p_manager.connections))
     connection = node1.p2p_manager.connections[0]
     wait_until(lambda: connection.status == P2pConnStatus.Connected)
@@ -51,7 +51,7 @@ def test_connection_to_ourselves(tmp_path):
 
     wait_until(lambda: node.p2p_manager.is_alive())
 
-    node.p2p_manager.connect(("0.0.0.0", node.p2p_port))
+    node.p2p_manager.connect(local_addr(node.p2p_port))
 
     wait_until(lambda: len(node.p2p_manager.nonces) == 2)
     wait_until(lambda: not len(node.p2p_manager.connections))
