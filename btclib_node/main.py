@@ -22,8 +22,7 @@ def finish_sync(node):
     if node.status == NodeStatus.BlockSynced:
         return
     node.status = NodeStatus.BlockSynced
-    for conn in list(node.p2p_manager.connections.values()):
-        conn.send(Filterclear())
+    # node.p2p_manager.sendall(Filterclear())
 
 
 # TODO: support for failed updates
@@ -49,12 +48,13 @@ def update_chain(node):
             # block_index.block_candidates.insert(100, block_index.block_candidates.popleft())
             return
 
-    node.logger.debug("Start getting blocks")
+    node.logger.info("Start block validation")
 
+    node.logger.debug("Start getting blocks")
     to_add = [node.block_db.get_block(hash) for hash in to_add_hash]
     to_remove = [node.block_db.get_rev_block(hash) for hash in to_remove_hash]
-
     node.logger.debug("Got all blocks")
+
     node.logger.debug("Start chainstate test")
 
     success = True
@@ -90,7 +90,7 @@ def update_chain(node):
                     update_block_status(
                         block_index, block_hash, BlockStatus.in_active_chain, wb
                     )
-                    node.logger.debug(f"Added block {block_hash.hex()}")
+                    node.logger.info(f"Added block {block_hash.hex()}")
                 utxo_index.finalize(wb)
             node.logger.debug("End chainstate finalize")
         else:
@@ -98,8 +98,10 @@ def update_chain(node):
             utxo_index.rollback()
             node.logger.debug("End chainstate rollback")
 
-    node.logger.debug("Start updating index")
+    node.logger.info("End block validation")
+
     if not success:
+        node.logger.debug("Start updating index")
         update_header_index(block_index)
 
     if success and node.status == NodeStatus.BlockSynced:

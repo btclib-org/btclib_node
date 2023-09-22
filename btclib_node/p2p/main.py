@@ -6,7 +6,7 @@ def handle_p2p_handshake(node):
     msg_type, msg, conn_id = node.p2p_manager.handshake_messages.popleft()
     if conn_id in node.p2p_manager.connections:
         conn = node.p2p_manager.connections[conn_id]
-        node.logger.info(f"Received message: {msg_type}, {conn_id}")
+        node.logger.info(f"Received p2p message: {msg_type}, {conn_id}")
         try:
             if conn.status == P2pConnStatus.Open:
                 handshake_callbacks[msg_type](node, msg, conn)

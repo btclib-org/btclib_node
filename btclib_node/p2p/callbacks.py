@@ -10,7 +10,7 @@ from btclib_node.p2p.messages.compact import Sendcmpct
 from btclib_node.p2p.messages.data import Block as BlockMsg
 from btclib_node.p2p.messages.data import Headers, Inv
 from btclib_node.p2p.messages.data import Tx as TxMsg
-from btclib_node.p2p.messages.errors import Notfound
+from btclib_node.p2p.messages.errors import Notfound, Reject
 from btclib_node.p2p.messages.getdata import (
     Getdata,
     Getheaders,
@@ -46,6 +46,8 @@ def version(node, msg, conn):
     conn.send(Wtxidrelay())
     conn.send(Sendaddrv2())
     conn.send(Verack())
+
+    conn.relay_txs = version_msg.relay
 
 
 def verack(node, msg, conn):
@@ -109,8 +111,6 @@ def addrv2(node, msg, conn):
     node.p2p_manager.peer_db.add_addresses(addresses)
 
 
-# TODO: sends to many messages
-# TODO: check if we have already sent and inv containing this tx
 def tx(node, msg, conn):
     tx = TxMsg.deserialize(msg).tx
     try:
@@ -118,8 +118,9 @@ def tx(node, msg, conn):
     except MissingPrevoutError:
         # We don't have the parents in the mempool
         return
-    node.mempool.add_tx(tx)
-    node.p2p_manager.sendall(Inv([(InventoryType.wtx, tx.hash)]))
+    if not node.mempool.contains_tx(tx):
+        node.mempool.add_tx(tx)
+        node.download_manager.received_txs.append((conn.id, tx.hash))
 
 
 def block(node, msg, conn):
@@ -158,7 +159,7 @@ def inv(node, msg, conn):
     wtransactions = [x[1] for x in inv.inventory if x[0] == InventoryType.wtx]
     missing_tx = node.mempool.get_missing(wtransactions, wtxid=True)
     if missing_tx:
-        conn.send(Getdata([(InventoryType.wtx, wtxid) for wtxid in missing_tx]))
+        node.download_manager.inv_txs.extend([(conn.id, wtxid) for wtxid in missing_tx])
 
 
 def getdata(node, msg, conn):
@@ -190,13 +191,6 @@ def getdata(node, msg, conn):
 
 def headers(node, msg, conn):
     headers = Headers.deserialize(msg).headers
-    valid_headers = []
-    for header in headers:
-        try:
-            valid_headers.append(header)
-        except BTClibValueError:
-            continue
-    headers = valid_headers
     added = node.chainstate.block_index.add_headers(headers)
     # TODO: now it doesn't support long reorganizations (> 2000 headers)
     if len(headers) == 2000 and added:  # we have to require more headers
@@ -221,6 +215,12 @@ def not_found(node, msg, conn):
     node.logger.warning(f"Missing objects:{missing}")
 
 
+def reject(node, msg, conn):
+    reject = Reject.deserialize(msg)
+    err_msg = f"Reject received: {reject.code.name}, {reject.reason}, {reject.data.hex()}"
+    node.logger.warning(err_msg)
+
+
 handshake_callbacks = {
     "version": version,
     "verack": verack,
@@ -237,8 +237,9 @@ callbacks = {
     "getdata": getdata,
     "getheaders": getheaders,
     "headers": headers,
-    "notfound": not_found,
     "addr": addr,
     "addrv2": addrv2,
     "getaddr": getaddr,
+    "notfound": not_found,
+    "reject": reject,
 }

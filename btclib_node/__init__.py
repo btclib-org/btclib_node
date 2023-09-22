@@ -8,7 +8,7 @@ from btclib_node.block_db import BlockDB
 from btclib_node.chainstate import Chainstate
 from btclib_node.config import Config
 from btclib_node.constants import NodeStatus
-from btclib_node.download import block_download
+from btclib_node.download import DownloadManager
 from btclib_node.log import Logger
 from btclib_node.main import update_chain
 from btclib_node.mempool import Mempool
@@ -42,13 +42,13 @@ class Node(threading.Thread):
 
         self.chainstate = Chainstate(self.data_dir, self.chain, self.logger)
         self.block_db = BlockDB(self.data_dir, self.logger)
-        self.mempool = Mempool()
+        self.mempool = Mempool(self.logger)
 
         self.worker_pool = Pool(processes=8)
 
         self.status = NodeStatus.Starting
 
-        self.download_window = []
+        self.download_manager = DownloadManager(self, self.logger)
 
         if config.p2p_port:
             self.p2p_port = config.p2p_port
@@ -86,7 +86,7 @@ class Node(threading.Thread):
             if wait:
                 time.sleep(0.0001)
             try:
-                block_download(self)
+                self.download_manager.step()
                 update_chain(self)
             except Exception:
                 self.logger.exception("Exception occurred")

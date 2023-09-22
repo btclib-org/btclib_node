@@ -1,13 +1,14 @@
+from btclib_node.log import Logger
 from btclib_node.mempool import Mempool
 from tests.helpers import generate_random_transaction
 
 
 def test_init():
-    Mempool()
+    Mempool(Logger(debug=True))
 
 
 def test_workflow():
-    mempool = Mempool()
+    mempool = Mempool(Logger(debug=True))
 
     tx = generate_random_transaction()
     mempool.add_tx(tx)

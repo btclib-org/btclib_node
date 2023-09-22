@@ -10,7 +10,10 @@ from tests.helpers import wait_until
 def test_init(tmp_path):
     node = Node(
         config=Config(
-            chain="regtest", data_dir=tmp_path, allow_p2p=False, allow_rpc=True
+            chain="regtest", 
+            data_dir=tmp_path, 
+            allow_p2p=False, 
+            allow_rpc=True,
         )
     )
     node.start()
@@ -28,6 +31,7 @@ def test_init(tmp_path):
                 }
             ).encode(),
             headers={"Content-Type": "text/plain"},
+            timeout=2,
         ).text
     )
 

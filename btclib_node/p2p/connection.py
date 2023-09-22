@@ -33,6 +33,7 @@ class Connection:
         self.version_message = None
         self.wtxidrelay_received = False
 
+        self.relay_tx = True
         self.prefer_addressv2 = False
 
         self.last_receive = time.time()
