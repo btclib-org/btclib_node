@@ -16,8 +16,9 @@ def test_workflow():
     assert mempool.size == 1
     assert mempool.bytesize == tx.vsize
     assert mempool.get_tx(tx.id) == tx
+    assert mempool.get_tx(tx.hash, wtxid=True) == tx
 
-    mempool.remove_tx(tx.id)
+    mempool.remove_tx(tx)
     assert mempool.size == 0
     assert mempool.bytesize == 0
  

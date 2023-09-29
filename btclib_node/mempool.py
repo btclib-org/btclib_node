@@ -34,17 +34,22 @@ class Mempool:
             txid = self.txid_index.get(txid)
         return self.transactions.get(txid)
 
+    # Don't need lock because handled in same thread
     def add_tx(self, tx):
-        if not self.is_full() and not tx.hash in self.transactions:
-            self.transactions[tx.hash] = tx
-            self.txid_index[tx.id] = tx.hash
+        if self.is_full():
+            return
+        wtxid, txid = tx.hash, tx.id
+        if txid not in self.txid_index:
+            self.transactions[wtxid] = tx
+            self.txid_index[tx.id] = wtxid
             self.size += 1
             self.bytesize += tx.vsize
 
-    def remove_tx(self, tx_id):
-        if tx_id in self.transactions:
-            tx = self.transactions.pop(tx_id)
-            self.txid_index.pop(tx.id)
+    def remove_tx(self, tx):
+        txid = tx.id
+        if txid in self.txid_index:
+            wtxid = self.txid_index.pop(tx.id)
+            tx = self.transactions.pop(wtxid)
             self.size -= 1
             self.bytesize -= tx.vsize
 

@@ -127,3 +127,7 @@ class P2pManager(threading.Thread):
     def ping_all(self):
         for conn in self.connections.copy().values():
             conn.send_ping()
+
+    def stop_all(self):
+        for conn in self.connections.copy().values():
+            conn.stop()

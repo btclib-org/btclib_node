@@ -111,7 +111,7 @@ def update_chain(node):
                 node.mempool.add_tx(tx)
         for rev_block, block in zip(generated_rev_patches, to_add):
             for tx in block.transactions:
-                node.mempool.remove_tx(tx.id)
+                node.mempool.remove_tx(tx)
 
     node.logger.debug("Finished main\n")
 

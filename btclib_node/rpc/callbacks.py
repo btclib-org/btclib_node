@@ -15,7 +15,6 @@ def get_block_hash(node, conn, params):
 
 
 def get_block_header(node, conn, params):
-
     block_index = node.chainstate.block_index
     header_index = block_index.header_index
 
@@ -81,6 +80,22 @@ def get_mempool_info(node, conn, _):
     return out
 
 
+def get_raw_mempool(node, conn, params):
+    verbose = params[0] if params else False
+    if verbose:
+        return {
+            tx.id.hex(): {
+                "size": tx.size,
+                "vsize": tx.vsize,
+                "weigth": tx.weight,
+                "wtxid": tx.hash.hex(),
+            }
+            for tx in node.mempool.transactions.values()
+        }
+    else:
+        return {"txids": [txid.hex() for txid in node.mempool.txid_index]}
+
+
 def test_mempool_accept(node, conn, params):
     rawtxs = params[0]
     out = []
@@ -138,6 +153,7 @@ callbacks = {
     "getpeerinfo": get_peer_info,
     "getconnectioncount": get_connection_count,
     "getmempoolinfo": get_mempool_info,
+    "getrawmempool": get_raw_mempool,
     "testmempoolaccept": test_mempool_accept,
     "sendrawtransaction": send_raw_transaction,
     "ping": ping,

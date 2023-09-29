@@ -2,6 +2,7 @@ import traceback
 from itertools import chain
 from pathlib import Path
 from typing import Tuple
+from copy import deepcopy
 
 from btclib.script.engine import verify_input, verify_transaction
 
@@ -12,6 +13,10 @@ def get_flags(config, index) -> Tuple[str]:
 
 def f(prevouts, tx, i, flags):
     try:
+        # no need to deepcopy the values as 
+        # they are not reused
+        # TODO: are we really sure this is safe?
+        # To check and fix upstream
         verify_input(prevouts, tx, i, flags)
     except Exception as e:
         err_dir = Path("errors", tx.id.hex(), str(i))
@@ -48,5 +53,8 @@ def check_transactions(transaction_data, index, node):
 
 
 def check_transaction(prevouts, tx, index, node):
+    # TODO: we need to deepcopy the transaction because
+    # verify_transaction modifies it. To fix upstream
+    tx = deepcopy(tx)
     flags = get_flags(node.config, index)
     verify_transaction(prevouts, tx, flags)
