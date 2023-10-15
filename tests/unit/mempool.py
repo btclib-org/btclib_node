@@ -21,13 +21,13 @@ def test_workflow():
     mempool.remove_tx(tx)
     assert mempool.size == 0
     assert mempool.bytesize == 0
- 
+
     txs = []
     for x in range(100):
         tx = generate_random_transaction()
         mempool.add_tx(tx)
         txs.append(tx)
-        
+
     prev_size = mempool.size
     prev_bytesize = mempool.bytesize
     # Test is_full() method
@@ -40,4 +40,4 @@ def test_workflow():
     mempool.bytesize_limit = 1000**2
     assert mempool.get_missing([tx.id for tx in txs] + [tx.id]) == [tx.id]
 
-    assert mempool.get_tx(b"\x00"*32) == None
+    assert mempool.get_tx(b"\x00" * 32) is None

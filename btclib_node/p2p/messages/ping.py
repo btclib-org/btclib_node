@@ -1,4 +1,4 @@
-import random
+import secrets
 from dataclasses import dataclass
 
 from btclib.utils import bytesio_from_binarydata
@@ -12,7 +12,7 @@ class Ping:
 
     def __init__(self, nonce=None):
         if not nonce:
-            self.nonce = random.randint(0, 2 ** 64 - 1)
+            self.nonce = secrets.randbelow(0xFFFFFFFFFFFF)
         else:
             self.nonce = nonce
 

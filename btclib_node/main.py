@@ -4,7 +4,6 @@ from btclib_node.chainstate.block_index import BlockStatus
 from btclib_node.constants import NodeStatus
 from btclib_node.exceptions import MissingPrevoutError
 from btclib_node.interpreter import check_transaction, check_transactions
-from btclib_node.p2p.messages.filters import Filterclear
 
 
 def update_block_status(index, hash, status, wb):
@@ -28,7 +27,6 @@ def finish_sync(node):
 
 # TODO: support for failed updates
 def update_chain(node):
-
     if node.status < NodeStatus.HeaderSynced:
         return
 

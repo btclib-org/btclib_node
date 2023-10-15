@@ -1,14 +1,9 @@
-import time
-
 from btclib_node import Node
 from btclib_node.chains import RegTest
 from btclib_node.config import Config
 from btclib_node.constants import NodeStatus, P2pConnStatus
-from btclib_node.main import update_chain
-from btclib_node.p2p.messages.ping import Ping
 from tests.helpers import (
     generate_random_chain,
-    generate_random_header_chain,
     generate_random_transaction,
     get_random_port,
     local_addr,

@@ -1,4 +1,3 @@
-import plyvel
 from btclib.tx.tx_in import OutPoint
 from btclib.tx.tx_out import TxOut
 
@@ -7,7 +6,6 @@ from btclib_node.block_db import RevBlock
 
 class UtxoIndex:
     def __init__(self, parent_db, logger):
-
         self.db = parent_db
 
         self.removed_utxos = set()
@@ -16,7 +14,6 @@ class UtxoIndex:
         self.logger = logger
 
     def add_block(self, block):
-
         removed = []
         added = []
         complete_transactions = []
@@ -27,13 +24,11 @@ class UtxoIndex:
             added.append(out_point)
 
         for tx in block.transactions[1:]:
-
             tx_id = tx.id
 
             prev_outputs = []
 
             for tx_in in tx.vin:
-
                 prevout_bytes = tx_in.prev_out.serialize(check_validity=False)
 
                 if prevout_bytes in self.removed_utxos:
@@ -68,7 +63,6 @@ class UtxoIndex:
 
     def apply_rev_block(self, rev_block):
         for out_point in rev_block.to_remove:
-
             out_point_bytes = out_point.serialize(check_validity=False)
 
             if out_point_bytes in self.removed_utxos:

@@ -13,7 +13,6 @@ from tests.helpers import generate_random_chain, get_random_port, local_addr, wa
 
 @pytest.mark.run(order=1)
 def test_download(tmp_path):
-
     length = 3000
     chain = generate_random_chain(length, RegTest().genesis.hash)
     headers = [block.header for block in chain]

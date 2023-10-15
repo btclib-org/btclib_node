@@ -1,8 +1,4 @@
 import plyvel
-from btclib.tx.tx_in import OutPoint
-from btclib.tx.tx_out import TxOut
-
-from btclib_node.block_db import RevBlock
 
 from .block_index import BlockIndex
 from .utxo_index import UtxoIndex

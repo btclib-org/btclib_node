@@ -9,7 +9,6 @@ from btclib_node.constants import NodeStatus, P2pConnStatus
 from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.connection import Connection
 from btclib_node.p2p.messages.data import Tx
-from btclib_node.p2p.messages.ping import Ping
 
 
 class P2pManager(threading.Thread):
@@ -47,9 +46,7 @@ class P2pManager(threading.Thread):
             self.create_connection(client, address, False)
 
     def connect(self, address):
-        asyncio.run_coroutine_threadsafe(
-            self.async_connect(address), self.loop
-        )
+        asyncio.run_coroutine_threadsafe(self.async_connect(address), self.loop)
 
     async def manage_connections(self, loop):
         while True:

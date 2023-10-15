@@ -11,7 +11,19 @@ plyvel = "1.3.0"
 btclib = "2023.7.12"
 http-parser = "^0.9.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+isort = "^5.12.0"
+black = "^23.9.1"
+nox = "^2023.4.22"
+pre-commit = "^3.4.0"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
 pytest = "^7.0"
 pytest-cov = {extras = ["toml"], version = "^4.0"}
 pytest-xdist = "^3.3.0"
@@ -25,7 +37,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-testpaths = ["tests/unit", 'tests/functional']
+testpaths = ["tests/unit", "tests/functional"]
 python_files = "*.py"
 python_functions = "test*"
 addopts = "-n auto --remote-data=any --cov --cov-report term-missing:skip-covered --durations=10"
@@ -42,3 +54,10 @@ precision = 2
 [tool.isort]
 profile = "black"
 src_paths = ["btclib_node", "tests"]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.flake8]
+max-line-length = 130
+ignore = ["E203", "E501", "W503"]

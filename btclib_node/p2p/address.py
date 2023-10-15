@@ -1,10 +1,9 @@
 import asyncio
 import enum
-import random
+import secrets
 import socket
 import time
 from dataclasses import dataclass
-from ipaddress import AddressValueError, IPv6Address
 
 from btclib import var_bytes, var_int
 from btclib.utils import bytesio_from_binarydata
@@ -121,7 +120,7 @@ class NetworkAddress:
                     try:
                         client.getpeername()
                         return client
-                    except socket.error:
+                    except OSError:
                         pass
                 client.close()
         else:
@@ -172,7 +171,7 @@ class PeerDB:
 
     def random_address(self):
         while True:
-            address = random.choice(list(self.addresses))
+            address = secrets.choice(list(self.addresses))
             if address.can_connect:
                 return address
 

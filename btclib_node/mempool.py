@@ -1,13 +1,10 @@
-from dataclasses import dataclass, field
 from typing import Dict
 
 from btclib.tx.tx import Tx
 
 
 class Mempool:
-
     def __init__(self, logger):
-
         self.logger = logger
 
         self.transactions: Dict[bytes, Tx] = {}

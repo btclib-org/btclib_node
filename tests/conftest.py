@@ -3,7 +3,6 @@ from contextlib import contextmanager
 import pytest
 
 from btclib_node import Node
-from btclib_node.chains import RegTest
 from btclib_node.config import Config
 from tests.helpers import get_random_port
 

@@ -6,7 +6,6 @@ from btclib_node import Node
 from btclib_node.chains import RegTest
 from btclib_node.config import Config
 from btclib_node.constants import NodeStatus
-from btclib_node.main import update_chain
 from tests.helpers import (
     generate_random_chain,
     generate_random_header_chain,

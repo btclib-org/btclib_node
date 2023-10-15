@@ -4,7 +4,7 @@ from typing import List
 from btclib import var_int
 from btclib.utils import bytesio_from_binarydata
 
-from btclib_node.p2p.address import NetworkAddress, NetworkID
+from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import add_headers
 
 

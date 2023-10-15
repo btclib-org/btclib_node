@@ -20,7 +20,7 @@ def test_tx():
         sequence=0xFFFFFFFF,
     )
     tx_out = TxOut(
-        value=50 * 10 ** 8,
+        value=50 * 10**8,
         script_pub_key=script.serialize(["00"]),
     )
     tx = TxData(
@@ -43,7 +43,7 @@ def test_block():
             sequence=0xFFFFFFFF,
         )
         tx_out = TxOut(
-            value=50 * 10 ** 8,
+            value=50 * 10**8,
             script_pub_key=script.serialize([f"{x}{x}"]),
         )
         tx = TxData(
@@ -111,7 +111,7 @@ def test_blocktxn():
             sequence=0xFFFFFFFF,
         )
         tx_out = TxOut(
-            value=50 * 10 ** 8,
+            value=50 * 10**8,
             script_pub_key=script.serialize([f"{x}{x}"]),
         )
         tx = TxData(

@@ -13,11 +13,11 @@ def test_serialization():
             if not addrv2 and not netid.can_addrv1:
                 continue
             for x in range(start, netid.addr_bytesize * 8 + 1):
-                addr = (2 ** x - 1).to_bytes(netid.addr_bytesize, "big")
+                addr = (2**x - 1).to_bytes(netid.addr_bytesize, "big")
                 for y in range(10):
-                    services = 2 ** y
+                    services = 2**y
                     for z in range(1, 17):
-                        port = 2 ** z - 1
+                        port = 2**z - 1
                         network_address = NetworkAddress(0, services, netid, addr, port)
                         assert network_address == NetworkAddress.deserialize(
                             network_address.serialize(addrv2=addrv2), addrv2=addrv2

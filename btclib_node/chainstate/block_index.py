@@ -2,7 +2,6 @@ import enum
 from collections import deque
 from dataclasses import dataclass
 
-import plyvel
 from btclib import var_int
 from btclib.block import BlockHeader
 from btclib.utils import bytesio_from_binarydata
@@ -12,7 +11,7 @@ from btclib.utils import bytesio_from_binarydata
 def calculate_work(header):
     target = int.from_bytes(header.bits[-3:], "big")
     exp = pow(256, (header.bits[0] - 3))
-    return int(256 ** 32 / target / exp)
+    return int(256**32 / target / exp)
 
 
 class BlockStatus(enum.IntEnum):
@@ -49,7 +48,6 @@ class BlockInfo:
 
 class BlockIndex:
     def __init__(self, parent_db, chain, logger):
-
         self.logger = logger
 
         self.db = parent_db
@@ -188,7 +186,6 @@ class BlockIndex:
         added = False  # flag that signals if there is a new header in this message
         current_work = self.get_block_info(self.active_chain[-1]).chainwork
         for header in headers:
-
             # TODO: validate timestamp and difficulty
 
             header_hash = header.hash

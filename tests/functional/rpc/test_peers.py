@@ -113,8 +113,12 @@ def test_get_peer_info(tmp_path):
     assert response["result"][0]["addrlocal"] == f"127.0.0.1:{local_port}"
     assert response["result"][0]["network"] == "ipv4"
     assert response["result"][0]["services"] == "0000000000000409"
-    assert response["result"][0]["servicesnames"] == ["NETWORK", "WITNESS", "NETWORK_LIMITED"]
-    assert response["result"][0]["inbound"] == False
+    assert response["result"][0]["servicesnames"] == [
+        "NETWORK",
+        "WITNESS",
+        "NETWORK_LIMITED",
+    ]
+    assert not response["result"][0]["inbound"]
 
     response = json.loads(
         requests.post(
@@ -136,8 +140,12 @@ def test_get_peer_info(tmp_path):
     assert response["result"][0]["addrlocal"] == f"0.0.0.0:{node1.p2p_port}"
     assert response["result"][0]["network"] == "ipv4"
     assert response["result"][0]["services"] == "0000000000000409"
-    assert response["result"][0]["servicesnames"] == ["NETWORK", "WITNESS", "NETWORK_LIMITED"]
-    assert response["result"][0]["inbound"] == True
+    assert response["result"][0]["servicesnames"] == [
+        "NETWORK",
+        "WITNESS",
+        "NETWORK_LIMITED",
+    ]
+    assert response["result"][0]["inbound"]
 
     node1.stop()
     node2.stop()

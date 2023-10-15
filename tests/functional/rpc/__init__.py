@@ -10,9 +10,9 @@ from tests.helpers import wait_until
 def test_init(tmp_path):
     node = Node(
         config=Config(
-            chain="regtest", 
-            data_dir=tmp_path, 
-            allow_p2p=False, 
+            chain="regtest",
+            data_dir=tmp_path,
+            allow_p2p=False,
             allow_rpc=True,
         )
     )

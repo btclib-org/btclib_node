@@ -1,4 +1,4 @@
-from btclib_node.chains import Main, RegTest, SigNet, TestNet
+from btclib_node.chains import Main, SigNet, TestNet
 
 
 def test_genesis():

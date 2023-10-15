@@ -4,14 +4,7 @@ import requests
 
 from btclib_node.chains import RegTest
 from btclib_node.constants import NodeStatus
-from btclib_node.main import update_chain
-from tests.helpers import (
-    generate_random_chain,
-    generate_random_header_chain,
-    generate_random_transaction,
-    get_random_port,
-    wait_until,
-)
+from tests.helpers import generate_random_chain, generate_random_transaction, wait_until
 
 
 def test_add_tx(rpc_node):
@@ -47,7 +40,7 @@ def test_add_tx(rpc_node):
             timeout=2,
         ).text
     )
-    assert response["result"][0]["allowed"] == False
+    assert not response["result"][0]["allowed"]
     assert response["result"][0]["reject-reason"] == "Invalid serialization"
 
     response = json.loads(
@@ -65,7 +58,7 @@ def test_add_tx(rpc_node):
             timeout=2,
         ).text
     )
-    assert response["result"][0]["allowed"] == False
+    assert not response["result"][0]["allowed"]
     assert response["result"][0]["reject-reason"] == "Missing prevouts"
 
     tx1 = generate_random_transaction(chain[-1].transactions[0].id)
@@ -86,7 +79,7 @@ def test_add_tx(rpc_node):
             timeout=2,
         ).text
     )
-    assert response["result"][0]["allowed"] == True
+    assert response["result"][0]["allowed"]
 
     response = json.loads(
         requests.post(
@@ -103,10 +96,11 @@ def test_add_tx(rpc_node):
             timeout=2,
         ).text
     )
-    assert response["result"][0]["allowed"] == False
+    assert not response["result"][0]["allowed"]
     assert response["result"][0]["reject-reason"] == "Missing prevouts"
 
-    response = json.loads(requests.post(
+    response = json.loads(
+        requests.post(
             url=f"http://127.0.0.1:{node.rpc_port}",
             data=json.dumps(
                 {
@@ -153,4 +147,4 @@ def test_add_tx(rpc_node):
             timeout=2,
         ).text
     )
-    assert response["result"][0]["allowed"] == True
+    assert response["result"][0]["allowed"]

@@ -64,7 +64,6 @@ class Node(threading.Thread):
         self.rpc_manager = RpcManager(self, self.rpc_port)
 
     def run(self):
-
         self.logger.info("Starting main loop")
 
         if self.p2p_port:

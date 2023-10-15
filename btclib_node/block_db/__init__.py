@@ -83,7 +83,6 @@ class FileMetadata:
 
 class BlockDB:
     def __init__(self, data_dir, logger):
-
         self.logger = logger
 
         self.data_dir = data_dir / "blocks"
@@ -127,7 +126,7 @@ class BlockDB:
         else:
             filename = f"{self.file_index:06d}.blk"
             file_metadata = self.files[filename]
-            if file_metadata.size > 128 * 1000 ** 2:  # 128MB
+            if file_metadata.size > 128 * 1000**2:  # 128MB
                 new_file = True
         if new_file:
             self.file_index += 1

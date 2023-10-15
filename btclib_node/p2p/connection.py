@@ -1,9 +1,7 @@
 import asyncio
-import random
 import re
+import secrets
 import time
-
-from btclib.exceptions import BTClibValueError
 
 from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion, Services
 from btclib_node.p2p.address import NetworkAddress
@@ -73,7 +71,6 @@ class Connection:
             pass
 
     async def async_send(self, msg):
-
         self.node.logger.debug(f"Sending message: {msg.__class__.__name__}")
 
         try:
@@ -88,7 +85,7 @@ class Connection:
 
     async def send_version(self):
         services = Services.network + Services.witness + Services.network_limited
-        nonce = random.randint(0, 0xFFFFFFFFFFFF)
+        nonce = secrets.randbelow(0xFFFFFFFFFFFF)
         self.manager.nonces.append(nonce)
         self.manager.nonces = self.manager.nonces[:10]
 
@@ -110,7 +107,6 @@ class Connection:
         self.ping_sent = time.time()
         self.ping_nonce = ping_msg.nonce
         self.send(ping_msg)
-
 
     def parse_messages(self):
         while True:

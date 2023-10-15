@@ -69,11 +69,11 @@ def test_add_tx(tmp_path):
     tx2 = generate_random_transaction(tx1.id)
 
     verify_mempool_acceptance(node, tx1)
-    
+
     # We can't find the prevouts
     with pytest.raises(MissingPrevoutError):
-        verify_mempool_acceptance(node, tx2) 
-    
+        verify_mempool_acceptance(node, tx2)
+
     # tx1 needs to be added to the mempool
     node.mempool.add_tx(tx1)
-    verify_mempool_acceptance(node, tx2) 
+    verify_mempool_acceptance(node, tx2)

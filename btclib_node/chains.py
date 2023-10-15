@@ -15,7 +15,7 @@ def create_genesis(time, nonce, difficulty, version, reward):
         [
             "FFFF001D",
             b"\x04",
-            "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks".encode(),
+            b"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks",
         ]
     )
     script_pub_key = script.serialize(
@@ -80,7 +80,7 @@ class Main(Chain):
             "seed.bitcoin.wiz.biz",
         ]
         self.genesis = create_genesis(
-            1231006505, 2083236893, 0x1D00FFFF, 1, 50 * 10 ** 8
+            1231006505, 2083236893, 0x1D00FFFF, 1, 50 * 10**8
         )
         self.flags = [
             (170061, "P2SH"),
@@ -106,7 +106,7 @@ class TestNet(Chain):
             "testnet-seed.bluematt.me",
         ]
         self.genesis = create_genesis(
-            1296688602, 414098458, 0x1D00FFFF, 1, 50 * 10 ** 8
+            1296688602, 414098458, 0x1D00FFFF, 1, 50 * 10**8
         )
         self.flags = [
             (395, "P2SH"),
@@ -126,7 +126,7 @@ class SigNet(Chain):
         self.port = 38333
         self.magic = "0a03cf40"  # default signet
         self.addresses = ["178.128.221.177"]
-        self.genesis = create_genesis(1598918400, 52613770, 0x1E0377AE, 1, 50 * 10 ** 8)
+        self.genesis = create_genesis(1598918400, 52613770, 0x1E0377AE, 1, 50 * 10**8)
         self.flags = [
             (0, "P2SH"),
             (0, "DERSIG"),
@@ -145,7 +145,7 @@ class RegTest(Chain):
         self.port = 18444
         self.magic = "fabfb5da"
         self.addresses = []
-        self.genesis = create_genesis(1296688602, 2, 0x207FFFFF, 1, 50 * 10 ** 8)
+        self.genesis = create_genesis(1296688602, 2, 0x207FFFFF, 1, 50 * 10**8)
         self.flags = [
             (0, "P2SH"),
             (0, "DERSIG"),

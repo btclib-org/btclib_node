@@ -1,7 +1,5 @@
 import time
 
-from btclib.exceptions import BTClibValueError
-
 from btclib_node.constants import NodeStatus, P2pConnStatus, ProtocolVersion, Services
 from btclib_node.exceptions import MissingPrevoutError
 from btclib_node.main import verify_mempool_acceptance
@@ -217,7 +215,9 @@ def not_found(node, msg, conn):
 
 def reject(node, msg, conn):
     reject = Reject.deserialize(msg)
-    err_msg = f"Reject received: {reject.code.name}, {reject.reason}, {reject.data.hex()}"
+    err_msg = (
+        f"Reject received: {reject.code.name}, {reject.reason}, {reject.data.hex()}"
+    )
     node.logger.warning(err_msg)
 
 

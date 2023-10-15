@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 
-from btclib.block import Block as BlockData
 from btclib.block import BlockHeader
 from btclib.script import script
 from btclib.tx.tx import Tx as TxData
@@ -30,7 +29,7 @@ def test_cmpctblock():
             sequence=0xFFFFFFFF,
         )
         tx_out = TxOut(
-            value=50 * 10 ** 8,
+            value=50 * 10**8,
             script_pub_key=script.serialize([f"{x}{x}"]),
         )
         tx = TxData(

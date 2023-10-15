@@ -1,5 +1,4 @@
 from btclib_node.constants import ProtocolVersion
-from btclib_node.p2p.address import NetworkAddress
 from btclib_node.p2p.messages import get_payload
 from btclib_node.p2p.messages.handshake import Verack, Version
 from tests.helpers import local_addr

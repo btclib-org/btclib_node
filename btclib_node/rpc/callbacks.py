@@ -44,7 +44,7 @@ def get_peer_info(node, conn, _):
             try:
                 addr = p2p_conn.client.getpeername()
                 addrbind = p2p_conn.client.getsockname()
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
             services = p2p_conn.version_message.services
@@ -102,7 +102,7 @@ def test_mempool_accept(node, conn, params):
     for rawtx in rawtxs:
         try:
             tx = Tx.parse(rawtx)
-        except:
+        except BTClibValueError:
             out.append({"allowed": False, "reject-reason": "Invalid serialization"})
             continue
 
@@ -115,7 +115,7 @@ def test_mempool_accept(node, conn, params):
             tx_res["reject-reason"] = "Invalid signatures or script"
         except MissingPrevoutError:
             tx_res["reject-reason"] = "Missing prevouts"
-        except:
+        except Exception:
             tx_res["reject-reason"] = "Unknown error"
         out.append(tx_res)
     return out
@@ -129,11 +129,11 @@ def send_raw_transaction(node, conn, params):
             verify_mempool_acceptance(node, tx)
             node.mempool.add_tx(tx)
             node.p2p_manager.broadcast_raw_transaction(tx)
-        except Exception:
+        except BTClibValueError:
             pass
         finally:
             return tx.id.hex()
-    except:
+    except Exception:
         return None
 
 

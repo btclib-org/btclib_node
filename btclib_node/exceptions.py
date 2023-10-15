@@ -1,4 +1,4 @@
-"""Expception classes"""
+"""Expception classes."""
 
 
 class MissingPrevoutError(ValueError):

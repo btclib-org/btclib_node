@@ -1,6 +1,5 @@
 from btclib_node.block_db import BlockDB
 from btclib_node.chainstate import Chainstate
-from btclib_node.chainstate.block_index import BlockIndex, BlockInfo, BlockStatus
 from btclib_node.config import Config
 from btclib_node.log import Logger
 

@@ -40,6 +40,6 @@ def test_getheaders():
 
 
 def test_getblocktxn():
-    msg = Getblocktxn(b"\x00" * 32, [2 ** x for x in range(10)])
+    msg = Getblocktxn(b"\x00" * 32, [2**x for x in range(10)])
     msg_bytes = bytes.fromhex("00" * 4) + msg.serialize()
     assert msg == Getblocktxn.deserialize(get_payload(msg_bytes)[1])

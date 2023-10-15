@@ -41,7 +41,8 @@ class Connection:
                     break
                 recved = len(data)
                 nparsed = p.execute(data, recved)
-                assert nparsed == recved
+                if nparsed != recved:
+                    raise RuntimeError
                 if p.is_partial_body():
                     body.append(p.recv_body())
                 if p.is_message_complete():
