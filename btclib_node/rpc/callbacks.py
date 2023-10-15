@@ -142,7 +142,6 @@ def ping(node, conn, _):
 
 
 def stop(node, conn, _):
-    node.stop()
     return "Btclib node stopping"
 
 

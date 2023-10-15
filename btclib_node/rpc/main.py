@@ -66,6 +66,10 @@ def handle_rpc(node):
                 node.logger.exception("Exception occurred")
                 response.append(error_msg(-32603))
 
-    conn.send(response)
+    if request.get("method") == "stop":
+        conn.send_and_wait(response)
+        node.stop()
+    else:
+        conn.send(response)
     node.logger.debug("Finished rpc\n")
     # node.rpc_manager.connections.pop(conn_id)

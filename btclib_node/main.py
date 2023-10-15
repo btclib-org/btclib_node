@@ -22,7 +22,8 @@ def finish_sync(node):
     if node.status == NodeStatus.BlockSynced:
         return
     node.status = NodeStatus.BlockSynced
-    # node.p2p_manager.sendall(Filterclear())
+    # start new connections with tx relay enabled
+    node.p2p_manager.stop_all()
 
 
 # TODO: support for failed updates

@@ -38,23 +38,25 @@ def test_send_tx(tmp_path):
 
     wait_until(lambda: node1.p2p_manager.is_alive())
     wait_until(lambda: node2.p2p_manager.is_alive())
+
+    # Add one block
+    block = generate_random_chain(1, RegTest().genesis.hash)[0]
+    for node in (node1, node2):
+        block_index = node.chainstate.block_index
+        node.chainstate.block_index.add_headers([block.header])
+        node.status = NodeStatus.HeaderSynced
+        node.block_db.add_block(block)
+        block_info = block_index.get_block_info(block.header.hash)
+        block_info.downloaded = True
+        block_index.insert_block_info(block_info)
+        wait_until(lambda: len(block_index.active_chain) == 2)
+
     node2.p2p_manager.connect(local_addr(node1.p2p_port))
     wait_until(lambda: len(node1.p2p_manager.connections))
     connection = node1.p2p_manager.connections[0]
     wait_until(lambda: connection.status == P2pConnStatus.Connected)
     connection = node2.p2p_manager.connections[0]
     wait_until(lambda: connection.status == P2pConnStatus.Connected)
-
-    # Add one block
-    block = generate_random_chain(1, RegTest().genesis.hash)[0]
-    block_index = node1.chainstate.block_index
-    node1.chainstate.block_index.add_headers([block.header])
-    node1.status = NodeStatus.HeaderSynced
-    node1.block_db.add_block(block)
-    block_info = block_index.get_block_info(block.header.hash)
-    block_info.downloaded = True
-    block_index.insert_block_info(block_info)
-    wait_until(lambda: len(block_index.active_chain) == 2)
 
     tx = generate_random_transaction(block.transactions[0].id)
 

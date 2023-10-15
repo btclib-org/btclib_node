@@ -69,6 +69,14 @@ class Connection:
     def send(self, response):
         asyncio.run_coroutine_threadsafe(self.async_send(response), self.loop)
 
+    # Use with care
+    def send_and_wait(self, response):
+        future = asyncio.run_coroutine_threadsafe(self.async_send(response), self.loop)
+        try:
+            future.result(timeout=2)
+        except TimeoutError:
+            pass
+
     def __repr__(self):
         try:
             out = f"Connection to {self.client.getpeername()[0]}:{self.client.getpeername()[1]}"
