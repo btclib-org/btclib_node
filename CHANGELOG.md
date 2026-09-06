@@ -267,6 +267,18 @@ keeps whichever shape it was written in.
   opening on `cd "$WT"` describes the fence this one replaces; that the
   sync stays outside the block is unchanged.
 
+### `scorecard.yml` names no count of elevations
+
+- **The workflow-level comment said the job below carried "one
+  elevation", and that job's own `permissions:` block declares
+  `id-token: write` and `security-events: write`, each with its own
+  reason on the line above it** (closes #886): the count is contradicted
+  by the list its own next clause gives. The comment now says the job
+  below is elevated and leaves what that takes to the block that
+  declares it, which is what the job's own `elevation-per-job` comment
+  already does — it names what stays at the workflow default rather than
+  tallying what does not.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
