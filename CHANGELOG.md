@@ -279,6 +279,19 @@ keeps whichever shape it was written in.
   already does — it names what stays at the workflow default rather than
   tallying what does not.
 
+### The worktree fence's create bullet no longer claims one string per shell
+
+- **"the string each of them prints is its own, and only the outcome is
+  shared" claimed a universal the four shells refute** (issue
+  btclib-org/.github#859): measured in `/bin/zsh`, `/bin/bash`,
+  `/bin/sh` and `/bin/dash`, which do not all print the same
+  diagnostic. `/bin/bash` and `/bin/sh` give the identical
+  `branch: No such file or directory` once each one's own script path
+  and line number are stripped from the front of it.
+- **The half that stays true is the string `CLAUDE.md` quotes being
+  `zsh`'s own** (issue btclib-org/.github#859); it is the universal
+  over all four shells that fails, not that quotation.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
