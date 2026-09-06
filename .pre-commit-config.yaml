@@ -413,8 +413,7 @@ repos:
   # the width of a toml comment, which nothing else here measures:
   # taplo formats values and leaves comments alone by design.
   # `.{80}\S*[ \t]` reports a line only when whitespace is left past
-  # column 80, the amnesty MD013 and ruff give a comment ending in a
-  # link that cannot be broken
+  # column 80: a comment whose overflow is one unbroken token is exempt
   - repo: local
     hooks:
       - id: toml-comment-width

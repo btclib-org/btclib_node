@@ -380,6 +380,21 @@ keeps whichever shape it was written in.
   states a lexical amnesty, which is btclib-org/.github#843 and is not
   this issue.
 
+### `toml-comment-width`'s comment claims no other tool's amnesty
+
+- **The comment above the hook no longer gives its exemption to MD013
+  and ruff** (issue btclib-org/.github#843). `.{80}\S*[ \t]` reports a
+  line only where whitespace is left past column 80, which is not
+  ruff's rule: at `max-doc-length = 80`, `W505` reports whole-line
+  comments this pattern passes over. The comment now attributes the
+  exemption to the pattern and to nothing else, which is the shape
+  `btclib-org/.github` and `btclib-org/bbt` carry.
+- **The `name:` and the `entry:` are left alone**: the entry above
+  deferred the whole of that sentence to btclib-org/.github#843, and
+  what stays there is the lexical amnesty the `name:` states against
+  the positional rule the pattern implements, one decision for every
+  tree carrying the hook rather than this tree's to take alone.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
