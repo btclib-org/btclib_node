@@ -410,7 +410,7 @@ repos:
         # the hook declares, and that flag is the whole of what it
         # declares, so passing --offline alone would drop it
         args: [--offline, --no-progress]
-  # the width of a toml comment, the one prose left with no limit:
+  # the width of a toml comment, which nothing else here measures:
   # taplo formats values and leaves comments alone by design.
   # `.{80}\S*[ \t]` reports a line only when whitespace is left past
   # column 80, the amnesty MD013 and ruff give a comment ending in a

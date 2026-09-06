@@ -778,7 +778,9 @@ ignore = [
     "prohibited-trailing-comma",
     # code length is enforced by the formatter, which reflows to its 88
     # columns everything it is allowed to rewrite; max-doc-length below
-    # measures the prose the formatter never touches.
+    # reaches a docstring and a whole-line comment, not a comment
+    # following code on its line -- with this rule ignored, nothing here
+    # measures one at any width.
     "line-too-long",
 ]
 
