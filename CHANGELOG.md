@@ -326,6 +326,24 @@ keeps whichever shape it was written in.
   the range instead of pointing at it, and a second copy of a number
   is the one that goes stale.
 
+### The coverage floor writes to `known_args_namespace`, not a plugin
+
+- **`relax_coverage_floor` sets
+  `config.known_args_namespace.cov_fail_under`, and the lookup of the
+  `_cov` plugin it used to reach through goes with it**
+  (issue btclib-org/.github#424). Section 8 of the organization standard
+  names `known_args_namespace` as where the threshold belongs:
+  pytest builds that namespace by parsing the known arguments into a
+  copy of `config.option`, and pytest-cov holds on to the copy and
+  never `config.option` itself -- `bitcoin-core-rpc` and `btclib`
+  already write there, in those words.
+  `plugin.options.cov_fail_under` reached into a third-party plugin's
+  own internals, a line the next `pytest-cov` release is free to break.
+  `tests/unit/coverage_floor_test.py`'s case for a missing `_cov` plugin
+  has no path left to cover once that lookup is gone, and is deleted
+  with it; the cases that read the write back now read
+  `known_args_namespace` instead of the plugin's options.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

@@ -98,8 +98,8 @@ def relax_coverage_floor(config: pytest.Config) -> bool:
     stops being read at all. An explicit `--cov-fail-under` still means
     what it says.
 
-    Answers whether it lowered the floor, which is how it is tested: the
-    run that measures the suite is the one run this never fires on.
+    Answers whether it wrote the floor down, which is how it is tested:
+    the run that measures the suite is the one run this never fires on.
     """
     option = config.option
     selective = bool(
@@ -121,13 +121,11 @@ def relax_coverage_floor(config: pytest.Config) -> bool:
     asked_for = option.cov_fail_under is not None
     if not selective or asked_for:
         return False
-    # pytest-cov keeps its own namespace, built from the arguments before
-    # the configuration file is read; config.option is a different object
-    # and setting the floor there changes nothing
-    plugin = config.pluginmanager.getplugin("_cov")
-    if plugin is None:
-        return False
-    plugin.options.cov_fail_under = 0
+    # pytest builds `known_args_namespace` by parsing the known
+    # arguments into a copy of `config.option`, and pytest-cov holds on
+    # to that copy: `config.option` is a different object, so setting
+    # the floor there runs without error and changes nothing
+    config.known_args_namespace.cov_fail_under = 0
     return True
 
 

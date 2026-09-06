@@ -54,19 +54,19 @@ def a_config(
     ignore_glob: list[str] | None = None,
     lf: bool = False,
     cov_fail_under: float | None = None,
-    plugin: bool = True,
     testpaths: list[str] | None = None,
     rootpath: Path | None = None,
 ) -> tuple[Any, SimpleNamespace]:
-    """Build a `pytest.Config` stand-in and the `pytest-cov` options it exposes.
+    """Build a `pytest.Config` stand-in and the `known_args_namespace` on it.
 
     Only the attributes `asks_for_everything` and `relax_coverage_floor`
     actually read are here, named after the command-line options they
-    come from; the second element returned is the `SimpleNamespace` the
-    fake `_cov` plugin holds, so a test can read `cov_fail_under` back
-    off it after calling one of the two functions on the first element.
+    come from; the second element returned is the `SimpleNamespace`
+    standing in for `known_args_namespace`, so a test can read
+    `cov_fail_under` back off it after calling one of the two functions
+    on the first element.
     """
-    options = SimpleNamespace(cov_fail_under=FLOOR)
+    known_args_namespace = SimpleNamespace(cov_fail_under=FLOOR)
     return SimpleNamespace(
         option=SimpleNamespace(
             # None is what the --help path leaves it, and is not the
@@ -89,14 +89,11 @@ def a_config(
         getini=lambda name: {
             "testpaths": TESTPATHS if testpaths is None else testpaths
         }[name],
-        # answers to the name pytest-cov registers under, and to no
-        # other: the string is what couples this to the plugin
-        pluginmanager=SimpleNamespace(
-            getplugin=lambda name: (
-                SimpleNamespace(options=options) if plugin and name == "_cov" else None
-            )
-        ),
-    ), options
+        # pytest-cov reads this copy, which pytest builds by parsing
+        # the known arguments into a copy of config.option, and never
+        # config.option itself
+        known_args_namespace=known_args_namespace,
+    ), known_args_namespace
 
 
 @pytest.mark.parametrize("paths", WHOLE_SUITE, ids=lambda p: " ".join(p) or "(bare)")
@@ -201,13 +198,6 @@ def test_a_floor_asked_for_explicitly_is_left_alone() -> None:
     config, options = a_config(
         file_or_dir=["tests/unit/mempool_test.py"], cov_fail_under=FLOOR
     )
-    assert relax_coverage_floor(config) is False
-    assert options.cov_fail_under == FLOOR
-
-
-def test_there_is_nothing_to_lower_when_coverage_is_not_running() -> None:
-    """With no `_cov` plugin, a narrowed run leaves the floor untouched."""
-    config, options = a_config(file_or_dir=["tests/unit/mempool_test.py"], plugin=False)
     assert relax_coverage_floor(config) is False
     assert options.cov_fail_under == FLOOR
 
