@@ -357,6 +357,29 @@ keeps whichever shape it was written in.
   immediately below, which is how `btclib-benchmarks`'s module docstring
   cites the section too -- by pointing at where each of them is read.
 
+### A comment following code on its line is outside `max-doc-length`
+
+- **The `"line-too-long"` ignore reason no longer says `max-doc-length`
+  "measures the prose the formatter never touches"** (issue
+  btclib-org/.github#841). Such a comment is prose the formatter never
+  touches and the key does not reach it, which section 9 of the
+  organization standard now states with the reason. The comment names
+  what the key does reach -- a docstring and a whole-line comment -- and
+  what a comment following code meets here: this tree ignores
+  `line-too-long`, so nothing measures one at any width. The reason for
+  ignoring that rule, the formatter's own 88 columns, is unchanged above
+  it.
+- **`.pre-commit-config.yaml`'s `toml-comment-width` comment stops
+  calling a toml comment "the one prose left with no limit"**: that is a
+  claim about every other kind of prose in this tree, and a comment
+  following code is prose with no limit here too -- which is what the
+  same commit writes into `pyproject.toml`. The sentence now says that
+  nothing else here measures the width of a toml comment, which is the
+  reason the hook exists. What it says about the pattern's exemption is
+  left as it is: the `entry:` exempts by position where the `name:`
+  states a lexical amnesty, which is btclib-org/.github#843 and is not
+  this issue.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
