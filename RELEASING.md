@@ -702,11 +702,13 @@ reading a mismatch as tampering:
   ```
 
 - **the build backend is bounded, not pinned.** `[build-system] requires`
-  asks for `uv_build>=0.12.5,<0.13`, and a build takes whichever version
-  in that range the uv running it carries, so a rebuild months later
-  runs a backend the release never saw. What the ceiling bounds is the
-  *content* of the archive; its member metadata is `normalize_sdist.py`'s
-  answer and not the backend's.
+  names a range and not a version, and a build takes whichever version in
+  that range the uv running it carries, so a rebuild months later runs a
+  backend the release never saw. The range itself is read there, with the
+  reason for each bound beside it, rather than copied here, a second copy
+  of a number being the one that goes stale. What the ceiling bounds is
+  the *content* of the archive; its member metadata is
+  `normalize_sdist.py`'s answer and not the backend's.
 - **the rehearsal is a different version, by construction.** A TestPyPI
   dispatch appends `.dev<run*100+attempt>` to the version, so its files
   are not a second build of the release's — no digest is shared with the
