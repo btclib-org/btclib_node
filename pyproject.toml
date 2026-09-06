@@ -334,28 +334,30 @@ required-version = ">=0.12.7"
 # the configuration, in place of the separate include and exclude
 # language of a MANIFEST.in.
 #
-# What the floor buys is the sdist's own pyproject.toml being a normalized
-# copy of this file with the verbatim one kept beside it as
-# pyproject.toml.orig -- and that arrives in 0.12.0, not here. Measured by
-# calling the backend's own hook at each version, `uv build` being no use
-# for the question: given a `requires` its own version does not satisfy it
-# falls back to the copy bundled in the running uv and only warns, so it
-# answers for that copy rather than for the pin.
+# The floor is the boundary of the property it keeps: the sdist's own
+# pyproject.toml becomes a normalized copy of this file with the
+# verbatim one kept beside it as pyproject.toml.orig, and that arrives
+# in 0.12.0, which is the floor below. Measured by calling the backend's
+# own hook at each version, the version standing on a line of its own so
+# that an unfilled paste of the line below it fails on ${version:?}
+# rather than measuring whatever is installed -- `uv build` being no use
+# for that sweep, whose whole point is the versions below the running
+# uv: asking for a backend older than the one running is the
+# ceiling-below case, where uv build falls back to the copy it bundles
+# and only warns, so it answers for that copy rather than for the pin.
+# Above the running uv it does resolve the pin and answer for it, which
+# is the other half of the same fact and not a way to run the sweep.
 #
-#     uv run --no-project --with uv_build==<version> python -c \
+#     version=<the version to measure>
+#
+#     uv run --no-project --with uv_build=="${version:?}" python -c \
 #       "import uv_build; print(uv_build.build_sdist('<outdir>'))"
 #
-# The floor therefore sits above that boundary rather than on it, which is
-# the deliberate half: 0.12.5 is the uv this tree is developed and gated
-# against, being the rev .pre-commit-config.yaml pins for uv-pre-commit,
-# so the backend that builds an archive here is the one whose lock format
-# that hook writes. btclib-org/btclib#1267 is where the boundary is being
-# weighed for btclib, which is the tree this pin comes from. The ceiling
-# is the next minor, which is where uv's versioning policy puts a breaking
-# change, this backend releasing with uv and versioned by it.
-# btclib-org/.github#118 is where a pure-Python project was decided onto
-# this backend
-requires = ["uv_build>=0.12.5,<0.13"]
+# The ceiling is the next minor, which is where uv's versioning policy
+# puts a breaking change, this backend releasing with uv and versioned by
+# it. btclib-org/.github#118 is where a pure-Python project was decided
+# onto this backend
+requires = ["uv_build>=0.12.0,<0.13"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]

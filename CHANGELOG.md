@@ -292,6 +292,40 @@ keeps whichever shape it was written in.
   `zsh`'s own** (issue btclib-org/.github#859); it is the universal
   over all four shells that fails, not that quotation.
 
+### The `uv_build` floor moves to the boundary it keeps
+
+- **`[build-system]`'s `requires` becomes `uv_build>=0.12.0,<0.13`**
+  (issue btclib-org/.github#858). The ceiling is unchanged. `0.12.0` is
+  where the sdist's own `pyproject.toml` becomes a normalized copy of
+  this file with the verbatim one kept beside it as
+  `pyproject.toml.orig`, measured by calling the backend's own hook at
+  each version rather than by `uv build`, which where the range asks for
+  a backend older than the one running falls back to the copy that uv
+  bundles and only warns, answering for that copy and not for the pin.
+  `btclib-org/.github`'s `README.md`, section 3, now names that boundary
+  as the floor's own property rather than a number a pin merely clears,
+  and names a floor aligned with the `uv-pre-commit` rev or with a
+  sibling's number as the rejected alternative -- which is what this
+  pin was: `0.12.5`, the rev `.pre-commit-config.yaml` pinned for
+  `uv-pre-commit`. The comment's citation of btclib-org/btclib#1267 as
+  "where the boundary is being weighed" goes with it: that issue closed
+  on 2026-08-25, before the standard's sentence existed.
+  `[tool.uv]`'s `required-version` does not move -- it answers what uv
+  reads `uv.lock` with, not what the backend builds the archive with,
+  and lowering the one leaves the other's question untouched.
+- **`.pre-commit-config.yaml`'s `check-sdist` environment moves with
+  it, and `RELEASING.md` stops carrying a copy of the range.** That
+  `additional_dependencies` is `[build-system]`'s own range and not a
+  number of its own: section 3 of the standard says the archive
+  `check-sdist` compares against git is packed by a backend resolved
+  from that range, which is a sentence that holds only while the two
+  agree. Nothing goes red when they part -- the old value is a subset
+  of the new one, so `build --no-isolation` is satisfied either way --
+  which is why it is written here rather than left to a gate.
+  `RELEASING.md`'s *the build backend is bounded, not pinned* quoted
+  the range instead of pointing at it, and a second copy of a number
+  is the one that goes stale.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
