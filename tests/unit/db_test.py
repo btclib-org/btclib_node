@@ -157,7 +157,7 @@ def test_a_batch_does_not_nest(tmp_path: Path) -> None:
     with store.write_batch() as batch:
         batch.put(b"k", b"v")
         with pytest.raises(RuntimeError, match="does not nest"), store.write_batch():
-            pass  # pragma: no cover -- never entered
+            pass  # pragma: no cover -- the inner write_batch raises on entry
         batch.put(b"k2", b"v2")
     assert store.get(b"k") == b"v"
     assert store.get(b"k2") == b"v2"

@@ -602,8 +602,8 @@ def test_resume_cfilters_drops_an_already_closed_connection_without_advancing(
     called: list[Any] = []
 
     def unreached(*a: Any) -> bool:
-        called.append(a)  # pragma: no cover -- never reached
-        return True  # pragma: no cover -- never reached
+        called.append(a)  # pragma: no cover -- advance_cfilters is not called
+        return True  # pragma: no cover -- advance_cfilters answers nothing here
 
     monkeypatch.setattr(main_module, "advance_cfilters", unreached)
     # dropping it is progress in its own right, whether or not it ever
@@ -756,8 +756,8 @@ def test_resume_getdata_drops_an_already_closed_connection_without_advancing(
     called: list[Any] = []
 
     def unreached(*a: Any) -> bool:
-        called.append(a)  # pragma: no cover -- never reached
-        return True  # pragma: no cover -- never reached
+        called.append(a)  # pragma: no cover -- advance_getdata is not called
+        return True  # pragma: no cover -- advance_getdata answers nothing here
 
     monkeypatch.setattr(main_module, "advance_getdata", unreached)
     # dropping it is progress in its own right, whether or not it ever

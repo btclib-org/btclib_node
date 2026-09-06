@@ -212,6 +212,27 @@ keeps whichever shape it was written in.
   since a site with nothing near it then reads exactly like a site with a
   paragraph above it, and only a person can tell them apart.
 
+### A pragma's inline half names its own line's case
+
+- **Each half reading `-- never reached` or `-- never entered` names
+  what holds its own line out of the run** (issue
+  btclib-org/.github#838): the entry above has `connection_test.py`'s
+  `_send` and `boom` stubs carrying `-- never reached`, and what they
+  carry is the reason particular to the site that the same bullet says
+  the phrase does not. The comment above each line is untouched, which
+  is what that bullet asks for.
+- **A half that could move to another pragma site unchanged and stay
+  true names no site**: `-- never reached` is as true at one of this
+  tree's sites as at another, where `-- no privilege on Windows` is true
+  only at its own, and is unchanged.
+- **`[tool.coverage.report]`'s comment hands the commands that check
+  that to section 8 of the organization standard**: the entry above has
+  the comment naming `git grep 'pragma: no cover$'`, and it names no
+  command now. Section 8 carries one for the ` - ` spelling as well, and
+  a comment naming a single spelling's command is the confident zero the
+  second command exists to prevent. The placement rule stays here,
+  section 8 citing this comment as where the family writes it.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

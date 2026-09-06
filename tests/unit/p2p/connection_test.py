@@ -112,7 +112,7 @@ def test_a_message_that_will_not_serialize_is_logged_and_dropped() -> None:
     async def _send(data: bytes) -> None:
         # the message fails to serialize before _send is called, which
         # is the whole point of this test
-        sent.append(data)  # pragma: no cover -- never reached
+        sent.append(data)  # pragma: no cover -- the payload never serializes
 
     connection._send = _send  # type: ignore[method-assign]
     with connection.client:
@@ -757,7 +757,7 @@ def test_close_on_an_already_closed_socket_touches_neither_reader_nor_writer() -
 
     def boom(_fd: int) -> bool:
         # the guard in _close is the point of this test
-        raise AssertionError("no")  # pragma: no cover -- never reached
+        raise AssertionError("no")  # pragma: no cover -- fileno() is already -1
 
     connection.loop = cast(
         "asyncio.AbstractEventLoop",
@@ -936,7 +936,7 @@ def test_a_peer_already_at_the_send_bound_is_dropped_not_queued_further() -> Non
         sent: list[bytes] = []
 
         async def _send(data: bytes) -> None:
-            sent.append(data)  # pragma: no cover -- never reached
+            sent.append(data)  # pragma: no cover -- the bound refuses this send
 
         connection._send = _send  # type: ignore[method-assign]
         await connection.async_send(Ping(1))
