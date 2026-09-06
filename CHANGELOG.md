@@ -233,6 +233,40 @@ keeps whichever shape it was written in.
   second command exists to prevent. The placement rule stays here,
   section 8 citing this comment as where the family writes it.
 
+### The worktree fence's create, push and guard take the standard's form
+
+- **The fence's push is `git -C "$WT" push origin
+  HEAD:refs/heads/<branch>`, with no `cd` above it** (issue
+  btclib-org/.github#824): a `cd` binds the shell that runs it, so a
+  session running each line as its own command would push from the
+  directory it began in. The paragraph below the fence is
+  `btclib-org/.github`'s at `20ad654` byte for byte, so the binding's
+  limit comes with it -- `git(1)` documents `git -C ""` as leaving the
+  working directory unchanged, and a `-C` against a lost `WT` lands
+  where a lost `cd` does.
+- **The guard sentence says `${WT:?}` fails with `$WT` unset or empty**
+  (closes #881): `WT=` is set and does not expand, so naming an unset
+  `WT` as the only case the guard catches gave a reason false of exactly
+  the value the sentence excluded. Under `/bin/zsh` 5.9 and the `bash`
+  3.2.57 macOS ships as `/bin/bash` and `/bin/sh`, unset and empty both
+  refuse, where a space, a word and a stale path each run.
+- **The create's condition is the reader's own directory already holding
+  the placeholder's name**: with the placeholder ahead of `"$WT"` the
+  `<` has to succeed before the `>` is reached, and a directory of that
+  name serves as well as a file. In a directory holding neither, the
+  line ends on a `no such file or directory` for `branch`, with nothing
+  created, in each of the shells above — the string each of them prints
+  is its own, and only the outcome is shared.
+- **`btclib-org/.github`'s `CLAUDE.md` at `20ad654` is named as the
+  converged form**, so a later reader compares these sentences against a
+  tree rather than against an issue's quotation of one.
+- **The `uv sync` sits outside the block for a reason that no longer
+  runs through a `cd`**: no line of the block moves the shell, `git -C`
+  binding the one command it is given, so a sync chained into it writes
+  its `.venv` and its `uv.lock` where the paste began. The entry above
+  opening on `cd "$WT"` describes the fence this one replaces; that the
+  sync stays outside the block is unchanged.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
