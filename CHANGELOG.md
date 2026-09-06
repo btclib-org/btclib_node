@@ -344,6 +344,19 @@ keeps whichever shape it was written in.
   with it; the cases that read the write back now read
   `known_args_namespace` instead of the plugin's options.
 
+### The coverage hook's docstring cites section 8 for its trigger set
+
+- **`relax_coverage_floor`'s docstring names section 8 of the
+  organization standard as where the set `selective` reads comes from**
+  (closes btclib-org/.github#868). Section 9's *Cite the authority* asks
+  for the name where behaviour comes from a standard, and the triggers
+  read here are that section's rather than this tree's own. The reason
+  the docstring already gives for relaxing the floor is unchanged. The
+  sentence is `bitcoin-core-rpc`'s and `btclib`'s as far as the colon;
+  their list of the flags is left out because `selective` spells the set
+  immediately below, which is how `btclib-benchmarks`'s module docstring
+  cites the section too -- by pointing at where each of them is read.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

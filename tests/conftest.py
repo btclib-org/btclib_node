@@ -98,6 +98,9 @@ def relax_coverage_floor(config: pytest.Config) -> bool:
     stops being read at all. An explicit `--cov-fail-under` still means
     what it says.
 
+    A subset is what pytest was *asked* for, and section 8 of the
+    organization standard is what names the set `selective` reads below.
+
     Answers whether it wrote the floor down, which is how it is tested:
     the run that measures the suite is the one run this never fires on.
     """
