@@ -12,12 +12,25 @@ regardless. That clause is right, and its price is that an *absent*
 convention test is indistinguishable from a convention this repository
 does not have. Nothing anywhere recorded which of the two it was.
 
-A filename cannot answer it either -- the suites of the organization
-name the same idea several ways, a module per bullet here and elsewhere
-several folded into the one file that is about a single module. So the
-audit reads a declaration rather than a directory, and this module is
-what keeps the declaration from being prose: section 7's own rule, that
-a convention worth stating is worth a test, applied to section 7 itself.
+A filename cannot answer it either, for the reason section 7 gives where
+it says the suites are right not to agree on what to call these tests;
+restating that answer here would be the second statement section 9
+refuses. So the audit reads a declaration rather than a directory, and
+this module is what keeps the declaration from being prose: section 7's
+own rule, that a convention worth stating is worth a test, applied to
+section 7 itself.
+
+Section 14 asks a copy of this module for what it reads and which of its
+departures are decided. What it reads is the declaration in
+tests/README.md, reached through parents[1] rather than parent: this
+copy sits under tests/unit/, while the declaration and the modules it
+names are resolved against tests/, so a row for a module under
+tests/unit/ carries that prefix. Section 14 names that path itself, a
+different path and not only different bytes, so the placement is
+recorded rather than residue. The other departure is _CONVENTIONS below,
+which transcribes section 7's list rather than reading it live: the
+standard is another repository's file, so a copy is the only form the
+list takes here.
 
 What it does not check is whether a named module tests the convention it
 is named against. Nothing short of reading it can, and the four

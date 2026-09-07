@@ -506,6 +506,29 @@ keeps whichever shape it was written in.
   decision of its own, so btclib-org/.github#418's own convergence
   across four trees is what leaves it open.
 
+### `conventions_test.py` says what it reads and where it departs
+
+- **`tests/unit/conventions_test.py`'s docstring names what this copy
+  reads and which of its departures are decided** (issue
+  btclib-org/.github#690). Section 14 of the organization standard asks
+  that of every copy of the module: the copies hold a job in common
+  rather than a text, and a defect in the parsing that job needs sits in
+  every copy carrying it and turns nothing red anywhere, so the header is
+  what tells a reader holding two copies which difference is one tree's.
+  What this one reads is the declaration in `tests/README.md`, reached
+  through `parents[1]` rather than `parent` because the copy sits under
+  `tests/unit/` while a declared module is resolved against `tests/`,
+  which is also why the rows name `unit/docs_test.py` and
+  `unit/all_test.py` with the prefix. Its other departure is
+  `_CONVENTIONS`, transcribing section 7's list because the standard is
+  another repository's file. The paragraph this replaces said how the
+  suites of the organization name their convention tests instead, which
+  is section 7's own point and the one section 14 names as not what the
+  header is about; section 9's *One fact in one place* is why the
+  docstring now points at section 7 rather than restating it. The issue
+  names other repositories owing the same sentence, so
+  btclib-org/.github#690 stays open.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
