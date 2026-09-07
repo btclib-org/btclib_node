@@ -440,6 +440,19 @@ keeps whichever shape it was written in.
   count of elevations* above says the comment leaves what the elevation
   takes to the block that declares it, which holds of this wording too.
 
+### `scorecard.yml`'s `contents: read` comment names the scope it is about
+
+- **The comment says what omitting `contents` from the analysis job's
+  block would do rather than what omitting any scope would do** (issue
+  btclib-org/.github#893). `metadata` is where the wider reading fails:
+  `actionlint`, which the lint gate runs, refuses it as a scope a
+  `permissions:` block may name, and the analysis job's
+  `GITHUB_TOKEN Permissions` group logs `Metadata: read` all the same.
+  *`scorecard.yml`'s `actions: read` carries its own reason* above states
+  that consequence for every scope, and this entry supersedes that
+  sentence, which holds of `contents`, the scope the run recorded there
+  measured.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
