@@ -462,9 +462,9 @@ jobs:
     # public-api two hops away skipping this job even though its one
     # listed dependency succeeded -- measured on a sibling repository's
     # own copy of this file (btclib-org/btclib#1470), where the sentinel
-    # never ran on the tag that followed #1461's own fix to publish-pypi
-    # itself. Guarded against here from this job's first day rather than
-    # after it recurs
+    # never ran on the tag that followed btclib-org/btclib#1461's own
+    # fix to publish-pypi itself. Guarded against here from this job's
+    # first day rather than after it recurs
     if: always() && needs.publish-pypi.result == 'success'
     uses: ./.github/workflows/pypi-install.yml
     with:

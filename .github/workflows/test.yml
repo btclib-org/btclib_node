@@ -615,8 +615,9 @@ jobs:
   # This comment said the opposite until issue #749 -- that nothing
   # required a status check and the classic protection was empty, citing
   # btclib-org/.github#88. That was true when it was written and stopped
-  # being true with nothing to notice, #88 being the issue that records
-  # the state moving rather than one that holds it still
+  # being true with nothing to notice, btclib-org/.github#88 being
+  # the issue that records the state moving rather than one that
+  # holds it still
   test-passed:
     # the name and not the id is what a required-check rule matches, in
     # classic protection here and in a ruleset alike, and it carries
