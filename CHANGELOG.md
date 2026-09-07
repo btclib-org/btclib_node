@@ -529,6 +529,30 @@ keeps whichever shape it was written in.
   names other repositories owing the same sentence, so
   btclib-org/.github#690 stays open.
 
+### `.github/`'s comments qualify the issues they cite in other trees
+
+- **A comment in `.github/` citing another repository's issue writes it
+  `owner/repo#N`** (closes btclib-org/.github#899, closes
+  btclib-org/.github#909). Section 9 of the organization standard is
+  the rule: a bare `#123` resolves inside the repository it is written
+  in. `dev-version/action.yml`'s header, `generate_sbom.py`'s
+  `component` docstring, `pypi-install.yml`'s `shell: bash` comment and
+  `release.yml`'s `pypi-install` guard each meant a `btclib` issue and
+  answered 404 in this tree's tracker; `test.yml`'s `test-passed`
+  comment meant `btclib-org/.github#88` and named a `btclib-node` issue
+  about a listener that cannot bind. Reading the sentence is what
+  settles whether a bare number is foreign: no pattern separates a
+  correct bare self-reference from a wrong one, and resolving a number
+  against both trackers discriminates only where one of them answers
+  nothing. A qualified reference on the line above does not qualify the
+  one after it, which is the shape `release.yml`'s guard and
+  `test.yml`'s comment each carried. The qualified name says which
+  repository, so `pypi-install.yml`'s parenthesis is the reference
+  alone, which is the shape `release.yml`'s own sentence about a
+  sibling's copy of itself uses. `release.yml` cites
+  `btclib-org/btclib#1461` in its `publish-testpypi` comment and in its
+  `pypi-install` guard.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

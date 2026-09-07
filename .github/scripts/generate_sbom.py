@@ -230,7 +230,8 @@ def component(readings: list[Reading]) -> dict[str, Any]:
     schema and keeps that graph, at the price of a `bom-ref` that is no
     longer the purl a consumer resolves the package by; the document is
     read to resolve a dependency graph, so the graph is what has to be
-    right, and the lines survive as properties either way (issue #1194).
+    right, and the lines survive as properties either way (issue
+    btclib-org/btclib#1194).
     """
     version = agreed([entry.version for entry in readings])
     url = agreed([entry.url for entry in readings])
