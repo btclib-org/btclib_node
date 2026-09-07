@@ -33,12 +33,12 @@ standard is another repository's file, so a copy is the only form the
 list takes here.
 
 What it does not check is whether a named module tests the convention it
-is named against. Nothing short of reading it can, and the four
-assertions below are the ones that fail on the ways a declaration
-actually rots: a convention invented here rather than taken from
-section 7, a module renamed or deleted with the row left behind, a
-module emptied of its tests, and a bullet that quietly stops being
-accounted for by either half.
+is named against. Nothing short of reading it can, and the assertions
+below are the ones that fail on the ways a declaration actually rots: a
+table the row pattern no longer matches, a convention invented here
+rather than taken from section 7, a module renamed or deleted with the
+row left behind, a module emptied of its tests, and a bullet that
+quietly stops being accounted for by either half.
 """
 
 import ast
@@ -105,11 +105,15 @@ _ROWS = tuple((m["convention"], m["module"]) for m in _ROW.finditer(_SECTION))
 
 
 def test_the_table_is_not_empty() -> None:
-    """A declaration that parsed to nothing is the failure that hides.
+    """No other assertion here reports an unmatched table as one.
 
-    Every assertion below quantifies over the rows, so a table this
-    module's regex stopped matching -- a column added, the backticks
-    dropped, the heading retitled -- would satisfy all of them silently.
+    The assertions parametrized on the rows are skipped on an empty
+    parameter set, so a table this module's regex stopped matching -- a
+    column added, the backticks dropped -- leaves the two-halves
+    assertion below, which is not parametrized, to fail naming every
+    convention the table declared as accounted for by neither half. A
+    retitled heading reaches neither: _section asserts while the module
+    is imported, so collection errors.
     """
     assert _ROWS, f"{_README.name}'s {_HEADING} section parsed to no rows"
 
