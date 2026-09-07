@@ -395,6 +395,27 @@ keeps whichever shape it was written in.
   the positional rule the pattern implements, one decision for every
   tree carrying the hook rather than this tree's to take alone.
 
+### `scorecard.yml`'s `actions: read` carries its own reason
+
+- **The analysis job's `actions: read` sits under a comment naming the
+  call that asks for it, and `contents: read` moves up under the comment
+  that explains it** (issue btclib-org/.github#871): `ossf/scorecard`'s
+  `checks/raw/github/packaging.go` calls
+  `Client.Actions.ListWorkflowRunsByFileName` for a workflow file its
+  Packaging check recognizes as publishing, which `release.yml` is by
+  its `pypa/gh-action-pypi-publish` step. Measured here rather than
+  ported: a scorecard run of this repository scores Packaging 10,
+  naming `release.yml`'s `publish-pypi` job, which the check reports
+  only where that call returns a run. The comments are
+  `btclib-secp256k1`'s, landed there first for its own copy.
+- **`contents: read` is granted here rather than inherited**: a job's
+  own `permissions:` block replaces the workflow-level one, so a scope
+  the block omits is `none` for that job, which one `release.yml` run
+  shows -- `publish-testpypi`, whose block names `id-token: write`
+  alone, logs no `Contents` in its `GITHUB_TOKEN Permissions` group,
+  while `version-check`, declaring no block in the same run, logs
+  `Contents: read` under the same workflow-level grant.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
