@@ -453,6 +453,35 @@ keeps whichever shape it was written in.
   sentence, which holds of `contents`, the scope the run recorded there
   measured.
 
+### The token census reads a declaration's position, not the end of a line
+
+- **`REPOSITORY.md`'s *Token permissions* hands the reader `git grep -nE
+  '^ +[a-z-]+: write([[:blank:]]+#|$)' -- .github/workflows`** (issue
+  btclib-org/.github#897): the `: write$` form it replaces drops a
+  declaration carrying a trailing comment along with the comment lines it
+  was there to exclude, a shape `btclib`'s workflows hold and this tree's
+  do not -- so the answer here was right by what the files happen to say
+  rather than by what the pattern asks. *The token grants are read from
+  the workflows, not bounded in prose* above names the `$` as what keeps
+  a comment naming a permission out of the answer, and that sentence
+  describes a command this file no longer carries: what keeps one out now
+  is the key's own position, a comment line opening with a `#` where
+  `[a-z-]` has to match.
+- **The comment branch takes `[[:blank:]]` rather than a space**:
+  `actionlint`, which the lint gate runs, accepts a tab between a grant
+  and its comment, and the census reads that line rather than resting on
+  the hooks that rewrite the tab.
+- **The shapes named beside the command as outside its answer are ones
+  this tree's gate leaves standing**: `actionlint` takes
+  `permissions: write-all`, a flow mapping and a quoted key or value each
+  as a grant, and `prettier` keeps each rather than rewriting it into
+  what the pattern reads, as it does a double space or a trailing space.
+- **Folding a shape into the pattern would leave the next one out**:
+  `contents: >-` with `write` on the line below is a grant `actionlint`
+  accepts and `prettier` hands back unchanged, and a line-oriented
+  pattern reads a spelling where a permission is a value in a parsed
+  document.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
