@@ -303,12 +303,16 @@ gh api repos/btclib-org/btclib-node/actions/permissions
 itself where it needs more, in a job-level block under a workflow whose
 own top-level `permissions:` is `contents: read` like every other. Those
 blocks are the record of which jobs do, and the write grants among them
-read out of the files — anchored, so that a comment naming a permission
-stays out of the answer:
+read out of the files — keyed on where the key sits, first on its line
+after the indentation, so that a comment naming a permission stays out of
+the answer while a grant carrying a trailing comment stays in:
 
 ```shell
-git grep -n ': write$' -- .github/workflows
+git grep -nE '^ +[a-z-]+: write([[:blank:]]+#|$)' -- .github/workflows
 ```
+
+A grant written some other way — `permissions: write-all`, a flow
+mapping, or a quoted key or value — is outside that answer.
 
 `release.yml` takes `contents: write` on `github-release`, which is the
 one token in this repository that writes to it, and `id-token: write` on
