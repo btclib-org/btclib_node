@@ -482,6 +482,30 @@ keeps whichever shape it was written in.
   pattern reads a spelling where a permission is a value in a parsed
   document.
 
+### `exclude_patterns` converges on `btclib-benchmarks`'s empty list
+
+- **`docs/source/conf.py`'s `exclude_patterns` is now
+  `list[str] = []`** (issue btclib-org/.github#418). The dropped
+  `sphinx-quickstart` stock list -- `["_build", "Thumbs.db",
+  ".DS_Store"]` -- named nothing this tree's build reaches: `Thumbs.db`
+  and `.DS_Store` never survive `path2doc` under the `.md`/`.rst`
+  `source_suffix` this tree declares, and `_build` is dead here for a
+  layout reason rather than a sphinx one -- `docs.yml` and
+  `.readthedocs.yaml` both write the built html outside `docs/source`,
+  into `docs/build/html` or `$READTHEDOCS_OUTPUT/html`, so no page ever
+  lands where the entry would catch it. Neither `html_static_path` nor
+  `html_extra_path` is assigned in this tree either, so
+  `exclude_patterns` has no second, suffix-free path to act through.
+  The annotation is kept for the reason `btclib-benchmarks` carries it,
+  and this tree's `[tool.mypy]` `files` list does not reach `docs/`, so
+  nothing here type-checks the line. The dropped comment was
+  `sphinx-quickstart`'s own boilerplate about sphinx's API rather than
+  this tree's reasoning, so nothing this tree said is lost with it.
+  Section 2 of the organization standard is where the rule this
+  converges on now lives, and this branch is a port of it rather than a
+  decision of its own, so btclib-org/.github#418's own convergence
+  across four trees is what leaves it open.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
