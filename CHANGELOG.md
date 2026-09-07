@@ -580,6 +580,37 @@ keeps whichever shape it was written in.
   the trees still owing the change, so btclib-org/.github#906 stays
   open.
 
+### `REPOSITORY.md`'s *Token permissions* has what caps a called workflow
+
+- **The section says why `release.yml`'s `test` job names a
+  `permissions:` block, so the comment above that block resolves to an
+  answer for both lines of it** (closes btclib-org/.github#895): the
+  section carried the `pull-requests: read` reason and nothing about the
+  caller, where the line a reader asks about is `contents: read`, a
+  workflow-level `contents: read` being in force already.
+- **The paragraph is written as a cap rather than as a substitution**:
+  the caller's list bounds every job of the called workflow and does not
+  stand in for what that workflow declares for itself. This tree's
+  `v2026.9.4` release run is what decides between the two -- every job of
+  `test.yml` that declares no block of its own logs `Contents: read` and
+  `Metadata: read` in its `GITHUB_TOKEN Permissions` group, which is
+  `test.yml`'s own top level and not the caller's list, while `changes`,
+  declaring both and reached through the same `uses:`, logs
+  `PullRequests: read` besides. The *replaces* wording the sibling trees
+  carry is under question in btclib-org/.github#912, which the paragraph
+  cites for the half that stays unmeasured: what a run does where a
+  called workflow's top-level declaration falls outside the cap.
+- **`btclib` and `btclib-secp256k1` have no pointer to answer for**:
+  their `release.yml` comments give the caller reason inline rather than
+  citing `REPOSITORY.md`, and `bitcoin-core-rpc`'s comment cites a
+  section that carries the paragraph.
+- **`claude-review.yml`'s `mention` job says what its
+  `pull-requests: write` is for**, as the `review` job's identical grant
+  and the `id-token: write` beside it do. The wording is
+  `btclib-benchmarks`', written for its own copy of the file in
+  btclib-org/btclib-benchmarks@2fe5a05, which answered
+  btclib-org/btclib-benchmarks#232 -- the same finding in that tree.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
