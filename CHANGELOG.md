@@ -553,6 +553,33 @@ keeps whichever shape it was written in.
   `btclib-org/btclib#1461` in its `publish-testpypi` comment and in its
   `pypi-install` guard.
 
+### `conventions_test.py`'s docstrings account for the table assertion
+
+- **`test_the_table_is_not_empty`'s docstring says which assertion below
+  reports an unmatched table** (closes btclib-org/.github#904). It said
+  every assertion below quantifies over the rows, so a table this
+  module's regex stopped matching -- a column added, the backticks
+  dropped, the heading retitled -- would satisfy all of them silently.
+  The assertions parametrized on `_ROWS` are skipped on an empty
+  parameter set, and `test_the_two_halves_account_for_every_convention`,
+  which is not parametrized, then fails naming every convention the
+  table declared as accounted for by neither half. A retitled heading
+  reaches neither of those: `_section` asserts while the module is
+  imported, so the module errors at collection instead. The replacement
+  wording is `bitcoin-core-rpc`'s, landed there as
+  btclib-org/bitcoin-core-rpc#403; this is the last of the copies the
+  issue names, and every one of them carries that block byte for byte.
+- **The module docstring names the ways a declaration rots and counts
+  nothing** (issue btclib-org/.github#906). It said the four assertions
+  below are the ones that fail on those ways, and the ways it listed
+  left out `test_the_table_is_not_empty`, which is what fails where a
+  column added or the backticks dropped stops a row parsing. A table the
+  row pattern no longer matches is the first way in the list now, and
+  the number is gone: section 9 of the organization standard refuses a
+  stated total, a line every open branch has to edit. The issue names
+  the trees still owing the change, so btclib-org/.github#906 stays
+  open.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
