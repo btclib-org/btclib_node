@@ -416,6 +416,30 @@ keeps whichever shape it was written in.
   while `version-check`, declaring no block in the same run, logs
   `Contents: read` under the same workflow-level grant.
 
+### The token grants are read from the workflows, not bounded in prose
+
+- **`REPOSITORY.md`'s *Token permissions* hands the reader
+  `git grep -n ': write$' -- .github/workflows` as what answers which
+  jobs elevate, and names `scorecard.yml` among them** (issue
+  btclib-org/.github#891): the paragraph enumerated `test.yml`,
+  `codeql.yml`, `claude-review.yml` and `release.yml`, leaving out the
+  workflow holding `id-token: write` and `security-events: write`. The
+  `$` is what keeps a comment naming a permission out of the answer,
+  which is no hypothetical here -- workflows that declare no write grant
+  carry comment lines naming one.
+- **The clause calling `release.yml` where the list stops being a list
+  of reads is gone**: `codeql.yml`'s `security-events: write` and
+  `claude-review.yml`'s pair sat ahead of it.
+- **`scorecard.yml`'s workflow-level comment enumerates nothing and
+  points at the job block, each grant being explained at its own line
+  there** (issue btclib-org/.github#891): it named the tree read, the
+  transparency-log entry and the code-scanning alerts, and nothing for
+  the `actions: read` that carries its own reason in that block. The
+  wording is `btclib-secp256k1`'s, byte-identical to the copy
+  `bitcoin-core-rpc` took for this issue. *`scorecard.yml` names no
+  count of elevations* above says the comment leaves what the elevation
+  takes to the block that declares it, which holds of this wording too.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

@@ -300,18 +300,31 @@ gh api repos/btclib-org/btclib-node/actions/permissions
 ```
 
 `read` is what every workflow here starts from, and a job elevates
-itself where it needs more: `test.yml`'s `changes` job adds
-`pull-requests: read` to ask which files a pull request touches,
-`codeql.yml`'s analysis adds `security-events: write` to upload its
-SARIF, and `claude-review.yml` adds `pull-requests: write` to post a
-comment and `id-token: write` for the OIDC token its action mints.
-`release.yml` is where that stops being a list of reads: `publish-pypi`
-and `publish-testpypi` add `id-token: write` for the OIDC token each
-index trusts, `attest` adds `attestations: write` beside an
-`id-token: write` of its own, and `github-release` adds
-`contents: write`, which is the one token in this repository that
-writes to it. Each is a job-level block under a workflow whose own
-top-level `permissions:` is `contents: read` like every other.
+itself where it needs more, in a job-level block under a workflow whose
+own top-level `permissions:` is `contents: read` like every other. Those
+blocks are the record of which jobs do, and the write grants among them
+read out of the files — anchored, so that a comment naming a permission
+stays out of the answer:
+
+```shell
+git grep -n ': write$' -- .github/workflows
+```
+
+`release.yml` takes `contents: write` on `github-release`, which is the
+one token in this repository that writes to it, and `id-token: write` on
+`publish-pypi` and `publish-testpypi` for the OIDC token each index
+trusts, with `attestations: write` beside it on `attest`.
+`claude-review.yml` takes `pull-requests: write` to post a comment and
+`id-token: write` for the token its action mints at startup, on `review`
+and on `mention` alike. `codeql.yml`'s `analyze` and `scorecard.yml`'s
+`analysis` take `security-events: write` to file a SARIF as
+code-scanning alerts, and `analysis` takes `id-token: write` besides,
+for the transparency-log entry its published score rests on.
+
+An elevation to a read leaves that command nothing to find, and a job's
+own block is where those are read: `test.yml`'s `changes` takes
+`pull-requests: read` to ask which files a pull request touches, which
+`contents: read` does not carry.
 
 `can_approve_pull_request_reviews` is false, which matters as much as the
 token: a workflow that could approve would satisfy `main-self-merge`
