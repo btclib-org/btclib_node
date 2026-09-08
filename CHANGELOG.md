@@ -611,6 +611,17 @@ keeps whichever shape it was written in.
   btclib-org/btclib-benchmarks@2fe5a05, which answered
   btclib-org/btclib-benchmarks#232 -- the same finding in that tree.
 
+### `templates_path` goes, this tree keeping no templates
+
+- **`docs/source/conf.py` no longer assigns `templates_path`** (issue
+  btclib-org/.github#901). Nothing is tracked under
+  `docs/source/_templates` and `docs/` holds no template of its own, so
+  the key named a directory this repository does not have. Section 2 of
+  the organization standard is where the rule this converges on lives,
+  and this branch is a port of it rather than a decision of its own, so
+  btclib-org/.github#901's convergence across the trees still carrying
+  the key is what leaves it open.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
