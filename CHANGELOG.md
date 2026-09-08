@@ -650,6 +650,34 @@ keeps whichever shape it was written in.
   decision of every copy of this module, and `btclib-benchmarks` still
   carries the old one at `dc47a41`, so it stays open.
 
+### The declaration says what it is and leaves its assertions to the module
+
+- **`tests/README.md`'s *Convention tests* sentence names no assertion of
+  `conventions_test.py`** (issue btclib-org/.github#910): the list it
+  carried left out `test_the_table_is_not_empty`, the one assertion that
+  reports an unmatched table as one -- a column added to the table, or
+  the backticks dropped from its second, stops every row matching.
+  Nothing asserts against that sentence:
+  `tests/unit/conventions_test.py` is what reads the declaration, and
+  what it reads of it is the heading, the row pattern and the *Not
+  tested here* line. So a list of that module's assertions there is a
+  second statement of what it checks with no gate holding the two
+  together, and completing the list would leave the next assertion free
+  to go out of step the same way. What replaces it says what the
+  declaration is -- the table and the *Not tested here* line under it,
+  accounting between them for every convention section 7 lists -- and
+  sends a reader wanting what those assertions catch to that module's
+  docstring, section 9 of the organization standard asking that the
+  second statement point at the first. The halves are named because
+  nothing else says what the line under the table is: the *Convention
+  tests* section ends at that line.
+- **This is the last of the copies btclib-org/.github#910 names**:
+  `btclib` took the same replacement in btclib-org/btclib@bd4a4654,
+  `btclib-secp256k1` in btclib-org/btclib-secp256k1@d80e2c07 and
+  `bitcoin-core-rpc` in btclib-org/bitcoin-core-rpc@a0bb7ef6. The
+  citation is `(issue ...)` rather than a closing keyword because the
+  issue is closed on the tracker holding it rather than by this landing.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
