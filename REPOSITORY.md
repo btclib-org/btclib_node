@@ -330,6 +330,24 @@ own block is where those are read: `test.yml`'s `changes` takes
 `pull-requests: read` to ask which files a pull request touches, which
 `contents: read` does not carry.
 
+`release.yml`'s `test` job names a `permissions:` block for a different
+reason: not that the job needs more itself, but that
+`uses: ./.github/workflows/test.yml` makes the caller's grant the cap on
+every job of the called workflow. A scope a job over there declares and
+the caller leaves off is not quietly dropped: the run is refused before
+any job of it starts, `release.yml`'s own jobs included
+(btclib-org/btclib-secp256k1#281). `pull-requests: read` is in the
+caller's list for that reason — `test.yml`'s `changes` job declares it.
+
+The cap bounds what the called workflow declares rather than standing in
+for it: a job over there with no block of its own is granted `test.yml`'s
+own top-level `contents: read` and not the caller's
+`pull-requests: read`. `contents: read` is repeated in the caller's list
+to keep that top-level declaration inside the cap. What a run does where
+a called workflow's *top-level* declaration falls outside the cap is not
+measured; the refusal above is what a job's own declaration draws, and
+the two need not behave alike (btclib-org/.github#912).
+
 `can_approve_pull_request_reviews` is false, which matters as much as the
 token: a workflow that could approve would satisfy `main-self-merge`
 without a person.
