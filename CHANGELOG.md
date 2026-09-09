@@ -678,6 +678,15 @@ keeps whichever shape it was written in.
   citation is `(issue ...)` rather than a closing keyword because the
   issue is closed on the tracker holding it rather than by this landing.
 
+### The zizmor pin holds at v1.29.0
+
+- **`.pre-commit-config.yaml` pins `zizmor` to `v1.29.0`, not `v1.30.0`**
+  (closes #911): `v1.30.0`'s `self-repository` audit flags every
+  `uses: ./...` reference the workflows below carry, and its own
+  auto-fix rewrites them to `uses: $/...`, which `actionlint` 1.7.12
+  (pinned in this same file) cannot parse. The comment above the pin
+  already states this condition.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
