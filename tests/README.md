@@ -8,14 +8,35 @@ instead of something `tests/unit/` can mirror — and asks that the split
 be declared here, with its reason.
 
 `tests/unit/` mirrors `src/btclib_node/`, module for module, and is free
-to reach into the object under test directly. `tests/functional/` and
-`tests/integration/` hold what has no module to mirror, told apart by
-what each needs: `functional/` starts a `Node` itself and speaks to it
-over its p2p or RPC socket, needing nothing the repository does not
-ship; `integration/` speaks to a real `bitcoind` instead, which the
-repository does not ship, and every test in it skips itself without one.
-All three directories are in `testpaths`, so a bare run is still the
-whole suite.
+to reach into the object under test directly. A module there with no
+source counterpart still belongs where its subject is `src/btclib_node/`
+taken whole rather than one file of it -- `unit/all_test.py`'s `__all__`
+convention, `unit/docs_test.py`'s documentation convention -- or the
+suite's own machinery: `tests/__init__.py`, `conftest.py`, or the pytest
+configuration it runs under, which is what `unit/helpers_test.py`,
+`unit/coverage_floor_test.py` and `unit/harness_test.py` each read, and a
+declaration this file keeps about the suite itself, which
+`unit/conventions_test.py` reads (a module named without a leading
+`tests/` anywhere in this file is resolved against `tests/`, `unit/`
+marking one under `tests/unit/`). `tests/functional/` and
+`tests/integration/` hold what has no module to mirror either, told
+apart by what each needs:
+`functional/` starts a `Node` itself and speaks to it over its p2p or RPC
+socket, needing nothing the repository does not ship; `integration/`
+speaks to a real `bitcoind` instead, which the repository does not ship,
+and every test in it skips itself without one.
+
+`tests/` root holds what neither of those is the subject of: a script
+under `.github/scripts/` (`check_core_citation_pin_test.py` and its two
+release-wait siblings), the corpus and property layer over `fuzz/`'s own
+harnesses (`fuzz_corpus_test.py`, `property_test.py`), or a rule or fact
+recorded across files no one directory owns, such as
+`interpreters_test.py`'s reading of `pyproject.toml`, `.python-version`
+and every workflow at once, and `pragma_test.py`'s reading of every
+tracked `.py` file for `pyproject.toml`'s own pragma-reason rule.
+`pyproject.toml`'s `testpaths` names each of those individually, beside
+the three directories, so a bare run is the whole suite for that reason
+as well as because the three directories are each in it.
 
 ## Convention tests
 
@@ -28,7 +49,7 @@ prose states it or not.
 So which of them this repository tests is **declared here**, in two
 halves that together account for every convention section 7 lists: the
 table below and the "Not tested here" line under it.
-`conventions_test.py` asserts the declaration is true, and what its
+`unit/conventions_test.py` asserts the declaration is true, and what its
 assertions catch is written in that module's docstring, a second list
 here being the statement section 9 refuses.
 

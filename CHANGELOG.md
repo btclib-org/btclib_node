@@ -736,6 +736,41 @@ keeps whichever shape it was written in.
   survives a landing elsewhere, which an issue's state does not, so that is what
   the bullets above give in place of one.
 
+### Suite layout says where a no-mirror test sits, and its pragma rule runs
+
+- **A module with no source counterpart sits under `tests/unit/` where
+  its subject is `src/btclib_node/` taken whole or the suite's own
+  machinery -- `tests/__init__.py`, `conftest.py`, the pytest
+  configuration, or a declaration this file keeps about the suite --
+  and sits at `tests/` root where its subject is a `.github/scripts/`
+  tool, the `fuzz/` corpus and property layer, or a rule or fact spread
+  across files no one directory owns** (closes #900). *Suite layout* named
+  only the three `testpaths` directories, leaving unstated both why a
+  bare run is also the whole suite because of the individual entries
+  `pyproject.toml` names beside them, and what decides which side of
+  that line a no-mirror module falls on.
+- **`tests/README.md` spells every module under `tests/unit/` with that
+  prefix, in *Suite layout* and in the *Convention tests* paragraph
+  alike** (closes #909). The paragraph named `conventions_test.py` bare,
+  where there is no `tests/conventions_test.py` and the table beside it
+  already spells its own rows `unit/docs_test.py` and `unit/all_test.py`.
+- **`tests/pragma_test.py` runs the command
+  `[tool.coverage.report]`'s own comment hands to section 8 of the
+  organization standard for its pragma rule** (closes #884):
+  `git grep -nE 'pragma: no cover$' -- '*.py'`, unchanged from what
+  section 8 names, so the two do not drift apart. The issue that asks
+  for it frames the choice as between two `tests/unit/` precedents,
+  `conventions_test.py` and `docs_test.py`, and this fits neither: the
+  command reads every tracked `.py` file alike, `src/btclib_node/`,
+  `tests/` and everything outside them, and touches neither
+  `tests/README.md`'s own declaration nor `src/btclib_node/` as a
+  module or a whole. The rule comes from `pyproject.toml`, which
+  neither directory owns, so `tests/pragma_test.py` sits at `tests/`
+  root instead, on `interpreters_test.py`'s own ground. It is section
+  8's rule rather than one of section 7's own conventions
+  `tests/unit/conventions_test.py`'s `_CONVENTIONS` transcribes, so it
+  earns no row in the *Convention tests* table either way.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
