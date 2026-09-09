@@ -397,7 +397,7 @@ repos:
     # waits on whichever lands first: an actionlint release that
     # understands `$/`, or GitHub's runner requirement (>=2.336.0) making
     # workspace-relative references the thing to flag instead.
-    rev: v1.30.0
+    rev: v1.29.0
     hooks:
       - id: zizmor
         # offline is what it does by default, said out loud: it warns
