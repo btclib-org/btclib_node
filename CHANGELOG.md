@@ -819,6 +819,22 @@ keeps whichever shape it was written in.
   `P2pManager`/`RpcManager`, which is how the issue's own report caught
   it in a functional test that is the subject of neither.
 
+### `CLAUDE.md`'s worktree paragraph says why the four parts are in that order
+
+- **The paragraph naming the parts of `wt-<tracker>-<issue>-<repo>-<role>`
+  carries the argument for their order** (issue btclib-org/.github#854):
+  most general part first, an issue filed in `btclib-org/.github`'s
+  tracker being the key and the repository a detail of it, which is why
+  `repo` comes after `issue`. The wording is that repository's own
+  `CLAUDE.md` at `cdb0333`, with *this tracker* named explicitly and the
+  two example citations qualified -- bare, `#255` and `#177` each name
+  unrelated work in this repository's tracker.
+- **The sentence saying the name sorts every worktree of one issue
+  together sits with that argument** (issue btclib-org/.github#854),
+  rather than inside the `repo` collision clause: sorting follows from
+  the order and not from `repo` being present. Its spelling in that
+  clause goes in the same edit, so the property is stated once.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

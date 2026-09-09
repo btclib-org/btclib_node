@@ -208,24 +208,27 @@ the permitted side of *never work in it*, not an exception to it. Stop
 if the checkout is not on `main` or is not clean: that is no longer
 bringing it forward.
 
-**Every session works in a worktree**, its own, from the first edit,
-named `wt-<tracker>-<issue>-<repo>-<role>` rather than after the issue
-alone. `tracker` is the repository whose issue tracker holds the issue:
-an issue number is unique only within one tracker, so
-`btclib-org/.github#45` and `btclib-org/btclib#45` are different issues
-that would otherwise name the same worktree. `issue` is what prevents
-the collision that has actually happened — two worktrees of different
-work sharing a generic basename in one repository's own `.git`, keyed on
-its path's basename. `repo` prevents a different collision, a *path*
-one rather than a `.git` one: two repositories each keep their own
-`.git/worktrees/<basename>` and cannot collide there, but the workers of
-one session share one scratchpad directory, so a session carrying one
-issue into several repositories computes the same target path for each
-of them, and `git worktree add` refuses a directory that already
-exists — or worse, a second worker reads the first one's tree; naming it
-this way also sorts every worktree of one issue together. `role` covers
-the narrower case of a coder and its reviewer holding a worktree at
-once, which the ordinary sequence avoids by each removing its own.
+**Every session works in a worktree**, its own, from the first edit, named
+`wt-<tracker>-<issue>-<repo>-<role>` rather than after the issue alone, most
+general part first: an issue filed in `btclib-org/.github`'s tracker is the key
+and the repository is a detail of it — `btclib-org/.github#255` is one issue
+owed by seven repositories, `btclib-org/.github#177` by two — so the repository
+is what varies underneath an issue rather than the other way round, which is why
+`repo` comes after `issue`. Naming it that way also sorts every worktree of one
+issue together, which is what a port leaves behind. `tracker` is the repository
+whose issue tracker holds the issue: an issue number is unique only within one
+tracker, so `btclib-org/.github#45` and `btclib-org/btclib#45` are different
+issues that would otherwise name the same worktree. `issue` is what prevents the
+collision that has actually happened — two worktrees of different work sharing a
+generic basename in one repository's own `.git`, keyed on its path's basename.
+`repo` prevents a different collision, a *path* one rather than a `.git` one:
+two repositories each keep their own `.git/worktrees/<basename>` and cannot
+collide there, but the workers of one session share one scratchpad directory, so
+a session carrying one issue into several repositories computes the same target
+path for each of them, and `git worktree add` refuses a directory that already
+exists — or worse, a second worker reads the first one's tree. `role` covers the
+narrower case of a coder and its reviewer holding a worktree at once, which the
+ordinary sequence avoids by each removing its own.
 
 An issue in `btclib-org/.github`'s tracker, worked in `btclib` by a
 coder, names its worktree `wt-github-255-btclib-coder`, and the editing,
