@@ -580,6 +580,104 @@ keeps whichever shape it was written in.
   the trees still owing the change, so btclib-org/.github#906 stays
   open.
 
+### `REPOSITORY.md`'s *Token permissions* has what caps a called workflow
+
+- **The section says why `release.yml`'s `test` job names a
+  `permissions:` block, so the comment above that block resolves to an
+  answer for both lines of it** (closes btclib-org/.github#895): the
+  section carried the `pull-requests: read` reason and nothing about the
+  caller, where the line a reader asks about is `contents: read`, a
+  workflow-level `contents: read` being in force already.
+- **The paragraph is written as a cap rather than as a substitution**:
+  the caller's list bounds every job of the called workflow and does not
+  stand in for what that workflow declares for itself. This tree's
+  `v2026.9.4` release run is what decides between the two -- every job of
+  `test.yml` that declares no block of its own logs `Contents: read` and
+  `Metadata: read` in its `GITHUB_TOKEN Permissions` group, which is
+  `test.yml`'s own top level and not the caller's list, while `changes`,
+  declaring both and reached through the same `uses:`, logs
+  `PullRequests: read` besides. The *replaces* wording the sibling trees
+  carry is under question in btclib-org/.github#912, which the paragraph
+  cites for the half that stays unmeasured: what a run does where a
+  called workflow's top-level declaration falls outside the cap.
+- **`btclib` and `btclib-secp256k1` have no pointer to answer for**:
+  their `release.yml` comments give the caller reason inline rather than
+  citing `REPOSITORY.md`, and `bitcoin-core-rpc`'s comment cites a
+  section that carries the paragraph.
+- **`claude-review.yml`'s `mention` job says what its
+  `pull-requests: write` is for**, as the `review` job's identical grant
+  and the `id-token: write` beside it do. The wording is
+  `btclib-benchmarks`', written for its own copy of the file in
+  btclib-org/btclib-benchmarks@2fe5a05, which answered
+  btclib-org/btclib-benchmarks#232 -- the same finding in that tree.
+
+### `templates_path` goes, this tree keeping no templates
+
+- **`docs/source/conf.py` no longer assigns `templates_path`** (issue
+  btclib-org/.github#901). Nothing is tracked under
+  `docs/source/_templates` and `docs/` holds no template of its own, so
+  the key named a directory this repository does not have. Section 2 of
+  the organization standard is where the rule this converges on lives,
+  and this branch is a port of it rather than a decision of its own, so
+  btclib-org/.github#901's convergence across the trees still carrying
+  the key is what leaves it open.
+
+### `conventions_test.py` splits the *Not tested here* list at its separator
+
+- **`tests/unit/conventions_test.py` splits the collapsed list at a
+  semicolon and a space, and collapses no name after that** (issue
+  btclib-org/.github#911): the line above the split has already replaced
+  every run of whitespace, newlines included, with one space, so
+  collapsing a piece of it again is `strip()` with nothing left to strip.
+  The comment giving an eighty-column wrap that falls inside a name as
+  the reason for that second collapse goes with it: the *Not tested here*
+  list of `tests/README.md` does wrap, and every wrap in it falls at a
+  semicolon, so no name in it is broken across lines.
+- **The separator keeps its space rather than becoming the semicolon
+  alone**, and what the comment says now is why: the split is lossless --
+  `sep.join(s.split(sep))` is `s` for any non-empty `sep` -- so a
+  separator the declaration wrote some other way leaves the name whatever
+  the split did not take, and the assertion that every name listed is one
+  of section 7's reports it. The semicolon alone would take a separator
+  written without its space too, and nothing would report it.
+- **That assertion's message quotes the names it read out of the
+  declaration**: a semicolon written with a space on each side is
+  consumed by the split and leaves the name a trailing one, which
+  unquoted reads as a name the same message goes on to list as known. The
+  comments and this message are the form landed in `btclib` as
+  `bd9e3e87`, taken by `btclib-secp256k1` as `288a8fe` and by
+  `bitcoin-core-rpc` as `10af48d`; btclib-org/.github#911 asks one
+  decision of every copy of this module, and `btclib-benchmarks` still
+  carries the old one at `dc47a41`, so it stays open.
+
+### The declaration says what it is and leaves its assertions to the module
+
+- **`tests/README.md`'s *Convention tests* sentence names no assertion of
+  `conventions_test.py`** (issue btclib-org/.github#910): the list it
+  carried left out `test_the_table_is_not_empty`, the one assertion that
+  reports an unmatched table as one -- a column added to the table, or
+  the backticks dropped from its second, stops every row matching.
+  Nothing asserts against that sentence:
+  `tests/unit/conventions_test.py` is what reads the declaration, and
+  what it reads of it is the heading, the row pattern and the *Not
+  tested here* line. So a list of that module's assertions there is a
+  second statement of what it checks with no gate holding the two
+  together, and completing the list would leave the next assertion free
+  to go out of step the same way. What replaces it says what the
+  declaration is -- the table and the *Not tested here* line under it,
+  accounting between them for every convention section 7 lists -- and
+  sends a reader wanting what those assertions catch to that module's
+  docstring, section 9 of the organization standard asking that the
+  second statement point at the first. The halves are named because
+  nothing else says what the line under the table is: the *Convention
+  tests* section ends at that line.
+- **This is the last of the copies btclib-org/.github#910 names**:
+  `btclib` took the same replacement in btclib-org/btclib@bd4a4654,
+  `btclib-secp256k1` in btclib-org/btclib-secp256k1@d80e2c07 and
+  `bitcoin-core-rpc` in btclib-org/bitcoin-core-rpc@a0bb7ef6. The
+  citation is `(issue ...)` rather than a closing keyword because the
+  issue is closed on the tracker holding it rather than by this landing.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
