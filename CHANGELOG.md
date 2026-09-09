@@ -835,6 +835,29 @@ keeps whichever shape it was written in.
   the order and not from `repo` being present. Its spelling in that
   clause goes in the same edit, so the property is stated once.
 
+### The aggregates guard the empty result, and the macOS sentinel drops the floor
+
+- **`test.yml`'s and `codeql.yml`'s `test-passed`/`codeql-passed` step
+  reads a comma-joined `needs.*.result` against an allowlist, guarded by
+  `case ",$results," in *,,*)` for the empty case** (issue
+  btclib-org/.github#537). The step decided with a denylist instead, one
+  `case` comparison over a space-joined `needs.*.result` that passed any
+  result the file did not anticipate, the empty string included -- not
+  word splitting, which that single string comparison never did
+  (btclib-org/btclib#1454).
+  `test.yml`'s allowlist names `success` and `skipped`, for the reason
+  the aggregate step's own kept comment gives: the coverage job skips by
+  design on a prose-only pull request; `codeql.yml`'s names `success`
+  alone, since nothing in that workflow is conditional on what a pull
+  request touched.
+- **`os-macos.yml`'s suite runs `pytest --no-cov`** (closes
+  btclib-org/.github#429). The step ran `pytest` with no argument, and
+  `pyproject.toml`'s `addopts` carries `--cov` and
+  `[tool.coverage.report]` the `fail_under = 100` floor `test.yml`'s own
+  `ubuntu-latest` cell already measures and gates; the platform sentinel
+  asks whether macOS changes the suite's outcome, not whether it changes
+  the floor a second image cannot argue about.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
