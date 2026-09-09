@@ -12,8 +12,10 @@ messages addressed to a connection that is no longer there.
 
 import asyncio
 import socket
+import sys
 import threading
 import time
+import warnings
 from concurrent.futures import Future
 from contextlib import closing, suppress
 from functools import partial
@@ -2109,6 +2111,91 @@ def test_server_closes_a_connection_queued_in_the_instant_it_is_cancelled(
         theirs.close()
         listening_socket.close()
     assert accepted.fileno() == -1
+
+
+def test_accept_loop_discards_the_kernel_accepted_socket_on_the_documented_race(
+    a_manager: AManagerFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ISS 904: the cancel-after-`sock_accept` race raises, and is ignored.
+
+    `_accept_loop`'s own docstring, and the comment above the `accepted`
+    queue in `server`, describe a window `Task.cancel` cannot close:
+    where the cancellation lands after `loop.sock_accept`'s internal
+    future is already resolved with a real accepted socket, `Task.__wakeup`
+    calls that future's own `result()` -- discarding the return value
+    right there, before `_accept_loop`'s coroutine ever regains control --
+    and then throws the `CancelledError` in regardless. Nothing this
+    tree's code can reach ever holds that socket, so it is closed by its
+    own `__del__`, raising `ResourceWarning: unclosed <socket.socket ...>`
+    unraisably (btclib-org/btclib-node#904).
+
+    `loop._run_once()` is what makes the race deterministic rather than
+    timing-dependent: `BaseEventLoop._run_once`'s own `_process_events`
+    call adds a ready reader's callback to `self._ready` *before* that
+    same call snapshots `ntodo = len(self._ready)`, so one call both
+    resolves `sock_accept`'s future (the reader callback's `sock.accept()`
+    succeeding now that `client` has connected) and leaves the task's own
+    wakeup queued rather than run -- exactly the gap between "the kernel
+    resolved one `sock_accept`" and "`_accept_loop`'s own next step" the
+    comment names. `task.cancel()` called in that gap cannot cancel the
+    already-done future either, so it sets `Task._must_cancel` instead,
+    which is what turns the wakeup already queued into a thrown
+    `CancelledError` rather than a delivered result.
+    """
+    manager = a_manager()
+
+    def race_once() -> None:
+        loop = manager.loop
+        listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listening_socket.bind(("127.0.0.1", 0))
+        listening_socket.listen()
+        listening_socket.settimeout(0.0)
+        accepted: asyncio.Queue[
+            tuple[socket.socket, tuple[str, int] | tuple[str, int, int, int]]
+        ] = asyncio.Queue()
+        task = loop.create_task(manager._accept_loop(listening_socket, accepted))
+        # One step: `sock_accept` finds nothing pending yet, so it
+        # registers a reader and suspends -- the state the race needs to
+        # start from.
+        loop.run_until_complete(asyncio.sleep(0))
+        client = socket.create_connection(listening_socket.getsockname())
+        try:
+            # resolves the future; the wakeup is queued, not run. `_run_once`
+            # is undocumented and unstubbed -- typeshed's `AbstractEventLoop`
+            # and `BaseEventLoop` alike carry nothing named it.
+            loop._run_once()  # type: ignore[attr-defined]
+            task.cancel()  # lands in the gap: discards the result on the next step
+            with suppress(asyncio.CancelledError):
+                loop.run_until_complete(task)
+        finally:
+            client.close()
+            listening_socket.close()
+        assert accepted.empty()  # the accepted socket never reached the queue
+
+    unraisable: list[BaseException | None] = []
+    monkeypatch.setattr(
+        sys, "unraisablehook", lambda ua: unraisable.append(ua.exc_value)
+    )
+
+    # Without an ignore entry naming this warning -- what this tree would
+    # raise had #904 gone unanswered -- `warnings.warn` itself raises
+    # inside the socket's own `__del__`, and that raise is what reaches
+    # `sys.unraisablehook`.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", ResourceWarning)
+        race_once()
+    assert len(unraisable) == 1
+    assert isinstance(unraisable[0], ResourceWarning)
+    assert str(unraisable[0]).startswith("unclosed <socket.socket")
+
+    # Under this tree's own `pyproject.toml` `filterwarnings` -- active
+    # here as it is for the whole suite -- the identical race raises
+    # nothing at all: `warnings.warn` never turns the warning into an
+    # exception, so `__del__` returns normally and `sys.unraisablehook`
+    # is never called.
+    unraisable.clear()
+    race_once()
+    assert unraisable == []
 
 
 def test_accept_loop_logs_and_retries_on_a_refused_accept(

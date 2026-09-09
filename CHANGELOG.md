@@ -771,6 +771,54 @@ keeps whichever shape it was written in.
   `tests/unit/conventions_test.py`'s `_CONVENTIONS` transcribes, so it
   earns no row in the *Convention tests* table either way.
 
+### A documented shutdown-race `ResourceWarning` is ignored, not fixed
+
+- **`pyproject.toml`'s `filterwarnings` gains an entry naming
+  `unclosed <socket\.socket` under `ResourceWarning`, unscoped to either
+  module** (closes #904). `P2pManager.server` and `RpcManager.server`
+  each carry the identical comment above their own `accepted` queue
+  arguing the window this answers: a `Task.cancel` landing after
+  `loop.sock_accept`'s internal future is resolved discards the
+  accepted socket inside asyncio's own `Task.__wakeup`, before
+  `_accept_loop`'s coroutine frame -- the only frame either module's
+  code runs in -- regains control, so there is no object here for
+  `_accept_loop` to close. Read against
+  `asyncio.base_events.BaseEventLoop._run_once` and
+  `asyncio.tasks.Task.__wakeup` on this tree's own CPython 3.14 rather
+  than assumed: `Task.__wakeup` calls the future's `result()` and
+  discards the return value before ever stepping the coroutine, so the
+  socket is unreachable from `_accept_loop` by the time the
+  `CancelledError` reaches it, which is why the fix is the `ignore`
+  entry and not a `try`/`except` around the accept. `tests/unit/p2p/manager_test.py`'s
+  `test_accept_loop_discards_the_kernel_accepted_socket_on_the_documented_race`
+  manufactures the race deterministically -- one `loop._run_once()`
+  resolves `sock_accept`'s future without running the task's own
+  wakeup, so `task.cancel()` lands exactly in the gap -- and asserts
+  both that a locally forced `error` filter still raises this
+  `ResourceWarning` unraisably and that this tree's own configuration
+  raises nothing for the identical race.
+- **The entry is unscoped because nothing narrower is available, not
+  because nothing narrower was wanted** (closes #904): it silences any
+  unrelated unclosed-socket `ResourceWarning` too, suite-wide, reopening
+  for this one shape the exact detection `"error"` above it was added
+  for (issue #111, issue #195). `module=` cannot narrow it -- the
+  warning fires from the socket's own `__del__`, so the module a filter
+  sees is whichever function is driving the event loop through the
+  cancellation, not the module that created the socket. Measured two
+  ways on this exact mechanism: through the real `server()` and `stop()`
+  it attributes to `btclib_node.p2p.manager` itself, so naming that
+  module would also swallow an unrelated future leak anywhere else in a
+  thousand-line file merely for surfacing during a cancellation; driven
+  the way this file's own regression test has to, straight through
+  `_accept_loop` to keep the race deterministic, the identical warning
+  attributes to the test's own module instead, outside either manager
+  entirely, so naming the two manager modules would not even have caught
+  the reproduction this fix ships with. Nor is the race a knowable
+  handful of tests for `pytest.mark.filterwarnings` to mark: it is
+  OS-timing-dependent and reachable from any test that stops a
+  `P2pManager`/`RpcManager`, which is how the issue's own report caught
+  it in a functional test that is the subject of neither.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

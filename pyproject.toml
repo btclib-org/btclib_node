@@ -671,6 +671,49 @@ filterwarnings = [
     # change instead, at the cost of the name the wire protocol and
     # every other repository reading it already agree on.
     "ignore:cannot collect test class 'TestNet'",
+    # `P2pManager.server` and `RpcManager.server` each carry this above
+    # their own `accepted` queue rather than fixing it, the latter
+    # naming the former as "the identical fix, for the identical
+    # reason": a `Task.cancel` landing after `loop.sock_accept`'s
+    # internal future is already resolved discards the accepted socket
+    # inside asyncio's own `Task.__wakeup`, before `_accept_loop`'s
+    # coroutine frame -- the only frame either module's own code runs in
+    # -- ever regains control, so there is no object here to close.
+    # Confirmed against `asyncio.base_events.BaseEventLoop._run_once`
+    # and `asyncio.tasks.Task.__wakeup` on the interpreter this tree
+    # targets (CPython 3.14): `Task.__wakeup` calls the future's own
+    # `result()` and discards the return value before ever calling
+    # `__step`, so the socket is unreachable from `_accept_loop` by the
+    # time a `CancelledError` is thrown into it -- which is why this is
+    # not scoped to either module by name, both raising the identical
+    # warning for the identical reason. Ignored rather than fixed at the
+    # source, this being that source (btclib-org/btclib-node#904).
+    #
+    # This also silences any *other* unclosed-socket `ResourceWarning`,
+    # suite-wide and permanently -- reopening exactly the hole `"error"`
+    # above exists to close, for this one warning shape, on a socket that
+    # has nothing to do with either accept loop. `module=` cannot narrow
+    # it: the warning fires from the socket's own `__del__`, so the
+    # module a filter sees is whichever function is driving the event
+    # loop through the cancellation at that instant, not the module that
+    # created the socket. Measured directly on this exact mechanism two
+    # ways: driven through the real `server()` and `stop()` it attributes
+    # to `btclib_node.p2p.manager` itself, so a filter scoped to that
+    # module would also swallow an unrelated future leak anywhere else in
+    # a thousand-line file merely for surfacing during a cancellation --
+    # no narrower than the suite-wide version. Driven the way this file's
+    # own regression test has to, straight through `_accept_loop` to keep
+    # the race deterministic, the identical warning attributes to the
+    # test's own module instead, outside either manager entirely, so
+    # naming just the two manager modules would not even have caught the
+    # reproduction this fix ships with. Nor is this the handful-of-tests
+    # shape `pytest.mark.filterwarnings` answers elsewhere in this file:
+    # the race is OS-timing-dependent and reachable from any test that
+    # stops a `P2pManager`/`RpcManager`, not a knowable set to mark one
+    # by one -- the issue's own report caught it in a functional test
+    # neither accept loop is the subject of. No narrower `pytest` filter
+    # exists for this; the trade-off is accepted rather than hidden.
+    "ignore:unclosed <socket\\.socket:ResourceWarning",
 ]
 
 [tool.coverage.run]
