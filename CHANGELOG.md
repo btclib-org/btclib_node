@@ -687,6 +687,55 @@ keeps whichever shape it was written in.
   (pinned in this same file) cannot parse. The comment above the pin
   already states this condition.
 
+### The entries citing an issue for its state are superseded
+
+- **The entry *`exclude_patterns` converges on `btclib-benchmarks`'s empty list*
+  above gives btclib-org/.github#418's convergence across four trees as what
+  leaves that issue open** (issue btclib-org/.github#946): it closed on
+  2026-09-07. `btclib` converged at btclib-org/btclib@77be39fc,
+  `btclib-secp256k1` at btclib-org/btclib-secp256k1@fbf158d9 and
+  `bitcoin-core-rpc` at btclib-org/bitcoin-core-rpc@bec1ebb0.
+- **The entry *`conventions_test.py` says what it reads and where it departs*
+  above gives the other repositories owing the same sentence as what leaves
+  btclib-org/.github#690 open** (issue btclib-org/.github#946): it closed on
+  2026-09-07. `btclib` took the same docstring at btclib-org/btclib@62d58055,
+  `btclib-secp256k1` at btclib-org/btclib-secp256k1@1e587dac, `bitcoin-core-rpc`
+  at btclib-org/bitcoin-core-rpc@85f7dbd3 and `btclib-benchmarks` at
+  btclib-org/btclib-benchmarks@81f1313c.
+- **The entry *`conventions_test.py`'s docstrings account for the table
+  assertion* above gives the trees still owing the change as what leaves
+  btclib-org/.github#906 open** (issue btclib-org/.github#946): it closed on
+  2026-09-08. `btclib` took the same docstring at btclib-org/btclib@385406f1,
+  `btclib-secp256k1` at btclib-org/btclib-secp256k1@8d84015d, `bitcoin-core-rpc`
+  at btclib-org/bitcoin-core-rpc@be5bacd7 and `btclib-benchmarks` at
+  btclib-org/btclib-benchmarks@dc47a41f.
+- **The entry *`REPOSITORY.md`'s Token permissions has what caps a called
+  workflow* above gives the sibling trees as carrying the *replaces* wording and
+  btclib-org/.github#912 as holding it under question**
+  (issue btclib-org/.github#946): that issue closed on 2026-09-09, its box
+  replaced by one asking each tree's comment to fix the reading in its own
+  words. `btclib` rewrote its comment at btclib-org/btclib@7522369d and
+  `btclib-secp256k1` at btclib-org/btclib-secp256k1@ffd00782, and both now carry
+  the fence that entry cites the issue for: what a run does where a called
+  workflow's top-level declaration falls outside the cap is not measured.
+- **The entry *`templates_path` goes, this tree keeping no templates* above
+  gives btclib-org/.github#901's convergence across the trees still carrying the
+  key as what leaves that issue open** (issue btclib-org/.github#946): it closed
+  on 2026-09-08. `btclib` dropped the key at btclib-org/btclib@c352c145,
+  `btclib-secp256k1` at btclib-org/btclib-secp256k1@76766d18 and
+  `bitcoin-core-rpc` at btclib-org/bitcoin-core-rpc@fd9a7c87.
+- **The entry *`conventions_test.py` splits the Not tested here list at its
+  separator* above gives `btclib-benchmarks` carrying the old wording at
+  `dc47a41` as what leaves btclib-org/.github#911 open**
+  (issue btclib-org/.github#946): it closed on 2026-09-08, and
+  `btclib-benchmarks` took the same split at
+  btclib-org/btclib-benchmarks@6fb1cdfe.
+- **Each of those sentences was true when it landed**: every one of those issues
+  closed after the entry naming it did, and the sibling `release.yml` comments
+  were rewritten after the entry that names them. What a tree and a sha say
+  survives a landing elsewhere, which an issue's state does not, so that is what
+  the bullets above give in place of one.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
