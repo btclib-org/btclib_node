@@ -974,6 +974,30 @@ keeps whichever shape it was written in.
   answers non-zero against the standard, which is what its list
   excludes.
 
+### The pytest and coverage flags take the standard's shape
+
+- **`--cov-report term-missing:skip-covered` leaves `addopts`, and
+  `[tool.coverage.report]` says `skip_covered = true` where it said
+  `skip_empty = true`** (issue btclib-org/.github#433): section 8 of the
+  organization standard puts the report options in that table, and
+  `show_missing` and `skip_covered` there are the flag's two halves.
+  `skip_covered` is section 8's key, decided at the key with the reason
+  beside it rather than inherited: coverage asks `skip_covered` before
+  `skip_empty`, and a file with no statements has nothing missing, so a
+  report under both keys lists the same files as one under
+  `skip_covered` alone -- none, at the floor, the line counting the
+  files skipped for complete coverage reading the same before and after.
+- **`addopts` gains `-ra` and says `--durations=8` where it said
+  `--durations=10`** (issue btclib-org/.github#433): section 7's string,
+  keeping the `-n auto` it allows for a suite this long, with `--cov`
+  ahead of `--durations=8` rather than last, for section 7's reason.
+  `-ra` lists what a bare run skips, which without a bitcoind is
+  `tests/integration/`. `--dist worksteal` is not added: whether the
+  pool wants it is a measurement on CI the issue does not ask for.
+- **`test.yml`'s, `deps-latest.yml`'s and `deps-oldest.yml`'s comments
+  on the bare `pytest` say `[tool.coverage.report]` carries the report
+  options**, where they said `addopts` carries the report format.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

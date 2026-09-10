@@ -583,7 +583,7 @@ testpaths = [
 # wider than pytest's own `test` prefix. Restating either is a second
 # place for a fact pytest already states, and the second one to fall out
 # of step with the tree.
-addopts = "-n auto --strict-config --strict-markers --cov --cov-report term-missing:skip-covered --durations=10"
+addopts = "-ra --cov --durations=8 -n auto --strict-config --strict-markers"
 # No `markers = [...]` table needed beside `--strict-markers`: the only
 # markers this suite uses are `pytest.mark.parametrize` (pytest's own)
 # and `pytest.mark.order` (pytest-order, which registers its own), and
@@ -741,7 +741,16 @@ omit = ["*/site-packages/*", "tests/integration/*"]
 
 [tool.coverage.report]
 show_missing = true
-skip_empty = true
+# `skip_covered` and not `skip_empty`, section 8's table being the
+# authority: coverage's `report_one_file` asks `skip_covered` first,
+# and a file with no statements has no missing line and no missing
+# branch, so it drops there before `skip_empty` is asked -- a report
+# under both keys lists the same files as one under this key alone.
+# This key and `show_missing` above are the two halves of
+# `--cov-report term-missing:skip-covered`; with no `--cov-report` on
+# the command line pytest-cov hands `Coverage.report()` `None` for
+# both, and `None` reads the value written here.
+skip_covered = true
 precision = 2
 # The tree is there, so this is what holds it: every statement and
 # every branch of `btclib_node` and of `tests` that the report measures

@@ -116,7 +116,7 @@ jobs:
       # same mode this job's env declares, so this asserts nothing moved
       # between the two.
       # no pytest argument: addopts in pyproject.toml carries the
-      # coverage flags and the report format, [tool.coverage.report] the
-      # floor
+      # coverage flags, [tool.coverage.report] the floor and the report
+      # options
       - name: Run pytest
         run: uv run --locked --no-default-groups --group test pytest
