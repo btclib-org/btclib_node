@@ -328,7 +328,9 @@ for the transparency-log entry its published score rests on.
 An elevation to a read leaves that command nothing to find, and a job's
 own block is where those are read: `test.yml`'s `changes` takes
 `pull-requests: read` to ask which files a pull request touches, which
-`contents: read` does not carry.
+`contents: read` does not carry. `codeql.yml`'s `codeql-passed` takes
+`actions: read` to ask the run's own job listing back, which
+`contents: read` does not carry either.
 
 `release.yml`'s `test` job names a `permissions:` block for a different
 reason: not that the job needs more itself, but that
