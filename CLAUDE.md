@@ -215,24 +215,32 @@ and the repository is a detail of it — `btclib-org/.github#255` is one issue
 owed by seven repositories, `btclib-org/.github#177` by two — so the repository
 is what varies underneath an issue rather than the other way round, which is why
 `repo` comes after `issue`. Naming it that way also sorts every worktree of one
-issue together, which is what a port leaves behind. `tracker` is the repository
-whose issue tracker holds the issue: an issue number is unique only within one
-tracker, so `btclib-org/.github#45` and `btclib-org/btclib#45` are different
-issues that would otherwise name the same worktree. `issue` is what prevents the
-collision that has actually happened — two worktrees of different work sharing a
-generic basename in one repository's own `.git`, keyed on its path's basename.
-`repo` prevents a different collision, a *path* one rather than a `.git` one:
-two repositories each keep their own `.git/worktrees/<basename>` and cannot
-collide there, but the workers of one session share one scratchpad directory, so
-a session carrying one issue into several repositories computes the same target
-path for each of them, and `git worktree add` refuses a directory that already
-exists — or worse, a second worker reads the first one's tree. `role` covers the
-narrower case of a coder and its reviewer holding a worktree at once, which the
+issue together, which is what a port leaves behind.
+
+Each of the four parts earns its place against a different collision,
+and none of them is the same collision. `tracker` is the repository
+whose issue tracker holds the issue: an issue number is unique only
+within one tracker, so `btclib-org/.github#45` and
+`btclib-org/btclib#45` are different issues that would otherwise name
+the same worktree. `issue` is what prevents the collision that has
+actually happened — two worktrees of different work sharing a generic
+basename in one repository's own `.git`, keyed on its path's basename.
+`repo` prevents a different collision, a *path* one rather than a `.git`
+one: two repositories each keep their own `.git/worktrees/<basename>`
+and cannot collide there, but the workers of one session share one
+scratchpad directory, so a session carrying one issue into several
+repositories computes the same target path for each of them, and `git
+worktree add` refuses a directory that already exists — or worse, a
+second worker reads the first one's tree. `role` covers the narrower
+case of a coder and its reviewer holding a worktree at once, which the
 ordinary sequence avoids by each removing its own.
 
-An issue in `btclib-org/.github`'s tracker, worked in `btclib` by a
-coder, names its worktree `wt-github-255-btclib-coder`, and the editing,
-the gates and the commits all happen there before the push.
+An issue of `btclib-org/.github`'s tracker, worked in `btclib` by a coder, names
+its worktree `wt-github-255-btclib-coder`. The environment is created in the
+worktree, not the checkout, by whatever that tree's own `CONTRIBUTING.md` names
+under *The environment and the gates*, and a session reads that section, not
+this one, for the command. The editing, the gates and the commits all happen in
+the worktree before the push.
 
 ```shell
 WT=<scratchpad>/wt-<tracker>-<issue>-<repo>-<role>
@@ -240,17 +248,14 @@ git worktree add "$WT" origin/main -b <branch>
 git -C "$WT" push origin HEAD:refs/heads/<branch>
 ```
 
-`-b <branch>` sits after the path and the commit-ish so that the
-placeholder ends the command, which is the rule in section 9 of
-[btclib-org/.github's
-README](https://github.com/btclib-org/.github/blob/main/README.md). With
-the placeholder ahead of `"$WT"`, its `<` and its `>` are redirections
-performed left to right, so the `>` is reached only where the reader's
-own directory already holds the name `branch`: there the `<` succeeds,
-the line runs, and the `>` takes `"$WT"` as its target — a path with no
-directory at it is the file it creates. Ordinarily nothing holds that
-name, so the `<` fails first (`no such file or directory: branch`) and
-the line ends before the `>` opens anything.
+`-b <branch>` sits after the path and the commit-ish so that the placeholder
+ends the command, which is section 9 of `btclib-org/.github`'s rule. With the
+placeholder ahead of `"$WT"`, its `<` and its `>` are redirections performed
+left to right, so the `>` is reached only where the reader's own directory
+already holds the name `branch`: there the `<` succeeds, the line runs, and the
+`>` takes `"$WT"` as its target — a path with no directory at it is the file it
+creates. Ordinarily nothing holds that name, so the `<` fails first (`no such
+file or directory: branch`) and the line ends before the `>` opens anything.
 
 The push names the worktree with `git -C "$WT"` because a `cd` binds the
 shell that runs it: a session that runs each line as its own command
@@ -260,30 +265,12 @@ worktree's. `env -C <dir>` is the same binding for a command that takes
 no `-C` of its own. Neither binding rescues the assignment above it: a
 session that loses the `cd` loses `WT` with it, and `git -C ""` is
 documented to leave the working directory unchanged, so that push lands
-the same way, exit 0 and no diagnostic. What the `-C` buys is a path
-that can be written out in full; write it out.
-
-The gates run against a `.venv` the worktree owns rather than a shared
-one, and `CONTRIBUTING.md`'s *The environment and the gates* opens with
-the `uv sync` that writes it; what a reused one imports instead is under
-*Non-obvious facts that will otherwise waste a session* below. That sync
-is bare rather than `--locked`, so where the lock has fallen behind
-`pyproject.toml` it writes `uv.lock` as well as `.venv` -- `uv sync
---help` describes `--frozen` as the flag that syncs without updating the
-lock. Section 9 of that README, *A line that writes goes in a fence of
-its own*, is why it sits outside the block above: it writes in the
-directory the shell is standing in, and no line of that block moves the
-shell, `git -C` binding the one command it is given. That directory is
-the primary checkout above, where `.gitignore` covers the `.venv` and
-only a rewritten `uv.lock` shows in `git status`. An `&&` chaining the
-sync into the block is not the alternative it reads as, and neither is
-the block's own parse: unfilled it is a syntax error to `/bin/zsh` 5.9,
-to the `bash` 3.2.57 macOS ships as `/bin/bash` and `/bin/sh`, and to
-`bash` 5.3.15, each reading it as a script, and the same lines filled in
-parse cleanly, so what stops it is the placeholders' shape. Not any one
-of them: `<scratchpad>` filled alone, or `<tracker>`, or `<branch>`,
-leaves the same error at the same line, line 1 still ending on the `>`
-of `<role>`. An interactive paste is unmeasured here.
+the same way, exit 0 and no diagnostic. That silence is `git`'s rather
+than the binding's: the BSD `env` macOS ships documents no case for an
+empty `-C` and refuses one — `cannot change directory to ''`, exit 125 —
+so a line bound with `env -C` stops there instead of running against the
+wrong tree. What the `-C` buys is a path that can be written out in
+full; write it out.
 
 Removing the worktree is part of finishing, and it stands in a block of
 its own: the block above ends in a placeholder, and a shell that
@@ -299,38 +286,10 @@ whatever worktree that path names.
 git worktree remove --force "${WT:?}"
 ```
 
-What the fence says about the create, the push and the removal converged
-in `btclib-org/.github`'s `CLAUDE.md` at `20ad654`, which is what a
-later reader compares it against rather than an issue's quotation of
-it. The `uv sync` paragraph above is this tree's own.
-
 **Never `git stash` in a worktree either: `refs/stash` is shared.** A
 worktree isolates files, not refs, so `git stash push` pushes onto the
 same stack every other session pops from. Commit to your own branch
 instead.
-
-**It does not isolate objects either, which is how an unpushed branch
-reads as pushed.** A commit written in a worktree is in that one shared
-object store the moment it exists, so `git cat-file -t`, `git show
-<sha>:<path>`, a diff and `git log --format='%h %G? %GS'` all answer for
-it exactly as they would after a push -- the right content, a good
-signature, nothing stale and nothing erroring. Hand that sha to a
-reviewer and it confirms every one of those, having read something the
-forge does not have. The ref is the only read that answers, and what it
-answers with is compared against the sha you sent:
-
-```shell
-git -C "$WT" fetch origin
-git -C "$WT" rev-parse "origin/<branch>"
-```
-
-Twice in one campaign a branch was reported pushed while `origin/` still
-held the pre-rebase commit, the second time to a reviewer that caught it
-only by resolving the ref rather than the bare sha
-(btclib-org/btclib-node#783, btclib-org/btclib-node#806). Push with
-`--force-with-lease=<ref>:<expected old sha>` so a concurrent writer is
-refused rather than clobbered, and read the ref back before saying the
-word.
 
 **Do not rewrite `refs/heads/main`, and move it only onto
 `origin/main`.** That name is the local branch's, and no ruleset reaches
@@ -351,6 +310,29 @@ unclear, a diagnosis whose symptom does not point at its cause. Use
 Do not use Fable unless explicitly instructed.
 
 ## Non-obvious facts that will otherwise waste a session
+
+- **A worktree does not isolate objects, which is how an unpushed branch
+  reads as pushed.** A commit written in a worktree is in that one shared
+  object store the moment it exists, so `git cat-file -t`, `git show
+  <sha>:<path>`, a diff and `git log --format='%h %G? %GS'` all answer for
+  it exactly as they would after a push -- the right content, a good
+  signature, nothing stale and nothing erroring. Hand that sha to a
+  reviewer and it confirms every one of those, having read something the
+  forge does not have. The ref is the only read that answers, and what it
+  answers with is compared against the sha you sent:
+
+  ```shell
+  git -C "$WT" fetch origin
+  git -C "$WT" rev-parse "origin/<branch>"
+  ```
+
+  Twice in one campaign a branch was reported pushed while `origin/` still
+  held the pre-rebase commit, the second time to a reviewer that caught it
+  only by resolving the ref rather than the bare sha
+  (btclib-org/btclib-node#783, btclib-org/btclib-node#806). Push with
+  `--force-with-lease=<ref>:<expected old sha>` so a concurrent writer is
+  refused rather than clobbered, and read the ref back before saying the
+  word.
 
 - **A trailing comment on the version line of `.python-version` makes uv
   ignore the whole file.** The reasoning for the pin is therefore in the
