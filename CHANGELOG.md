@@ -898,6 +898,65 @@ keeps whichever shape it was written in.
   `codeql-passed`'s allowlist over `needs.*.result`; that job reads the
   listing now, and what it says there about `test-passed` still holds.
 
+### The gate runs section 4's local hooks
+
+- **`reasonless-coverage-pragma`, `unquoted-placeholder` and
+  `check-changelog` join `.pre-commit-config.yaml`** (issue
+  btclib-org/.github#965, issue btclib-org/.github#706, issue
+  btclib-org/.github#21): each hook mapping is `btclib-org/.github`'s own
+  at `e1069d1`, `tests/hooks_test.py`'s `test_the_local_hooks_run` there
+  being what reads every Python tree's config for the hooks its `LOCAL`
+  tuple names, and the comments above them are that tree's, the
+  organization standard named where they cite a section of it.
+  `check-changelog` sits ahead of `markdownlint-cli2`, whose `--fix`
+  repairs the seam the script's third check names;
+  `unquoted-placeholder` sits beside the two markdown pygrep hooks and
+  `reasonless-coverage-pragma` beside `decoded-subprocess-encoding`, as
+  there. Neither pygrep hook reports a line of this tree, so neither
+  costs a rewrite here.
+- **`reasonless-coverage-pragma` refuses both spellings section 8 names,
+  at the gate**: section 8 of the organization standard names
+  `git grep -nE 'pragma: no (cover|branch)$' -- '*.py'` since
+  btclib-org/.github@a0ee508, and `tests/pragma_test.py` runs the
+  `no cover` half of it alone, so the two have drifted where the entry
+  above titled *Suite layout says where a no-mirror test sits, and its
+  pragma rule runs* said they do not; btclib-org/.github#968 is the
+  record of the `no branch` half. The hook refuses either spelling
+  before a commit exists, and the test stays where that entry put it.
+- **`.github/scripts/check_changelog.py` is `btclib-org/.github`'s byte
+  for byte** (issue btclib-org/.github#21): section 14 owes it of every
+  repository and `tests/verbatim_test.py` there compares it. Over this
+  file's open section it reports nothing. `pyproject.toml` ignores `T20`
+  for it, as for `check_core_citation_pin.py` and for the same reason.
+- **`check-docstring-first` excludes the script** (issue
+  btclib-org/.github#995): the attribute docstring under `_BLANK_LINE`
+  is a second module docstring to that hook, `btclib-org/.github` runs
+  no `check-docstring-first`, and a file section 14 owes byte for byte
+  cannot be edited here. Which of the two the standard wants is that
+  issue's; until it answers, the exclusion is written in this tree's
+  config beside its reason.
+- **`toml-comment-width`'s `name:` takes the wording `btclib-org/.github`
+  settled for the trees carrying the hook** (issue
+  btclib-org/.github#843, issue btclib-org/.github#885): `toml comment
+  width (80 bytes, an unbroken final token exempt)` states the pattern's
+  own predicate and the width it reads, bytes, which are columns where
+  the comment is ASCII. The entry above titled *`toml-comment-width`'s
+  comment claims no other tool's amnesty* left the `name:` alone as one
+  decision for every tree rather than this tree's; the decision is taken
+  there now and this is its port. The comment above the hook keeps the
+  sentence the entry titled *A comment following code on its line is
+  outside `max-doc-length`* describes, that nothing else here measures a
+  toml comment's width, and what follows it names sections 3 and 4 of
+  the standard and says byte where it said column.
+- **`.yamllint.yaml` is `btclib-org/.github`'s byte for byte** (issue
+  btclib-org/.github#883): the comment on `allow-non-breakable-words`
+  states the setting's own predicate and no longer calls MD013's
+  positional exemption a bare-URL one.
+- **The config's header says `lint.yml` runs the file**: it said the
+  lint workflow would run it once a step of btclib-org/.github#9 landed,
+  while the `ci:` comment under the same header already said `lint.yml`
+  exists; `lint.yml` runs `pre-commit run --all-files`.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
