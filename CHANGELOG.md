@@ -957,6 +957,23 @@ keeps whichever shape it was written in.
   while the `ci:` comment under the same header already said `lint.yml`
   exists; `lint.yml` runs `pre-commit run --all-files`.
 
+### `REPOSITORY.md` reads the wiki and the projects board back
+
+- **`.has_wiki` and `.has_projects` are read back under *Features, and
+  the topics*, in the call that reads `has_issues`, the visibility and
+  the default branch** (issue btclib-org/.github#550): section 11 of the
+  standard turns both off on every tree, an unused wiki being a second
+  place a reader can land looking for what the tracker already records
+  and the projects board a per-user view of the same issues, and the
+  call answers `true` for both today. The flip is the setting half of
+  that issue and is not made here; what the record adds is which side
+  of the rule this repository stands on. The paragraph under *What this
+  file passes over* that held the pair outside the perimeter on section
+  11 stating no rule for either goes, and the loop above it keeps its
+  list as it was: fed `has_wiki` or `has_projects`, that loop now
+  answers non-zero against the standard, which is what its list
+  excludes.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

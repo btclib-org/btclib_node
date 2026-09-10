@@ -246,8 +246,10 @@ than merged.
 ```shell
 gh api repos/btclib-org/btclib-node \
   --jq '{issues: .has_issues, visibility: .visibility,
-         default_branch: .default_branch}'
-# {"default_branch":"main","issues":true,"visibility":"public"}
+         default_branch: .default_branch,
+         wiki: .has_wiki, projects: .has_projects}'
+# {"default_branch":"main","issues":true,"projects":true,
+#  "visibility":"public","wiki":true}
 ```
 
 `has_issues` is what `CONTRIBUTING.md`'s *The issue tracker* rests on: an
@@ -257,6 +259,13 @@ Section 10's `scorecard` sentinel rests on the visibility: public is what
 it reads at all, so a flip to private leaves `scorecard.yml` and
 `README.md`'s badge standing while the run stops producing a score, and
 the answer above is what puts that flip one command from being seen.
+
+[Section 11](https://github.com/btclib-org/.github#11-github-settings)
+turns the wiki and the projects board off on every tree: an unused wiki
+is a second place a reader can land looking for what the tracker already
+records, and the projects board is a per-user view of the same issues.
+The call above still answers `true` for both; neither has been turned
+off here yet.
 
 ```shell
 gh api repos/btclib-org/btclib-node --jq '.topics | join(", ")'
@@ -714,11 +723,6 @@ rule grows this file with GitHub's API rather than with the standard.
 `merge_commit_title` and `merge_commit_message` are the same case reached
 from the other end: they compose a merge commit *Merge methods* above
 reads back as a button this repository does not offer.
-
-`has_wiki` and `has_projects` are outside the perimeter by section 11's
-own sentence, which states no rule about either, so this file neither
-reads them back nor explains an answer to them; that sentence is what the
-loop above would count, which is why the pair is not in its list.
 
 **A facility nobody reached for.** Self-hosted runners, deploy keys,
 autolinks and custom property values each answer empty, and an empty
