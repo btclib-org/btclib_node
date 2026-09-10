@@ -881,6 +881,23 @@ keeps whichever shape it was written in.
   `btclib-org/.github`'s at `2a7a8fc` now, and it says nothing about
   where a sync belongs.
 
+### `codeql.yml`'s aggregate reads the run's job listing
+
+- **`codeql.yml`'s `codeql-passed` job asks the run's own job listing
+  through the API rather than reading `needs.*.result`** (issue
+  btclib-org/.github#982): section 10 of `btclib-org/.github`'s
+  `README.md` keys the shape on whether something in the tree calls the
+  workflow, and nothing here calls `codeql.yml`, where `release.yml`
+  calls `test.yml`, so `test-passed` keeps `needs` and only
+  `codeql-passed` takes the listing. Its allowlist names `success` alone
+  rather than `success` and `skipped`: `analyze` carries no condition
+  narrower than this job's own draft/closed one, so a `skipped` row
+  would mean this job ran without its dependency having, which its own
+  `if:` already rules out. The entry above titled *The aggregates guard
+  the empty result, and the macOS sentinel drops the floor* described
+  `codeql-passed`'s allowlist over `needs.*.result`; that job reads the
+  listing now, and what it says there about `test-passed` still holds.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
