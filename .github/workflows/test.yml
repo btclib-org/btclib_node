@@ -647,19 +647,49 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # the condition reads the whole needs context rather than naming
-      # each job, so a job added to needs above is covered without
-      # touching this. "skipped" is not a failure on its own: the
-      # coverage job skips by design on a prose-only pull request, and
-      # reading that as a defect would fail the gate the changes job
-      # exists to let pass cheaply. changes itself is in needs, so its
-      # failure -- and a skip that follows from one -- still arrives here
-      # as "failure"
-      - name: Fail unless every job above succeeded
-        env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+      # the loop reads the whole needs context rather than naming each
+      # job, so a job added to needs above is covered without touching
+      # this. "skipped" is not a failure on its own: the coverage job
+      # skips by design on a prose-only pull request, and reading that
+      # as a defect would fail the gate the changes job exists to let
+      # pass cheaply. changes itself is in needs, so its own failure --
+      # and a skip that follows from one -- still arrives here as
+      # "failure"
+      #
+      # This step used to decide with a denylist, one `case` comparison
+      # over a space-joined `needs.*.result`: its blindness was passing
+      # any result this file did not anticipate, the empty string
+      # included -- not word splitting, which that single string
+      # comparison never did (btclib-org/btclib#1454's own title:
+      # "shell loop passes vacuously").
+      #
+      # The allowlist decides one field at a time, and word splitting
+      # does not hand it every field: a trailing empty one is dropped
+      # and an empty join gives no iteration at all, so the loop by
+      # itself decides the gate on the results beside the empty one, or
+      # on nothing. The `case` before it is what refuses those, and the
+      # comma separator is what lets it: `join` writes one separator
+      # between every pair of elements whatever they convert to, so an
+      # empty result is an empty field, and the commas wrapped around
+      # `$results` make an empty first field, an empty last one, an
+      # empty one between two others and an empty join a single pattern
+      - name: Fail unless every job above succeeded or was legitimately skipped
         run: |
-          echo "$RESULTS"
-          case " $RESULTS " in
-            *" failure "* | *" cancelled "*) exit 1 ;;
+          results='${{ join(needs.*.result, ',') }}'
+          echo "results: $results"
+          case ",$results," in
+            *,,*)
+              echo "::error::a job this gate depends on reported no result"
+              exit 1
+              ;;
           esac
+          IFS=,
+          for result in $results; do
+            case "$result" in
+              success | skipped) ;;
+              *)
+                echo "::error::a job this gate depends on reported $result"
+                exit 1
+                ;;
+            esac
+          done

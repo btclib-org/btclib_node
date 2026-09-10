@@ -38,8 +38,14 @@ name: os-macos
 # tree.
 #
 # What this runs is the gate's own job on another image: the same
-# interpreter, the same lock, the same coverage floor. What varies is
-# the platform, and between the two cells below the architecture.
+# interpreter, the same lock, without the coverage floor -- test.yml's
+# own `ubuntu-latest` cell is where that is measured and gated, on the
+# one interpreter section 8 of btclib-org/.github's README argues is
+# enough for it. `--no-cov` here is this job's own argument rather
+# than a second copy of that one: section 8 names it beside
+# `COVERAGE_FILE` as an argument a job may carry on its own account.
+# What varies here is the platform, and between the two cells below the
+# architecture.
 #
 # It gates no commit and no merge. A macOS regression sits on main for at
 # most a week, and that is the trade btclib-org/.github#85 makes for
@@ -132,9 +138,12 @@ jobs:
           # test.yml writes it out: the coverage floor is a claim about
           # one interpreter, and this job is held to the same one
           python-version: "3.14"
-      # no pytest argument, for the reason test.yml gives: pyproject.toml
-      # carries the coverage flags and the floor, and a second copy is a
-      # copy that can disagree
-      - name: Run the suite under coverage
+      # --no-cov, against the --cov pyproject.toml's addopts carries:
+      # the floor is a claim about one interpreter on one image, which
+      # test.yml's coverage job is where it is measured and gated, and
+      # what this asks is whether the platform changes the answer. A
+      # cell holding the floor would report the platform's own finding
+      # under the name of the coverage number
+      - name: Run the suite
         run: >
-          uv run --locked --no-default-groups --group test pytest
+          uv run --locked --no-default-groups --group test pytest --no-cov
