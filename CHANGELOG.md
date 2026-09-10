@@ -858,6 +858,29 @@ keeps whichever shape it was written in.
   asks whether macOS changes the suite's outcome, not whether it changes
   the floor a second image cannot argue about.
 
+### `CLAUDE.md`'s primary-checkout section is the standard's, byte for byte
+
+- **`CLAUDE.md`'s `## The primary checkout is the maintainer's` section
+  matches `btclib-org/.github`'s `CLAUDE.md` at `2a7a8fc`, heading to
+  heading** (issue btclib-org/.github#739). The paragraph on a worktree
+  not isolating objects, citing this repository's own #783 and #806,
+  moves into *Non-obvious facts that will otherwise waste a session*
+  rather than being dropped, since no other section of `CLAUDE.md`
+  states it.
+- **The entry *`CLAUDE.md`'s worktree fence leaves the `uv sync` to the
+  gate block* above names a paragraph below the fence as where
+  `CONTRIBUTING.md`'s `uv sync` is described** (issue
+  btclib-org/.github#739): that paragraph is gone from the section now;
+  `CONTRIBUTING.md`'s *The environment and the gates* names the command,
+  unchanged by this port.
+- **The entry *The worktree fence's create, push and guard take the
+  standard's form* above names the paragraph below the fence as
+  `btclib-org/.github`'s `CLAUDE.md` at `20ad654`, as the converged
+  form, and says the sync stays outside the block** (issue
+  btclib-org/.github#739): none of that holds any more -- the section is
+  `btclib-org/.github`'s at `2a7a8fc` now, and it says nothing about
+  where a sync belongs.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
