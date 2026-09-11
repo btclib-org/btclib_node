@@ -116,8 +116,8 @@ jobs:
       # and keeps the convention that no uv command in these workflows
       # installs from a lock it has not checked.
       # no pytest argument: addopts in pyproject.toml carries the
-      # coverage flags and the report format, [tool.coverage.report] the
-      # floor
+      # coverage flags, [tool.coverage.report] the floor and the report
+      # options
       - name: Run pytest
         run: uv run --locked --no-default-groups --group test pytest
 
