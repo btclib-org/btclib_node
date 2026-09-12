@@ -1139,6 +1139,28 @@ keeps whichever shape it was written in.
   gains a command, and the one about `validate-config` still called it
   the last with the documentation build appended below.
 
+### The closure reader takes `needs:` in each of its three shapes
+
+- **`tests/interpreters_test.py`'s `_NEEDS` reads a block list under the
+  key beside the flow list and the bare scalar on it** (issue
+  btclib-org/.github#1031). GitHub takes all three and they name the same
+  jobs, so a reader of two of them answers a closure short of whatever
+  sits behind an edge written in the third, and
+  `test_free_threading_is_classified_exactly_when_the_gate_runs_it` then
+  measures a gate it has not read. Only the aggregate's own `needs:`
+  going unread is loud, the closure collapsing to the aggregate and the
+  `no job ... names an interpreter` assertion firing on it; every other
+  position is silent. `test.yml` writes no block list today, which is a
+  condition and not a property.
+- **The run of items takes a whitespace-only line, the tolerance `_STEP`
+  already carries for the same residue.** `_UNCOMMENTED` takes one
+  whitespace character with the `#` it strips, so a comment among the
+  items arrives one space short of their indent, and a blank line
+  between two items changes nothing a yaml reader sees; a run of
+  adjacent lines ends at either and drops every item under it.
+- **The issue's other half is `btclib-org/bitcoin-core-rpc`'s own copy**,
+  which is not this tree's, so the issue stays open on this landing.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
