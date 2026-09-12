@@ -55,16 +55,16 @@ def a_config(
     lf: bool = False,
     cov_fail_under: float | None = None,
     testpaths: list[str] | None = None,
-    rootpath: Path | None = None,
 ) -> tuple[Any, SimpleNamespace]:
     """Build a `pytest.Config` stand-in and the `known_args_namespace` on it.
 
-    Only the attributes `asks_for_everything` and `relax_coverage_floor`
-    actually read are here, named after the command-line options they
-    come from; the second element returned is the `SimpleNamespace`
-    standing in for `known_args_namespace`, so a test can read
-    `cov_fail_under` back off it after calling one of the two functions
-    on the first element.
+    Only what `relax_coverage_floor` reads is here: the `option`
+    attributes, named after the command-line options they come from,
+    and `rootpath` and `getini`, which it hands on to
+    `asks_for_everything`. The second element returned is the
+    `SimpleNamespace` standing in for `known_args_namespace`, so a test
+    can read `cov_fail_under` back off it after calling
+    `relax_coverage_floor` on the first element.
     """
     known_args_namespace = SimpleNamespace(cov_fail_under=FLOOR)
     return SimpleNamespace(
@@ -85,7 +85,7 @@ def a_config(
         ),
         # what testpaths is relative to; the working directory is the
         # same thing only when pytest is run from the rootdir
-        rootpath=Path.cwd() if rootpath is None else rootpath,
+        rootpath=Path.cwd(),
         getini=lambda name: {
             "testpaths": TESTPATHS if testpaths is None else testpaths
         }[name],
@@ -102,8 +102,8 @@ def test_naming_the_whole_suite_holds_the_floor(paths: list[str]) -> None:
     # a directory above testpaths collects it too, so what decides this
     # is containment: read as strings, the everyday `pytest tests/`
     # would count as a subset and lose the gate
+    assert asks_for_everything(paths, TESTPATHS, Path.cwd()) is True
     config, options = a_config(file_or_dir=paths)
-    assert asks_for_everything(config) is True
     assert relax_coverage_floor(config) is False
     assert options.cov_fail_under == FLOOR
 
@@ -114,8 +114,8 @@ def test_the_help_path_names_no_paths_at_all() -> None:
     # asks_for_everything's docstring. What is here is the cover: the
     # guard it describes adds no branch for the floor to miss, so
     # deleting this test leaves the fix untested.
+    assert asks_for_everything(None, TESTPATHS, Path.cwd()) is True
     config, options = a_config(file_or_dir=None)
-    assert asks_for_everything(config) is True
     assert relax_coverage_floor(config) is False
     assert options.cov_fail_under == FLOOR
 
@@ -142,12 +142,9 @@ def test_testpaths_are_read_against_the_rootdir_and_not_the_working_directory() 
     # configuration file's; reading the second against the working
     # directory answers about a tree that is not the one being tested
     elsewhere = Path("/a/rootdir/that/is/not/here").resolve()
-    config, _ = a_config(file_or_dir=[str(elsewhere)], rootpath=elsewhere)
-    assert asks_for_everything(config) is True
-    config, _ = a_config(
-        file_or_dir=[str(elsewhere / "tests/unit")], rootpath=elsewhere
-    )
-    assert asks_for_everything(config) is False
+    assert asks_for_everything([str(elsewhere)], TESTPATHS, elsewhere) is True
+    subdirectory = [str(elsewhere / "tests/unit")]
+    assert asks_for_everything(subdirectory, TESTPATHS, elsewhere) is False
 
 
 def test_a_symlinked_rootdir_still_reads_as_the_whole_suite(tmp_path: Path) -> None:
@@ -161,6 +158,10 @@ def test_a_symlinked_rootdir_still_reads_as_the_whole_suite(tmp_path: Path) -> N
 
     A machine that will not create a symlink skips the case rather than
     failing it: on Windows an account can lack the privilege it takes.
+    What holds the two calls there is
+    `test_a_testpaths_entry_is_the_directory_its_parent_segment_reaches`
+    for the one on `wanted`, and `WHOLE_SUITE`'s relative spellings for
+    the one on `given`.
     """
     real = tmp_path / "real"
     (real / "tests").mkdir(parents=True)
@@ -169,12 +170,35 @@ def test_a_symlinked_rootdir_still_reads_as_the_whole_suite(tmp_path: Path) -> N
         link.symlink_to(real, target_is_directory=True)
     except OSError as refused:  # pragma: no cover -- no privilege on Windows
         pytest.skip(f"this platform will not create a symlink: {refused}")
-    config, options = a_config(
-        file_or_dir=[str(link / "tests")], rootpath=link, testpaths=["tests"]
-    )
-    assert asks_for_everything(config) is True
-    assert relax_coverage_floor(config) is False
-    assert options.cov_fail_under == FLOOR
+    assert asks_for_everything([str(link / "tests")], ["tests"], link) is True
+
+
+def test_a_testpaths_entry_is_the_directory_its_parent_segment_reaches(
+    tmp_path: Path,
+) -> None:
+    """`tests/../src` is `src`, which a command line naming `tests` misses.
+
+    `pathlib` keeps a parent-directory segment where it collapses `.`
+    and a trailing separator, so an unresolved join carries `..` into a
+    path whose parents include the directory that segment left: `tests`
+    then reads as above `tests/../src`, and a run collecting nothing of
+    `src` is handed the whole suite's ratchet. Resolving the join makes
+    the entry the directory it reaches, which `tests` is not above.
+
+    That is the `testpaths` side's second reason to resolve, and it asks
+    for no symlink and no privilege, so it holds where
+    `test_a_symlinked_rootdir_still_reads_as_the_whole_suite` can only
+    skip. A `..` that re-enters the directory it left --
+    `tests/../tests` -- cannot see it: the unresolved target then has
+    more parents and the command line's path is one of them, so
+    containment answers the same with the call and without it.
+    """
+    # both sides start from the same spelling, or the `..` is not the
+    # only difference between them; `tmp_path` already arrives resolved,
+    # `TempPathFactory.getbasetemp` resolving the basetemp on both its
+    # branches, so this states that invariant rather than establishing it
+    base = tmp_path.resolve()
+    assert asks_for_everything([str(base / "tests")], ["tests/../src"], base) is False
 
 
 def test_a_suite_that_names_no_paths_of_its_own() -> None:
@@ -182,8 +206,8 @@ def test_a_suite_that_names_no_paths_of_its_own() -> None:
     # with testpaths unset a bare run collects the rootdir, so anything
     # named is less than the suite. `all` over an empty sequence is
     # true, which would answer the opposite of that.
+    assert asks_for_everything(["tests/unit/mempool_test.py"], [], Path.cwd()) is False
     config, options = a_config(file_or_dir=["tests/unit/mempool_test.py"], testpaths=[])
-    assert asks_for_everything(config) is False
     assert relax_coverage_floor(config) is True
     assert options.cov_fail_under == 0
 
