@@ -100,12 +100,12 @@ class Coin(_BtclibCoin):
 # A file's byte offset or length, and the store's own file-rotation
 # counter, are this store's bookkeeping about itself, not a count of
 # items an untrusted peer handed it -- so none of the three needs
-# var_int.parse's default cap, which exists to bound an attacker-
-# inflated item count (btclib's var_int module docstring) and is what
-# a fixed two-octet counter and a fixed-width filename slice were
-# standing in for (btclib-org/btclib-node#78, #79). Bitcoin Core's own
-# on-disk position and file index, FlatFilePos::nFile and ::nPos, skip
-# that guard the same way: SERIALIZE_METHODS reads them through
+# var_int.parse's default cap, which exists to bound an
+# attacker-inflated item count (btclib's var_int module docstring) and
+# is what a fixed two-octet counter and a fixed-width filename slice
+# were standing in for (btclib-org/btclib-node#78, #79). Bitcoin Core's
+# own on-disk position and file index, FlatFilePos::nFile and ::nPos,
+# skip that guard the same way: SERIALIZE_METHODS reads them through
 # VARINT_MODE, not ReadCompactSize (src/flatfile.h). var_int's own
 # encoding ceiling, 8 bytes, is the only bound left here.
 _LOCAL_BOOKKEEPING_MAX = 0xFFFF_FFFF_FFFF_FFFF
@@ -504,9 +504,9 @@ class BlockDB:
         rather than being threaded through here. A no-op if `target_height`
         is at or behind what an earlier call already reached, the same
         idempotence `add_block` and `add_rev_block` already give the rest
-        of this store -- a retry after a crash, or a second automatic-
-        target step that lands on a height an earlier one already passed,
-        costs nothing extra.
+        of this store -- a retry after a crash, or a second
+        automatic-target step that lands on a height an earlier one already
+        passed, costs nothing extra.
         """
         with self._lock:
             if target_height <= self.pruned_up_to:
@@ -527,8 +527,8 @@ class BlockDB:
         `m_blockfile_info` still tracks; `self.files` is this store's own
         counterpart, one `FileMetadata` per `.blk` or `.rev` file not yet
         unlinked by `_release`, so the same sum over its `size` fields
-        answers the same question. `main._prune_chain`'s own automatic-
-        target walk is the one caller.
+        answers the same question. `main._prune_chain`'s own
+        automatic-target walk is the one caller.
         """
         with self._lock:
             return sum(file.size for file in self.files.values())

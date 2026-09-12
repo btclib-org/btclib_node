@@ -2461,8 +2461,8 @@ def test_a_refused_batch_is_not_the_end_of_a_sync() -> None:
 
     A batch refused for a bad proof of work is a misbehaving peer, not the
     ordinary end of a sync: the raise reaches handle_p2p, which drops the
-    connection instead of this node believing itself caught up. btclib-
-    org/btclib-node#75
+    connection instead of this node believing itself caught up.
+    btclib-org/btclib-node#75
     """
     # a batch refused for a bad proof of work is a misbehaving peer, not
     # the ordinary end of a sync: the raise reaches handle_p2p, which

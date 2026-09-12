@@ -1125,11 +1125,11 @@ def test_a_reorg_evicts_a_transaction_the_reorg_itself_invalidated(
     # carries a second transaction -- generate_random_chain's own rule
     # -- spending first[0]'s coinbase, confirmed rather than merely
     # offered. second outweighs it and abandons the whole branch, first[0]
-    # included, so _reconcile_mempool_for_reorg's own oldest-abandoned-
-    # block-first walk reaches orphaned only after the coinbase it spent
-    # is already undone: #85's MissingPrevoutError, not a second
-    # implementation of it here, is what that walk's own except catches
-    # and skips rather than re-adding.
+    # included, so _reconcile_mempool_for_reorg's own
+    # oldest-abandoned-block-first walk reaches orphaned only after the
+    # coinbase it spent is already undone: #85's MissingPrevoutError, not
+    # a second implementation of it here, is what that walk's own except
+    # catches and skips rather than re-adding.
     first = generate_random_chain(COINBASE_MATURITY + 1, RegTest().genesis.hash)
     connect(node, first)
     assert node.status == NodeStatus.BlockSynced

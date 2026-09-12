@@ -1010,6 +1010,40 @@ keeps whichever shape it was written in.
   work for both. The comment above the pair is `btclib-org/.github`'s
   own at `ed362d2a`. Both hooks report nothing on those files.
 
+### The hyphen hook reads Python and rst beside markdown
+
+- **`no-hyphen-at-end-of-line` carries `types_or: [markdown, python,
+  rst]`** (issue btclib-org/.github#921): section 4 of the organization
+  standard gives the hook the file types whose prose a build renders,
+  because a docstring reaches that rendering through docutils, which
+  leaves the source break inside the paragraph it builds and lets html
+  collapse it to a space. The comment above the hook is
+  `btclib-org/.github`'s own at `fd5fde6e`, its `README.md` read as the
+  organization standard -- the phrase the hook comments beside it use.
+- **Every line the widened list refuses holds its hyphenated token
+  whole** (closes btclib-org/.github#908): `docs/source/conf.py`'s
+  module docstring wrapped its Sphinx URL at `sphinx-`;
+  `block_db/__init__.py` wrapped `attacker-inflated` in the comment on
+  `_LOCAL_BOOKKEEPING_MAX` and `automatic-target` in `prune_up_to`'s and
+  `current_usage`'s docstrings; `p2p/callbacks.py` wrapped
+  `once-per-connection` in the comment on `_ADDR_SAMPLE_LIFETIME`;
+  `tests/functional/p2p/pruning_test.py` wrapped `proof-of-work`,
+  `tests/unit/download_test.py` `several-minutes-average` and
+  `tests/unit/main_test.py` `oldest-abandoned-block-first`. The
+  `automatic-target` docstrings are what
+  [ISS 908](https://github.com/btclib-org/.github/issues/908) read as
+  `automatic- target` off the built `btclib_node.block_db.html`. No word
+  is changed by a reflow, and no reflowed line is wider than section 9's
+  80 columns. `git grep -nE '[A-Za-z0-9]-$' -- '*.md' '*.py' '*.rst'`
+  answers on nothing, against the same expression less its hyphen, which
+  answers throughout those same files and is what says the first answer
+  is an absence rather than a pattern that cannot match.
+- **`test_a_refused_batch_is_not_the_end_of_a_sync`'s docstring cites
+  `btclib-org/btclib-node#75` on one line** (closes
+  btclib-org/.github#908): the reference was broken at the hyphen of
+  `btclib-`, which `git grep 'btclib-org/btclib-node#75'` reads past,
+  and that grep names the docstring.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

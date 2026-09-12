@@ -183,9 +183,9 @@ def test_a_pruned_server_serves_a_block_it_still_holds(
     connection.send(GetData([Inventory(InventoryType.MSG_BLOCK, tip_hash)]))
 
     payload = _wait_for_message(client, "block")
-    # regtest's own easy target fails btclib's default (mainnet) proof-
-    # of-work check -- callbacks.block's own comment argues the same
-    # unchecked-then-assert shape against this chain's own limit
+    # regtest's own easy target fails btclib's default (mainnet)
+    # proof-of-work check -- callbacks.block's own comment argues the
+    # same unchecked-then-assert shape against this chain's own limit
     block = BlockMsg.parse(payload, check_validity=False).block
     assert block.header.hash == tip_hash
     assert connection.status == P2pConnStatus.Connected

@@ -794,8 +794,8 @@ def test_a_large_enough_move_pulls_the_next_send_forward(
 ) -> None:
     """A rate risen by over a third pulls the resend forward, unsent yet."""
     # currentFilter > 4 * peer.m_fee_filter_sent / 3: a rate that has
-    # risen by more than a third is not left on the peer's own several-
-    # minutes-average schedule
+    # risen by more than a third is not left on the peer's own
+    # several-minutes-average schedule
     mempool = Mempool(Logger(debug=True))
     mempool._rolling_min_fee_rate = 1000.0
     mempool._block_since_last_rolling_fee_bump = True
