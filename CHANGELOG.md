@@ -1101,6 +1101,30 @@ keeps whichever shape it was written in.
   what the first of them says about `test.yml`'s own allowlist is
   untouched.
 
+### `REVIEWING.md` and `.gitattributes` are the standard's, byte for byte
+
+- **`REVIEWING.md` above `## This repository in particular` matches
+  `btclib-org/.github`'s copy at `1058ef3`** (issue
+  btclib-org/.github#353). A finding about the wording of prose no user
+  reads is named at the foot of the review instead of filed, and what is
+  filed stays a defect a test or a hook can measure, a decision the
+  standard has to take, or a functional defect. The paragraph proposing a
+  fix as a `suggestion` gives the signature as the reason it is the right
+  shape: the commit GitHub writes carries its web-flow key, and `main`
+  requires a valid signature rather than one particular signer.
+  *Re-review* reads the old sha off the previous round's verdict, an
+  amend and a rebase each leaving it off the branch. Everything under the
+  heading is this tree's and no byte of it moves.
+- **`.gitattributes` matches that copy whole, neither copy carrying the
+  marker heading** (issue btclib-org/.github#1026). It carries what the
+  union driver costs at the seam where two sides' added lines abut — the
+  blank line between them, which leaves a block opening with a heading
+  sitting against the line above it while `git rebase` exits 0 and
+  nothing conflicts — and names section 4's `check-changelog` as what
+  reports it, put ahead of the markdownlint autofix that would otherwise
+  repair the seam before anything named it. The paragraph after it
+  rejects not setting the driver at all.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
