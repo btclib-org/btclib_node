@@ -998,6 +998,18 @@ keeps whichever shape it was written in.
   on the bare `pytest` say `[tool.coverage.report]` carries the report
   options**, where they said `addopts` carries the report format.
 
+### The issue-form hooks join the `check-jsonschema` block
+
+- **`check-github-issue-config` and `check-github-issue-forms` stand
+  under `check-dependabot` and `check-readthedocs`, in the
+  `check-jsonschema` entry at `rev: 0.38.0`** (issue
+  btclib-org/.github#767): section 4's schemas bullet names the pair,
+  and this tree's `.github/ISSUE_TEMPLATE/` holds what each selects --
+  `config.yml` for the first, `bug_report.yml`, `feature_request.yml`
+  and `question.yml` for the second -- so `check-hooks-apply` finds
+  work for both. The comment above the pair is `btclib-org/.github`'s
+  own at `ed362d2a`. Both hooks report nothing on those files.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
