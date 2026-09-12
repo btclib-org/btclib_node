@@ -1044,6 +1044,34 @@ keeps whichever shape it was written in.
   `btclib-`, which `git grep 'btclib-org/btclib-node#75'` reads past,
   and that grep names the docstring.
 
+### `asks_for_everything` takes the paths rather than a `pytest.Config`
+
+- **`tests/conftest.py`'s `asks_for_everything` takes `file_or_dir`,
+  `testpaths` and `rootpath`, and `relax_coverage_floor` reads them off
+  the config where it calls it** (closes btclib-org/.github#806): a
+  predicate taking the config is reachable only through a stand-in for
+  one, and a case built on a stand-in measures the stand-in as much as
+  the predicate.
+- **The parameters are the values the two expressions already used**:
+  `given` resolves a positional as `Path(path)` and `wanted` joins a
+  `testpaths` entry onto `rootpath`, so what moves is where the values
+  come from and not what is computed from them. The `invocation_dir`
+  pair -- a positional joined onto a directory handed in, a `testpaths`
+  entry already absolute -- is the rejected alternative, and what it
+  costs is a second change underneath the signature.
+- **`tests/unit/coverage_floor_test.py` asks the predicate by naming
+  paths**, and `a_config` stands in only for `relax_coverage_floor`,
+  which takes a config: its `rootpath` parameter goes with the cases
+  that passed one.
+- **`test_a_testpaths_entry_is_the_directory_its_parent_segment_reaches`
+  holds `wanted`'s `.resolve()` where the symlink case can only skip**:
+  a `testpaths` entry of `tests/../src` against a command line naming
+  `tests` reads as the whole suite without that call, `pathlib` keeping
+  the segment so that `tests` is above the unresolved join. On a
+  platform refusing `os.symlink` the symlink case's body does not run,
+  and `WHOLE_SUITE`'s relative spellings are what hold the call on
+  `given` there.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

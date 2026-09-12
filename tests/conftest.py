@@ -49,25 +49,32 @@ settings.register_profile("thorough", deadline=None, max_examples=2_000)
 settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "default"))
 
 
-def asks_for_everything(config: pytest.Config) -> bool:
+def asks_for_everything(
+    file_or_dir: list[str] | None, testpaths: list[str], rootpath: Path
+) -> bool:
     """Whether the paths named on the command line take the suite in.
+
+    The arguments are read off a `pytest.Config` by the caller rather
+    than taken as one here: a predicate taking the config is reachable
+    only through a stand-in for one, and a case built on a stand-in
+    measures the stand-in as much as the predicate.
 
     No path at all is `testpaths`, which is the suite. A path above one
     of them -- `pytest tests/` -- collects it too, so what matters is
     containment and not equality: comparing the strings would call the
     whole suite a subset and quietly drop the floor from it.
 
-    On the `--help` path `config.option.file_or_dir` is `None` and not
-    `[]`, the parse having been abandoned rather than left unfinished:
-    `--help` is bound to pytest's `HelpAction`, which raises
-    `PrintHelp` to skip the rest of argument parsing, and
-    `Config.parse` catches it and returns before the positional is
-    consumed, so it still holds argparse's `None` default when
-    `helpconfig` calls `_do_configure()` and `pytest_configure` fires.
-    That is no path either, and folding it is what keeps `--help` from
-    ending in a traceback whose last frame is this file.
+    On the `--help` path `file_or_dir` is `None` and not `[]`, the
+    parse having been abandoned rather than left unfinished: `--help`
+    is bound to pytest's `HelpAction`, which raises `PrintHelp` to skip
+    the rest of argument parsing, and `Config.parse` catches it and
+    returns before the positional is consumed, so it still holds
+    argparse's `None` default when `helpconfig` calls `_do_configure()`
+    and `pytest_configure` fires. That is no path either, and folding
+    it is what keeps `--help` from ending in a traceback whose last
+    frame is this file.
     """
-    given = [Path(path).resolve() for path in config.option.file_or_dir or []]
+    given = [Path(path).resolve() for path in file_or_dir or []]
     if not given:
         return True
     # against the rootdir and not against where pytest was run from,
@@ -77,7 +84,7 @@ def asks_for_everything(config: pytest.Config) -> bool:
     # symlink needs resolving here too, or a tree under `/tmp` on macOS
     # would compare `/tmp/...` against `/private/tmp/...` and find no
     # containment anywhere.
-    wanted = [(config.rootpath / p).resolve() for p in config.getini("testpaths")]
+    wanted = [(rootpath / p).resolve() for p in testpaths]
     if not wanted:
         # `all` over nothing is true, and would make every path named
         # here the whole suite. Nothing names the suite, so a bare run
@@ -106,7 +113,9 @@ def relax_coverage_floor(config: pytest.Config) -> bool:
     """
     option = config.option
     selective = bool(
-        not asks_for_everything(config)
+        not asks_for_everything(
+            option.file_or_dir, config.getini("testpaths"), config.rootpath
+        )
         or option.keyword
         or option.markexpr
         or option.deselect
