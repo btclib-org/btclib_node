@@ -1072,6 +1072,35 @@ keeps whichever shape it was written in.
   and `WHOLE_SUITE`'s relative spellings are what hold the call on
   `given` there.
 
+### The anchor depth and the aggregate's allowlist are the standard's
+
+- **`docs/source/conf.py`'s `myst_heading_anchors` is 6** (issue
+  btclib-org/.github#715): section 2 of the organization standard makes
+  six every level markdown heads at, which is what makes the number a
+  fixed point rather than a depth re-derived from the files it covers.
+  `CONTRIBUTING.md`'s shared half is ported to every repository by
+  section 14, so a heading added there moves a tree-derived depth in each
+  of them at once, and which tree finds out is whichever carries a link
+  into it. Nothing this build includes heads below `###`, so the wider
+  setting generates no anchor that was not there already:
+  `sphinx-build -W -n` exits 0 at either value and the rendered pages are
+  identical file for file.
+- **`.github/workflows/codeql.yml`'s allowlist names `success` and
+  `skipped`** (issue btclib-org/.github#990): section 10 asks for both
+  names whatever a workflow's jobs can report today, and the comment
+  above the step is what says the constant does not follow the jobs -- a
+  job conditional on what a pull request touched, or an `if:` narrower
+  than the aggregate's own, re-opens `skipped`, and this job going red on
+  the first run that legitimately skips is what reports an allowlist that
+  has stopped matching the run. The entry above titled *The aggregates
+  guard the empty result, and the macOS sentinel drops the floor* says
+  this allowlist names `success` alone because nothing in the workflow is
+  conditional on what a pull request touched, and *`codeql.yml`'s
+  aggregate reads the run's job listing* says the same of the listing
+  step that replaced the `needs.*.result` read; neither holds now, and
+  what the first of them says about `test.yml`'s own allowlist is
+  untouched.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

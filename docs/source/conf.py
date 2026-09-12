@@ -178,13 +178,17 @@ nitpick_ignore = [
     ("py:class", "ScriptFlags"),
 ]
 
-# anchors for h1 to h3, which is what makes a link to a heading of the same
+# anchors for h1 to h6, which is what makes a link to a heading of the same
 # markdown file resolve here. Without it myst generates no anchor at all,
 # so "[Vendoring](#vendoring)" -- a link GitHub and PyPI both follow, the
 # anchor being what those two derive from the heading text -- becomes an
-# xref to a target no page has, and -W fails the build. Three levels,
-# because that is how deep the root markdown files head their sections
-myst_heading_anchors = 3
+# xref to a target no page has, and -W fails the build. Six is every level
+# markdown heads at, which makes the number a fixed point rather than a
+# depth re-derived from the files it covers: CONTRIBUTING.md's shared half
+# is ported to every repository by section 14 of the organization
+# standard, so a heading added there moves a tree-derived depth in each of
+# them at once (btclib-org/.github#715)
+myst_heading_anchors = 6
 
 # no suppress_warnings, and myst.xref_missing least of all: the transform
 # at the bottom of this file resolves every link the included root files
