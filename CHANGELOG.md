@@ -1125,6 +1125,20 @@ keeps whichever shape it was written in.
   repair the seam before anything named it. The paragraph after it
   rejects not setting the driver at all.
 
+### The gate block reproduces every run step of the docs job
+
+- **The block carries the `grep` over the built pages that `docs.yml`
+  runs after the `sphinx-build` call** (issue btclib-org/.github#973).
+  What myst renders for a target it cannot resolve is an anchor on the
+  page it is already on, and the build fails on it only through the
+  `myst.xref_missing` warning `docs/source/conf.py` suppresses nowhere;
+  the grep asks the same question of the artefact, where a suppression
+  cannot hide the answer.
+- **The paragraphs under the block name the command they are about, not
+  its position in it.** An ordinal reference goes false when the block
+  gains a command, and the one about `validate-config` still called it
+  the last with the documentation build appended below.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
