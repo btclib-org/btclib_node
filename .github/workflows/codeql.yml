@@ -194,14 +194,19 @@ jobs:
       # test.yml's aggregate, `needs` reaching nothing outside its own
       # workflow
       #
-      # the allowlist below names "success" alone and not "success" and
-      # "skipped": analyze carries no condition narrower than this job's
-      # own draft/closed one above, so whenever analyze would report
-      # "skipped" this job skips with it and never reaches this step --
-      # unlike test.yml's coverage job, nothing here is conditional on
-      # the diff. A "skipped" row in the listing would mean this step ran
-      # without its dependency having, which its own `if:` already rules
-      # out, so the allowlist refuses it rather than tolerating it
+      # the allowlist below names "success" and "skipped", both names,
+      # whatever the jobs of this workflow can report today. `analyze`
+      # carries no condition narrower than this job's own draft/closed
+      # one above and no job here is conditional on what a pull request
+      # touched, so no legitimate "skipped" row is reachable -- which is
+      # a condition rather than a property, and a job added later
+      # re-opens it. Letting the allowlist follow the jobs is the
+      # alternative section 10 of the organization standard rejects: the
+      # narrowing is sound the day it is written, and what it costs is
+      # an expiry nothing watches. What reports an allowlist that has
+      # stopped matching the run is this job going red on the first run
+      # that legitimately skips, with no defect under it and nothing in
+      # the tree pointing here (btclib-org/.github#990)
       - name: Fail unless every other job of this run succeeded
         env:
           GH_TOKEN: ${{ github.token }}
@@ -220,7 +225,7 @@ jobs:
           # implementation's extension and a literal "t" in another's,
           # where awk's field separator is POSIX
           bad=$(printf '%s\n' "${jobs}" |
-            awk -F'\t' '$1 != "success" && $1 != "unfinished"')
+            awk -F'\t' '$1 != "success" && $1 != "skipped" && $1 != "unfinished"')
           unfinished=$(printf '%s\n' "${jobs}" |
             awk -F'\t' '$1 == "unfinished"' | wc -l | tr -d ' ')
           # each annotation names the rows it is about, an annotation
