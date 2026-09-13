@@ -1278,6 +1278,22 @@ keeps whichever shape it was written in.
   no other tree**, so the issue stays open on this landing and the
   citation above is `issue` for that reason.
 
+### `source-exclude` names the `.hypothesis` a run from inside `tests/` leaves
+
+- **`[tool.uv.build-backend]`'s `source-exclude` gains `.hypothesis`**
+  (issue btclib-org/.github#1058). Hypothesis writes its example database
+  to `.hypothesis` under the working directory --
+  `hypothesis/configuration.py` takes `Path.cwd()` for it -- so `pytest`
+  invoked from inside `tests/` leaves one there, and `source-include`'s
+  `"tests/**"` then packs it into the sdist. `.gitignore` covers
+  `.hypothesis/` unanchored, which keeps git quiet about the directory
+  and says nothing to the backend, `.gitignore` being a file it does not
+  read. Measured as the list's own comment records for every line it
+  holds: with `tests/.hypothesis/examples/probe` planted,
+  `uv run pre-commit run check-sdist --all-files` exits 1 on
+  `SDist does not match git` naming that path under `SDist only`, and
+  exits 0 with the line in place.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
