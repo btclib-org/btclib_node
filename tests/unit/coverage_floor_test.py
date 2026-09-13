@@ -147,6 +147,34 @@ def test_testpaths_are_read_against_the_rootdir_and_not_the_working_directory() 
     assert asks_for_everything(subdirectory, TESTPATHS, elsewhere) is False
 
 
+def test_a_parent_directory_segment_names_the_whole_suite_too(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """`tests/../tests`, and `../tests` from inside `tests/`, are the suite.
+
+    `pathlib` keeps a parent-directory segment where it collapses `.`
+    and a trailing separator, so each spelling here is an object that
+    compares unequal to the directory it names until `given`'s call
+    resolves it. `WHOLE_SUITE`'s relative spellings are collapsed as
+    they are built and so ask nothing of that half: they hold the call
+    against being dropped, not against being rewritten to make a path
+    absolute without normalizing it.
+
+    The two commands differ in where the shell stood. A positional is
+    read against the working directory, which is what `Path.resolve()`
+    joins a relative one onto, while `rootpath` is the rootdir pytest
+    computes from the configuration file above the paths it was given --
+    so a run started inside `tests/` moves the first and leaves the
+    second where it was.
+    """
+    base = tmp_path.resolve()
+    (base / "tests").mkdir()
+    monkeypatch.chdir(base)
+    assert asks_for_everything(["tests/../tests"], TESTPATHS, base) is True
+    monkeypatch.chdir(base / "tests")
+    assert asks_for_everything(["../tests"], TESTPATHS, base) is True
+
+
 # the pragma sits on the `def` because an exclusion on a line that
 # introduces a block takes the whole block: this case's body is reachable
 # only where the platform makes a symbolic link, so a floor over a
@@ -172,8 +200,10 @@ def test_a_symlinked_rootdir_still_reads_as_the_whole_suite(  # pragma: no cover
     failing it: on Windows an account can lack the privilege it takes.
     What holds the two calls there is
     `test_a_testpaths_entry_is_the_directory_its_parent_segment_reaches`
-    for the one on `wanted`, and `WHOLE_SUITE`'s relative spellings for
-    the one on `given`.
+    for the one on `wanted`, and
+    `test_a_parent_directory_segment_names_the_whole_suite_too` for the
+    one on `given`, which `WHOLE_SUITE`'s relative spellings hold only
+    against being dropped.
     """
     real = tmp_path / "real"
     (real / "tests").mkdir(parents=True)
