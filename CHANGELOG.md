@@ -1230,6 +1230,54 @@ keeps whichever shape it was written in.
   so the issue stays open on this landing and the citation above is
   `issue` for that reason.
 
+### The command-line `..` case kills a resolve that only makes paths absolute
+
+- **`tests/unit/coverage_floor_test.py` gains
+  `test_a_parent_directory_segment_names_the_whole_suite_too`** (issue
+  btclib-org/.github#1049), the name `bitcoin-core-rpc` and
+  `btclib-benchmarks` already carry for it. It asks the predicate the
+  two commands their copies ask -- `pytest tests/../tests` from the
+  rootdir, and `pytest ../tests` from inside `tests/` -- re-expressed
+  against this tree's signature, which takes `file_or_dir`, `testpaths`
+  and `rootpath` and no invocation directory: a relative positional is
+  read against the working directory, `Path.resolve()` being what joins
+  it onto one, so the second command is a `monkeypatch.chdir` into the
+  fictitious rootdir's own `tests/`. `rootpath` stays that rootdir
+  there, measured rather than assumed: `pytest ../tests` run from
+  `tests/` reports the repository root as its `rootdir` and
+  `pyproject.toml` as its `configfile`, which is the pair a bare run
+  from the root reports.
+- **`Path.resolve()` does three things -- makes a path absolute,
+  normalizes a `..` segment, follows a link -- and this file pinned only
+  the first and the third.** Measured by loading `tests/conftest.py` out
+  of the object store under a standalone interpreter, as written and
+  under tampers of the comprehension -- `Path(path)`,
+  `Path(path).absolute()` and `Path(os.path.abspath(path))`, each
+  asserted before use: every relative spelling in `WHOLE_SUITE` reads as
+  a selection under `Path(path)` and as the whole suite under the other
+  two, which is the first alone, and no member of `WHOLE_SUITE` carries
+  a `..`. The symlinked spelling the file already held fails under both
+  `.absolute()` and `abspath`, so what it pins is the third and not the
+  second: a tamper performing the whole of the normalizing is one it
+  still kills. This case is what pins the second, dying to `.absolute()`
+  and surviving `abspath`. With `.absolute()` written into the tree and
+  `Path.symlink_to` made to refuse, the module is green without this
+  case and fails on this case alone with it.
+- **`Path(os.path.abspath(path))` is not what this case reaches**: it
+  normalizes the segment too, and
+  `test_a_symlinked_rootdir_still_reads_as_the_whole_suite` is what
+  tells that rewrite from the call -- the case that skips wherever the
+  platform will not make a link.
+- **The symlink case's docstring names this case as what holds `given`
+  where the link cannot be made**, in place of `WHOLE_SUITE`'s relative
+  spellings, which hold that call against being dropped and not against
+  being weakened. *`asks_for_everything` takes the paths rather than a
+  `pytest.Config`* above says the same of those spellings; this entry
+  replaces that sentence rather than rewriting it.
+- **`btclib` has no case of that name either, and this branch touches
+  no other tree**, so the issue stays open on this landing and the
+  citation above is `issue` for that reason.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
