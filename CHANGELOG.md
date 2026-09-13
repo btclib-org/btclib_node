@@ -1161,6 +1161,38 @@ keeps whichever shape it was written in.
 - **The issue's other half is `btclib-org/bitcoin-core-rpc`'s own copy**,
   which is not this tree's, so the issue stays open on this landing.
 
+### The symlink case's pragma takes the case, not the handler alone
+
+- **The `# pragma: no cover` sits on the case's `def`** (issue
+  btclib-org/.github#1042): an exclusion on a line that introduces a
+  block takes the whole block, so it reaches the assertion after the
+  skip as well. On the `except` it reaches the handler and the
+  `pytest.skip` alone, which are the two lines that do not run wherever
+  the link is made, and a platform refusing `os.symlink` then meets the
+  skip and a coverage floor it cannot reach in the same run -- the exit
+  code the floor's and the failure naming a percentage rather than a
+  symlink. Measured with a plugin making `Path.symlink_to` raise
+  `OSError`: with the pragma on the `except` the documented run exits 1
+  with the assertion after the skip named missing, and with it on the
+  `def` the same run meets the floor and the case reports `SKIPPED`.
+- **The comment above the line says why coverage can ask nothing of the
+  case, and what the exclusion costs**: the body is reachable only
+  where the platform makes a symbolic link, so a floor over a `source`
+  naming `tests` asks about the runner rather than about the suite, and
+  dead code inside the case stops being flagged in exchange. The inline
+  half names the case rather than the handler, which is the line
+  `[tool.coverage.report]`'s comment asks for.
+- **The docstring's own sentence -- a machine that will not create a
+  symlink skips the case rather than failing it -- is what the move
+  makes true.** *The symlink case skips a machine that will not create
+  one* above has the handler carrying the pragma, and *A pragma's
+  inline half names its own line's case* has that handler's half
+  reading `-- no privilege on Windows`; this entry replaces both rather
+  than rewriting either.
+- **`btclib`, `bitcoin-core-rpc` and `btclib-benchmarks` carry the same
+  shape**, so the issue stays open on this landing and the citation
+  above is `issue` for that reason.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`

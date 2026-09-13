@@ -147,7 +147,19 @@ def test_testpaths_are_read_against_the_rootdir_and_not_the_working_directory() 
     assert asks_for_everything(subdirectory, TESTPATHS, elsewhere) is False
 
 
-def test_a_symlinked_rootdir_still_reads_as_the_whole_suite(tmp_path: Path) -> None:
+# the pragma sits on the `def` because an exclusion on a line that
+# introduces a block takes the whole block: this case's body is reachable
+# only where the platform makes a symbolic link, so a floor over a
+# `source` naming `tests` asks about the runner rather than about the
+# suite. An exclusion on the `except` reaches only the two lines that do
+# not run wherever the link is made, and the platform the guard is for
+# then meets a skip and a floor it cannot reach in the same run. What it
+# costs is that dead code inside the case stops being flagged; the case's
+# one assertion is its whole subject, so the trade is cheap and is still
+# a trade.
+def test_a_symlinked_rootdir_still_reads_as_the_whole_suite(  # pragma: no cover -- the body needs a symlink
+    tmp_path: Path,
+) -> None:
     """A `rootpath` reached through a symlink still contains the resolved suite.
 
     `rootpath` is built with `os.path.abspath`, which leaves a symlink in
@@ -168,7 +180,7 @@ def test_a_symlinked_rootdir_still_reads_as_the_whole_suite(tmp_path: Path) -> N
     link = tmp_path / "link"
     try:
         link.symlink_to(real, target_is_directory=True)
-    except OSError as refused:  # pragma: no cover -- no privilege on Windows
+    except OSError as refused:
         pytest.skip(f"this platform will not create a symlink: {refused}")
     assert asks_for_everything([str(link / "tests")], ["tests"], link) is True
 
