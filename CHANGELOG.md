@@ -1355,6 +1355,61 @@ keeps whichever shape it was written in.
   comment**, so both issues stay open on this landing and the citations
   above are `issue` for that reason.
 
+### A run coverage's configuration never reached is refused
+
+- **`tests/conftest.py` let a run coverage read no configuration for
+  pass as the gate** (issue btclib-org/.github#443): coverage looks for
+  its configuration in the directory the process started in, so
+  `env -C tests uv run pytest` finds no `fail_under`, no `source` and no
+  `branch = true`, while pytest walks up and reads `pyproject.toml` all
+  the same. That asymmetry is what the hook keys on, rather than the
+  floor's own value, which `pyproject.toml` is the one place for; what
+  it raises is `pytest.UsageError`, which pytest prints without a
+  traceback and exits 4 for, so the exit code says the run measured
+  nothing rather than that something in the tree failed.
+- **The message names the root as the remedy, and `--cov-config` as one
+  that restores the floor and not the file set.** coverage keeps an
+  `omit` pattern that does not open with a wildcard and adds beside it
+  the form it makes absolute against the directory the run started in
+  (`prep_patterns` in `coverage/files.py`), so `tests/integration/*`
+  from `tests/` names an integration directory under `tests/tests` and
+  matches nothing. `tests/integration/` is measured rather than omitted
+  there, and the tests it holds skip themselves without
+  `BTCLIB_NODE_INTEGRATION`, so a run from `tests/` naming
+  `--cov-config` is held to the floor over exactly the files that
+  entry's own comment in `pyproject.toml` says it keeps out. `source` is
+  not what carries this tree: `btclib_node` is an import name from
+  either directory, this tree being src-layout, and `tests` reaches the
+  same files from either as well.
+- **Section 8 of the organization standard leaves a tree to point such a
+  run at its configuration or to make it say it is ungated, and this is
+  the second of the two.** A sentence in `CONTRIBUTING.md` telling a
+  reader to start from the root is the rejected alternative, on the
+  defect being that a plausible spelling switches the floor off in
+  silence: what the sentence buys is a silent failure somebody had been
+  told about.
+- **Left alone are `--no-cov`, `--help`, `--collect-only` and an
+  explicit `--cov-fail-under`, none of them a run held to a floor it
+  cannot see.** `collectonly` is the one invocation shape pytest-cov
+  itself exempts, its `pytest_runtestloop` returning on
+  `cov_fail_under is None or self.options.collectonly`, so the pair the
+  hook reads is an enumeration rather than every run pytest-cov leaves
+  ungated: `--markers` and `--fixtures` from `tests/` exit before that
+  loop as well and are refused knowingly. `--setup-plan` is what says
+  widening is the wrong direction, since pytest-cov does gate one -- a
+  run of it from `tests/` is held to a floor it cannot see, and is
+  refused. No workflow sets a `working-directory`, so CI meets the guard
+  from the root: `integration-bitcoind.yml`'s `pytest tests/integration`
+  is a selection `relax_coverage_floor` already drops the floor for, and
+  `os-macos.yml`, `os-ubuntu.yml` and
+  `.github/mutation/interpreter.toml`'s `test-command` name `--no-cov`.
+- **`bitcoin-core-rpc` and `btclib-benchmarks` are owed the same
+  guard**, btclib-org/.github#443 having taken that decision for the
+  family, and `btclib` landed it at `da3e0d15`, `btclib-secp256k1` at
+  `bd71d7c8`. What lands with the last of them is
+  the sentence recording which limb of section 8 the family took, which
+  is why this cites the issue rather than closing it.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
