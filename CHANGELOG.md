@@ -1193,6 +1193,43 @@ keeps whichever shape it was written in.
   shape**, so the issue stays open on this landing and the citation
   above is `issue` for that reason.
 
+### The `needs:` reader is the spelling the organization's copies share
+
+- **`_NEEDS` and `_ITEM` are `bitcoin-core-rpc@b2b9d114`'s, byte for
+  byte** (issue btclib-org/.github#1038). The run of items takes an
+  item's own trailing comment as well as a comment line and a blank
+  one, and the inline half stops at a `#` rather than reading the rest
+  of the key's own line. Each of those is one thing to a yaml reader,
+  and a run of adjacent item lines ends at it and drops every item
+  below.
+- **A trailing comment on an item is the shape the tolerance landed for
+  btclib-org/.github#1031 does not reach.** *The closure reader takes
+  `needs:` in each of its three shapes* above has the run of items
+  taking a whitespace-only line, the tolerance `_STEP` carries for the
+  same residue; what stands now takes the comment itself beside the
+  whitespace `_UNCOMMENTED` leaves where one was written, and is the
+  family's alternative rather than `_STEP`'s.
+- **`test_needed_reads_no_step_of_a_job_as_a_job_it_waits_on` asserts
+  that a step-shaped line where an item goes names no job**, with the
+  widened run monkeypatched in as the control. A `- name: Setup uv`
+  written at the items' indent differs from an item in what follows the
+  dash and in nothing else, where a job's own `steps:` key sits at the
+  shallower indent and ends the run under either reading, so the
+  misplaced line is the text the two disagree about.
+- **`test_needed_takes_no_token_of_a_comment_on_the_needs_line` asserts
+  the closure's contents rather than that the walk raised nothing**:
+  `_needed` reads a key no job answers to as the empty block, so words
+  of a comment taken for job keys are absorbed here in silence. The
+  reader that takes them is the control.
+- **The comment above the pattern names what the read still drops**: a
+  flow list wrapped across lines keeps what sat on the key's own line
+  and nothing else, and a flow list exploded under the key or a block
+  list at any other indent keep none of it.
+- **`btclib` and `btclib-secp256k1` carry the narrow reader, and
+  `bitcoin-core-rpc` carries the pattern without that last paragraph**,
+  so the issue stays open on this landing and the citation above is
+  `issue` for that reason.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
