@@ -110,8 +110,12 @@ _JOB = re.compile(
 # key, a flow list there, and a block list under it -- read as whatever
 # follows the key on its own line plus the items below it. A reader blind
 # to the block shape answers a closure short of whatever sits behind an
-# edge written that way, and the biconditional below then passes on a gate
-# it has not read (btclib-org/.github#1031).
+# edge written that way. Where the jobs the narrowing keeps still name an
+# interpreter it answers short in silence, the biconditional below
+# passing on a gate it has not read; where the narrowing leaves the
+# aggregate alone, the aggregate's own job names none and the `no job
+# ... names an interpreter` assertion ahead of that biconditional fires
+# instead (btclib-org/.github#1031).
 #
 # The run of items takes a comment line and a blank one as well, and an
 # item's own trailing comment with it: a whole-line comment among the
@@ -125,7 +129,7 @@ _JOB = re.compile(
 #
 # What the run must not take is a step: `steps:` entries sit at the item
 # indent, and `      - name: Setup uv` is kept out by an item being the
-# whole line up to its comment
+# whole line up to its comment.
 #
 # What it still does not read, it drops without saying so, and the cases
 # are named because they are not equally bad. A flow list wrapped across
@@ -529,42 +533,76 @@ def test_needed_reads_needs_in_each_of_its_three_shapes(
     the indent it was written at, and a trailing comment written with
     two spaces before the `#` as a single space, where a copy of this
     module that keeps comments hands the same pattern the `#` itself --
-    so both forms stand below.
+    so both forms stand below, each spelled out rather than one reached
+    from the other.
+
+    The job dict is flat, so every case asserts the closure its own
+    text earns: the aggregate and the one job a scalar names, where a
+    list of either shape reaches both. A dict in which `changes`
+    waited on `coverage` buys comparable expectations with a second
+    route to `coverage`, and an item dropped below a residue is
+    reached by that route anyway: the rows a whole-line comment and a
+    blank line are written for then hold under a reader carrying no
+    whole-line alternative at all (btclib-org/.github#1053). What the
+    chain was also pinning, and what nothing else in the module
+    pins, is that `_needed` walks: flat, one hop is the whole
+    closure, so a reader taking a job's direct `needs:` and
+    stopping answers every row here and the real gate alike. One
+    chained dict stands below the flat rows for that alone,
+    asserting its own closure and nothing about a shape.
     """
 
-    def closure(needs: str, *, stripped: bool = True) -> set[str]:
-        # `changes` waits on `coverage`, so the one job a scalar can
-        # name still reaches both and the three shapes are comparable.
-        # `stripped` is this tree's own pipeline, `_jobs` dropping
-        # comments before the read; False is what a copy that keeps
-        # them hands the same pattern
-        jobs = {
-            "aggregate": _UNCOMMENTED.sub("", needs) if stripped else needs,
-            "changes": "    needs: coverage\n",
-            "coverage": "",
-        }
-        return _needed(jobs, "aggregate")
+    def closure(needs: str) -> set[str]:
+        return _needed({"aggregate": needs, "changes": "", "coverage": ""}, "aggregate")
 
+    whole = {"aggregate", "changes", "coverage"}
     flow = "    needs: [changes, coverage]\n"
     scalar = "    needs: changes\n"
-    block = "    needs:\n      - changes\n      - coverage\n"
-    commented = (
-        "    needs:\n"
-        "      - changes\n"
-        "      # the cell the coverage floor is measured on\n"
-        "      - coverage\n"
+    under_the_key = {
+        "a block list": "    needs:\n      - changes\n      - coverage\n",
+        "a comment among the items": (
+            "    needs:\n"
+            "      - changes\n"
+            "      # the cell the coverage floor is measured on\n"
+            "      - coverage\n"
+        ),
+        "that comment stripped": (
+            "    needs:\n      - changes\n     \n      - coverage\n"
+        ),
+        "a comment on an item": (
+            "    needs:\n      - changes  # the gate\n      - coverage\n"
+        ),
+        "that one stripped": "    needs:\n      - changes \n      - coverage\n",
+        "a blank line between two items": (
+            "    needs:\n      - changes\n\n      - coverage\n"
+        ),
+    }
+    # what the docstring says the stripped pair is: `_UNCOMMENTED` takes
+    # one whitespace character with the `#` it removes, so the two forms
+    # spelled out above stay the two a run through `_jobs` produces
+    assert (
+        _UNCOMMENTED.sub("", under_the_key["a comment among the items"])
+        == under_the_key["that comment stripped"]
     )
-    annotated = "    needs:\n      - changes  # the gate\n      - coverage\n"
-    spaced = "    needs:\n      - changes\n\n      - coverage\n"
-    whole = {"aggregate", "changes", "coverage"}
+    assert (
+        _UNCOMMENTED.sub("", under_the_key["a comment on an item"])
+        == under_the_key["that one stripped"]
+    )
     assert closure(flow) == whole
-    assert closure(scalar) == whole
-    assert closure(block) == whole
-    assert closure(commented) == whole
-    assert closure(annotated) == whole
-    assert closure(spaced) == whole
-    assert closure(commented, stripped=False) == whole
-    assert closure(annotated, stripped=False) == whole
+    assert closure(scalar) == {"aggregate", "changes"}
+    for shape, block in under_the_key.items():
+        assert closure(block) == whole, shape
+    # the one job dict here that is not flat, and the only assertion
+    # in this module that a job reached only through another is
+    # reached at all: with every dict flat one hop is the whole
+    # closure, so a `_needed` that read a job's direct `needs:` and
+    # stopped would answer every row above correctly
+    chained = {
+        "aggregate": scalar,
+        "changes": "    needs: coverage\n",
+        "coverage": "",
+    }
+    assert _needed(chained, "aggregate") == whole
     # the control: a reader of the key's own line and nothing under it
     # answers the same for the two shapes that write the list there and
     # the aggregate alone for those that write it under the key, so what
@@ -578,13 +616,9 @@ def test_needed_reads_needs_in_each_of_its_three_shapes(
         ),
     )
     assert closure(flow) == whole
-    assert closure(scalar) == whole
-    assert closure(block) == {"aggregate"}
-    assert closure(commented) == {"aggregate"}
-    assert closure(annotated) == {"aggregate"}
-    assert closure(spaced) == {"aggregate"}
-    assert closure(commented, stripped=False) == {"aggregate"}
-    assert closure(annotated, stripped=False) == {"aggregate"}
+    assert closure(scalar) == {"aggregate", "changes"}
+    for shape, block in under_the_key.items():
+        assert closure(block) == {"aggregate"}, shape
 
 
 def test_needed_reads_no_step_of_a_job_as_a_job_it_waits_on(

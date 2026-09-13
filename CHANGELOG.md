@@ -1294,6 +1294,67 @@ keeps whichever shape it was written in.
   `SDist does not match git` naming that path under `SDist only`, and
   exits 0 with the line in place.
 
+### Every `needs:` shape earns its own closure, and both consequences are named
+
+- **`test_needed_reads_needs_in_each_of_its_three_shapes` reads its
+  shapes against a flat job dict, so every case asserts the closure its
+  own text earns** (issue btclib-org/.github#1053). A scalar `needs:`
+  names one job and reaches one job, so that row asserts the aggregate
+  and that job, where a list of either shape reaches both. A dict in
+  which `changes` waited on `coverage` buys one expectation for every
+  case with a second route to `coverage`, and an item dropped below a
+  residue is reached by that route anyway.
+- **One chained dict stands below the flat rows, and it is the only
+  assertion in the module that `_needed` walks at all.** Flattening
+  buys the comparability above at the cost of every closure being one
+  hop deep, and `test.yml`'s own `test-passed` writes
+  `needs: [changes, coverage, windows, dist]`, naming all four
+  directly, so `_gating()` never needs a second hop either. A
+  `_needed` reading a job's direct `needs:` and stopping therefore
+  answered every flat row: measured by replacing the walk with a
+  single lookup, under which every assertion above the chained case
+  passes and the chained case is the one that fails. The chain
+  asserts its own closure and nothing about a shape, so it costs the
+  flat rows none of their comparability.
+- **Each shape written under the key is a named case of a dict asserted
+  in a loop, the stripped form of a comment spelled out beside the
+  comment itself**, so a failure says which shape. `_UNCOMMENTED` over
+  the written form is asserted to be the stripped one, which is what
+  keeps the two forms the two `_jobs` hands the reader.
+- **Measured by rebinding `_NEEDS` in a standalone interpreter to
+  mutants of the pattern as written**: an item alternative with no
+  trailing-comment tolerance and one with no `[ \t]*` are each killed by
+  *a comment on an item*, a whole-line alternative with no comment
+  tolerance by *a comment among the items*, and no whole-line
+  alternative at all by *a comment among the items*, *that comment
+  stripped* and *a blank line between two items*. `flow` and `scalar`
+  kill none of them and are not meant to: they are the contrast the
+  degenerate-reader control turns on.
+- **The comment above `_NEEDS` names both of the things a reader blind
+  to the block shape does** (issue btclib-org/.github#1057), drawn from
+  the docstring `bitcoin-core-rpc` gives its own copy of this test.
+  Where the jobs the narrowing keeps still name an interpreter, the
+  biconditional passes on a gate it has not read; where the narrowing
+  leaves the aggregate alone, the aggregate's own job names no
+  interpreter and the `no job ... names an interpreter` assertion ahead
+  of that biconditional fires instead. Measured against `test.yml` with
+  `_NEEDS` rebound to a reader of the key's own line: with the
+  aggregate's own `needs:` rewritten under the key the closure is
+  `test-passed` alone and that assertion fires, and with a job reached
+  only under the key naming `3.14t`,
+  `test_free_threading_is_classified_exactly_when_the_gate_runs_it`
+  passes on a closure the reader as written fails it on.
+- **The paragraph on what the run must not take ends in a full stop**
+  (issue btclib-org/.github#1057).
+- **`_NEEDS` and `_ITEM` are untouched**, and are still
+  `bitcoin-core-rpc@ca9db975`'s and `btclib-secp256k1@1e01aa6d`'s byte
+  for byte. The comment above them is not one artefact:
+  `bitcoin-core-rpc` words its second paragraph differently and carries
+  no fourth one, so the repair above breaks no identity that holds.
+- **`btclib-secp256k1` owes the shape and `bitcoin-core-rpc` owes the
+  comment**, so both issues stay open on this landing and the citations
+  above are `issue` for that reason.
+
 ## v2026.9.4
 
 ### btclib resolves from the released package, not from git `main`
